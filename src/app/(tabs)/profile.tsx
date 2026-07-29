@@ -119,13 +119,32 @@ export default function ProfileScreen() {
   if (!isConnected || !user || !account) {
     return (
       <Screen tabBarInset padded>
-        <View className="flex-1 justify-center">
+        {/*
+          Settings stays reachable while signed out — it holds account recovery,
+          notification and privacy controls that should not require a wallet.
+        */}
+        <View className="flex-row justify-end pt-2">
+          <IconButton
+            icon={Settings}
+            label="Settings"
+            onPress={() => router.push('/settings')}
+            variant="secondary"
+            size={40}
+            iconSize={18}
+          />
+        </View>
+
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}
+        >
           <ConnectWalletPrompt
             title="Your on-chain profile"
             description="Connect a wallet to see your reputation, badges and the events you've shown up for."
             onConnect={openSheet}
           />
-        </View>
+        </ScrollView>
+
         <ConnectWalletSheet
           visible={sheetVisible}
           onClose={closeSheet}

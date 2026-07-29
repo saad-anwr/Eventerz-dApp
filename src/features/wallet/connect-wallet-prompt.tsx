@@ -7,15 +7,23 @@
  */
 
 import { LinearGradient } from 'expo-linear-gradient';
-import { memo } from 'react';
+import { memo, useCallback } from 'react';
 import { View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { Button } from '@/components/ui/button';
 import { ShieldCheck, Ticket, Trophy, Wallet } from '@/components/ui/icon';
+import { PressableScale } from '@/components/ui/pressable-scale';
+import { Spinner } from '@/components/ui/spinner';
 import { Text } from '@/components/ui/text';
+import { useAuthStore } from '@/store/auth-store';
+import { toast } from '@/store/toast-store';
 import { brand, gradients } from '@/theme/colors';
 import { radius, screenPadding } from '@/theme/layout';
+import { fontFamily } from '@/theme/typography';
+import { haptics } from '@/utils/haptics';
+
+import { GoogleMark } from './google-account-row';
 
 const BENEFITS = [
   { icon: Ticket, label: 'NFT tickets land in your wallet' },
@@ -32,6 +40,32 @@ export const ConnectWalletPrompt = memo(function ConnectWalletPrompt({
   description?: string;
   onConnect: () => void;
 }) {
+  const isLive = useAuthStore((s) => s.isLive);
+  const linking = useAuthStore((s) => s.status === 'linking');
+  const signInWithGoogle = useAuthStore((s) => s.signInWithGoogle);
+
+  const handleGoogle = useCallback(async () => {
+    haptics.medium();
+    const ok = await signInWithGoogle();
+
+    if (ok) {
+      haptics.success();
+      const email = useAuthStore.getState().profile?.email;
+      toast.success(
+        'Signed in',
+        email ? `Welcome, ${email}` : 'Connect a wallet to finish setting up.',
+      );
+      return;
+    }
+
+    // A cancelled sign-in clears the error and needs no toast.
+    const error = useAuthStore.getState().error;
+    if (error) {
+      haptics.error();
+      toast.error('Google sign-in failed', error);
+    }
+  }, [signInWithGoogle]);
+
   return (
     <Animated.View
       entering={FadeInDown.duration(420)}
@@ -93,6 +127,50 @@ export const ConnectWalletPrompt = memo(function ConnectWalletPrompt({
         style={{ maxWidth: 340 }}
         accessibilityHint="Opens the wallet picker"
       />
+
+      {/*
+        Google has to be reachable from here. Every signed-out screen renders
+        this prompt instead of its header, so without it the only route to
+        account recovery — Settings → Account recovery — is behind the very
+        wallet connection the user has not made yet.
+      */}
+      {isLive && (
+        <View className="w-full items-center" style={{ maxWidth: 340 }}>
+          <View className="my-4 flex-row items-center gap-3 self-stretch">
+            <View className="h-px flex-1 bg-white/10" />
+            <Text variant="caption" className="text-muted-foreground">
+              or
+            </Text>
+            <View className="h-px flex-1 bg-white/10" />
+          </View>
+
+          <PressableScale
+            onPress={handleGoogle}
+            disabled={linking}
+            scaleTo={0.98}
+            accessibilityRole="button"
+            accessibilityLabel="Continue with Google"
+            accessibilityHint="Signs in so this account can be recovered on another device"
+            className="w-full flex-row items-center justify-center gap-2.5 border border-white/12 bg-white/[0.05]"
+            style={{ height: 52, borderRadius: radius.full }}
+          >
+            {linking ? <Spinner size={18} /> : <GoogleMark size={18} />}
+            <Text
+              style={{ fontFamily: fontFamily.semibold, fontSize: 15 }}
+            >
+              {linking ? 'Waiting for Google…' : 'Continue with Google'}
+            </Text>
+          </PressableScale>
+
+          <Text
+            variant="caption"
+            className="mt-3 text-center text-muted-foreground"
+          >
+            Google signs you in and keeps the account recoverable — you will
+            still need a wallet for tickets and check-in.
+          </Text>
+        </View>
+      )}
     </Animated.View>
   );
 });
