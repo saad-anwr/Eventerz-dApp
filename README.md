@@ -2,7 +2,7 @@
 
 **Everything is On-chain. Why not your events?**
 
-The native companion to [eventerz-three.vercel.app](https://eventerz-three.vercel.app) —
+The native companion to [www.eventerz.xyz](https://www.eventerz.xyz) —
 a wallet-native event app for Android (built with the Solana Seeker in mind) and iOS.
 
 Discover events, RSVP on-chain, hold NFT tickets in your wallet, check in with a QR
@@ -189,16 +189,16 @@ depend on `app/` or `features/`.
 
 ## Wallet integration
 
-Today the app ships a **mock wallet adapter**: deterministic addresses,
-simulated approval latency, a persisted session, and fake signatures.
-Everything downstream — RSVP, minting, check-in — runs the real flow.
+The app uses **Solana Mobile Wallet Adapter** — real Phantom / Solflare /
+Backpack / Seeker wallets. The seam is `WalletAdapter` in `src/types/wallet.ts`:
 
-The seam is `WalletAdapter` in `src/types/wallet.ts`. Two implementations:
+| File                                       | Used when                          |
+| ------------------------------------------ | ---------------------------------- |
+| `services/wallet/mobile-wallet-adapter.ts` | Android dev/release build (default) |
+| `services/wallet/mock-wallet-adapter.ts`   | Expo Go, iOS, or `EXPO_PUBLIC_USE_MOCK_WALLET=true` |
 
-| File                                       | Status                        |
-| ------------------------------------------ | ----------------------------- |
-| `services/wallet/mock-wallet-adapter.ts`   | Shipping now                  |
-| `services/wallet/mobile-wallet-adapter.ts` | Placeholder, fully documented |
+MWA is Android-only and needs native code, so `wallet-service.ts` falls back to
+the mock elsewhere — and Settings says so rather than pretending.
 
 `services/wallet/wallet-service.ts` picks between them from a single flag.
 To go live with Solana Mobile Wallet Adapter:
@@ -277,8 +277,13 @@ Stated plainly rather than hidden:
   produce route types reliably on SDK 57 here, and a stale types file turns
   every `router.push` into a type error. Re-enable in `app.json` if it works
   for you.
-- **Mock data resets** on reload — there is no persistence layer for events yet,
-  only for wallet session and preferences.
+- **On-chain calls are not live.** No Anchor program is deployed, so
+  `signAndSendTransaction` refuses rather than fabricating a signature. RSVP,
+  ticketing and check-in are real — they run through Postgres — but nothing is
+  written to Solana yet. Set `EXPO_PUBLIC_EVENTERZ_PROGRAM_ID` once a program
+  exists.
+- **Seed data is opt-in.** The app talks to Supabase by default, so a fresh
+  project starts empty. Set `EXPO_PUBLIC_USE_MOCK_DATA=true` for offline UI work.
 - **Web is a preview target**, not a supported one. It builds and runs, but
   blur falls back to a flat fill, haptics are no-ops, and the camera scanner
   needs the "Simulate a scan" button.

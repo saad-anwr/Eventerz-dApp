@@ -9,6 +9,7 @@
  * the first frame is fully styled rather than flashing system type.
  */
 
+import '@/polyfills';
 import '@/global.css';
 
 import { QueryClientProvider } from '@tanstack/react-query';

@@ -12,7 +12,8 @@ import {
   useQueryClient,
 } from '@tanstack/react-query';
 
-import { eventRepository, ticketRepository, type CreateEventInput } from '@/repositories';
+import { integrationsConfig } from '@/constants/config';
+import { eventRepository, type CreateEventInput } from '@/repositories';
 import { AnalyticsEvent, analytics, notificationService, solanaService } from '@/services';
 import { useWalletStore } from '@/store/wallet-store';
 import type { EventFilters, EventItem } from '@/types';
@@ -114,18 +115,24 @@ export function useToggleRsvp() {
       }
       const wasGoing = event.attendeeIds.includes(user.id);
 
+      /*
+       * Ticket lifecycle lives with the RSVP: on Supabase the `rsvp()` /
+       * `cancel_rsvp()` functions allocate and revoke the ticket atomically
+       * (capacity and serial numbering are races otherwise), and the mock
+       * repository mirrors that. So this hook only sequences the on-chain step
+       * around it.
+       */
       if (wasGoing) {
-        await ticketRepository.revokeForEvent(event.id, user.id);
         await notificationService.cancelEventReminders(event.id);
-      } else {
-        // Both calls hit the wallet adapter; the mock simulates approval time.
+      } else if (integrationsConfig.programId) {
+        // Only attempt a signature when a program is actually deployed —
+        // otherwise the adapter throws and the RSVP would fail for no reason.
         await solanaService.rsvp(event.id);
-        await solanaService.mintTicket(event.id, account.address);
-        await ticketRepository.mint(event.id, user.id, account.address);
-        await notificationService.scheduleEventReminders(event);
       }
 
       const updated = await eventRepository.toggleRsvp(event.id, user.id);
+
+      if (!wasGoing) await notificationService.scheduleEventReminders(event);
       analytics.track(AnalyticsEvent.EventRsvp, {
         eventId: event.id,
         going: !wasGoing,

@@ -6,6 +6,9 @@
  * Adapter installed and every caller picks up the real implementation.
  */
 
+import Constants, { ExecutionEnvironment } from 'expo-constants';
+import { Platform } from 'react-native';
+
 import { featureFlags } from '@/constants/config';
 import type { WalletAdapter } from '@/types';
 
@@ -14,13 +17,42 @@ import { MockWalletAdapter } from './mock-wallet-adapter';
 
 let adapter: WalletAdapter | null = null;
 
+/**
+ * Mobile Wallet Adapter is an Android association intent backed by native code.
+ * It cannot work on iOS or web at all, and Expo Go does not bundle the native
+ * module — so asking for it there would throw on first use rather than at a
+ * point we can explain.
+ */
+export function isMwaAvailable(): boolean {
+  if (Platform.OS !== 'android') return false;
+  return Constants.executionEnvironment !== ExecutionEnvironment.StoreClient;
+}
+
+/** Why the mock is in use, when it is. Surfaced in Settings. */
+export function walletAdapterReason(): string | null {
+  if (featureFlags.useMockWallet) {
+    return 'Demo wallet — set EXPO_PUBLIC_USE_MOCK_WALLET=false to use a real wallet.';
+  }
+  if (Platform.OS !== 'android') {
+    return 'Mobile Wallet Adapter is Android-only; using the demo wallet here.';
+  }
+  if (!isMwaAvailable()) {
+    return 'Expo Go cannot load Mobile Wallet Adapter. Run a development build (npm run android).';
+  }
+  return null;
+}
+
 export function getWalletAdapter(): WalletAdapter {
   if (!adapter) {
-    adapter = featureFlags.useMockWallet
-      ? new MockWalletAdapter()
-      : new MobileWalletAdapter();
+    const useReal = !featureFlags.useMockWallet && isMwaAvailable();
+    adapter = useReal ? new MobileWalletAdapter() : new MockWalletAdapter();
   }
   return adapter;
+}
+
+/** True when the connected wallet is a real one, not the demo adapter. */
+export function isRealWallet(): boolean {
+  return getWalletAdapter().id === 'mwa';
 }
 
 /** Test seam — lets a spec inject a stub without touching env vars. */

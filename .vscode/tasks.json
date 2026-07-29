@@ -1,0 +1,53 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      // Boots the Seeker AVD without opening Android Studio.
+      // Ctrl+Shift+P → "Run Task" → "Start Seeker emulator".
+      "label": "Start Seeker emulator",
+      "type": "shell",
+      "command": "${env:ANDROID_HOME}/emulator/emulator",
+      "args": ["-avd", "Seeker", "-no-boot-anim"],
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": { "reveal": "silent", "panel": "dedicated" }
+    },
+    {
+      "label": "Run on Android",
+      "type": "shell",
+      "command": "npx expo run:android",
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "dedicated" }
+    },
+    {
+      "label": "Start Metro (dev client)",
+      "type": "shell",
+      "command": "npx expo start --dev-client",
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "dedicated" }
+    },
+    {
+      "label": "Typecheck",
+      "type": "shell",
+      "command": "npx tsc --noEmit",
+      "group": "test",
+      "problemMatcher": ["$tsc"]
+    },
+    {
+      "label": "Lint",
+      "type": "shell",
+      "command": "npx expo lint",
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      // Regenerates android/ after a native dependency change, then rebuilds.
+      "label": "Rebuild native (prebuild + run)",
+      "type": "shell",
+      "command": "npx expo prebuild --platform android --clean && npx expo run:android",
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "dedicated" }
+    }
+  ]
+}

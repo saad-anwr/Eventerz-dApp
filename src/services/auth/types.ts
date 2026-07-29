@@ -39,15 +39,113 @@ export type ProfileUpdate = Partial<
   >
 >;
 
+/* -------------------------------------------------------------------------- */
+/*  Rows from 0002_events.sql                                                  */
+/* -------------------------------------------------------------------------- */
+
+export type DbEvent = {
+  id: string;
+  title: string;
+  description: string;
+  host_id: string;
+  community_id: string | null;
+  cover_gradient: string;
+  cover_image: string | null;
+  category: string;
+  starts_at: string;
+  ends_at: string | null;
+  location: string;
+  is_online: boolean;
+  capacity: number;
+  price: string;
+  visibility: string;
+  requires_approval: boolean;
+  token_gated: boolean;
+  gate_requirement: string | null;
+  tags: string[];
+  schedule: unknown;
+  featured: boolean;
+  onchain_signature: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type DbCommunity = {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  icon: string;
+  accent: string;
+  cover_gradient: string;
+  token_gated: boolean;
+  verified: boolean;
+  owner_id: string | null;
+  created_at: string;
+};
+
+export type DbCommunityMember = {
+  community_id: string;
+  profile_id: string;
+  joined_at: string;
+};
+
+export type DbRsvp = {
+  id: string;
+  event_id: string;
+  profile_id: string;
+  status: string;
+  wallet_address: string | null;
+  created_at: string;
+};
+
+export type DbTicket = {
+  id: string;
+  event_id: string;
+  owner_id: string;
+  asset_id: string | null;
+  serial: number;
+  status: string;
+  soulbound: boolean;
+  tier: string;
+  qr_secret: string;
+  minted_at: string;
+  checked_in_at: string | null;
+};
+
+export type DbNotification = {
+  id: string;
+  profile_id: string;
+  kind: string;
+  title: string;
+  body: string;
+  href: string | null;
+  read: boolean;
+  created_at: string;
+};
+
+/** Helper: a table whose Insert allows omitting server-defaulted columns. */
+type Table<Row, Insert = Partial<Row>, Update = Partial<Row>> = {
+  Row: Row;
+  Insert: Insert;
+  Update: Update;
+  Relationships: [];
+};
+
 export type Database = {
   public: {
     Tables: {
-      profiles: {
-        Row: ProfileRow;
-        Insert: Partial<ProfileRow> & { id: string };
-        Update: ProfileUpdate;
-        Relationships: [];
-      };
+      profiles: Table<
+        ProfileRow,
+        Partial<ProfileRow> & { id: string },
+        ProfileUpdate
+      >;
+      events: Table<DbEvent>;
+      communities: Table<DbCommunity>;
+      community_members: Table<DbCommunityMember>;
+      rsvps: Table<DbRsvp>;
+      tickets: Table<DbTicket>;
+      notifications: Table<DbNotification>;
     };
     Views: Record<never, never>;
     Functions: {
@@ -58,6 +156,18 @@ export type Database = {
       profile_for_wallet: {
         Args: { p_wallet_address: string };
         Returns: ProfileRow;
+      };
+      rsvp: {
+        Args: { p_event_id: string };
+        Returns: DbTicket;
+      };
+      cancel_rsvp: {
+        Args: { p_event_id: string };
+        Returns: undefined;
+      };
+      check_in_ticket: {
+        Args: { p_ticket_id: string; p_qr_secret: string };
+        Returns: DbTicket;
       };
     };
     Enums: Record<never, never>;

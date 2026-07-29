@@ -44,7 +44,8 @@ import { Text } from '@/components/ui/text';
 import { GoogleAccountRow } from '@/features/wallet';
 import { integrationsConfig, siteConfig } from '@/constants/config';
 import { resetMockDatabase } from '@/mock';
-import { getWalletDescriptor } from '@/services/wallet';
+import { useMockBackend } from '@/repositories';
+import { getWalletDescriptor, walletAdapterReason } from '@/services/wallet';
 import { toast } from '@/store/toast-store';
 import {
   LANGUAGES,
@@ -184,6 +185,9 @@ export default function SettingsScreen() {
   const walletDescriptor = account
     ? getWalletDescriptor(account.walletId)
     : undefined;
+
+  // Non-null only when the real Mobile Wallet Adapter is unavailable.
+  const walletReason = walletAdapterReason();
 
   return (
     <Screen edgeTop={false}>
@@ -415,6 +419,23 @@ export default function SettingsScreen() {
           />
         </Group>
 
+        {/*
+          When the demo adapter is standing in, say so and say why. Silently
+          pretending a fake wallet is real is how someone ends up believing a
+          ticket was minted when nothing touched the chain.
+        */}
+        {walletReason && (
+          <View
+            className="mt-3 flex-row items-start gap-2.5 border border-amber-400/25 bg-amber-400/[0.07] p-3.5"
+            style={{ borderRadius: radius.lg }}
+          >
+            <Info size={15} color="#fbbf24" strokeWidth={2.2} />
+            <Text variant="caption" className="flex-1 text-muted-foreground">
+              {walletReason}
+            </Text>
+          </View>
+        )}
+
         {/* Privacy */}
         <Group title="Privacy">
           <SwitchRow
@@ -487,17 +508,26 @@ export default function SettingsScreen() {
               toast.success('Onboarding reset', 'It shows on your next launch.');
             }}
           />
-          <Divider />
-          <LinkRow
-            icon={Trash2}
-            title="Reset demo data"
-            description="Restore the seeded events, tickets and notifications"
-            onPress={() => {
-              resetMockDatabase();
-              haptics.success();
-              toast.success('Demo data restored');
-            }}
-          />
+          {/*
+            Only meaningful against the in-memory seed. On the real backend
+            there is no "demo data" to restore, and offering the button would
+            imply the app can wipe your actual events.
+          */}
+          {useMockBackend && (
+            <>
+              <Divider />
+              <LinkRow
+                icon={Trash2}
+                title="Reset demo data"
+                description="Restore the seeded events, tickets and notifications"
+                onPress={() => {
+                  resetMockDatabase();
+                  haptics.success();
+                  toast.success('Demo data restored');
+                }}
+              />
+            </>
+          )}
         </Group>
 
         {/* Sign out */}

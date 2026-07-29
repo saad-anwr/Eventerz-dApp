@@ -30,7 +30,7 @@ export const siteConfig = {
 export const integrationsConfig = {
   solanaNetwork:
     (process.env.EXPO_PUBLIC_SOLANA_NETWORK as SolanaCluster | undefined) ??
-    'devnet',
+    'mainnet-beta',
   heliusRpcUrl: process.env.EXPO_PUBLIC_HELIUS_RPC_URL ?? '',
   programId: process.env.EXPO_PUBLIC_EVENTERZ_PROGRAM_ID ?? '',
   merkleTree: process.env.EXPO_PUBLIC_MERKLE_TREE_ADDRESS ?? '',
@@ -50,8 +50,11 @@ export type SolanaCluster = 'mainnet-beta' | 'devnet' | 'testnet';
  * once Mobile Wallet Adapter is installed in a dev build.
  */
 export const featureFlags = {
-  useMockWallet: process.env.EXPO_PUBLIC_USE_MOCK_WALLET !== 'false',
-  useMockData: process.env.EXPO_PUBLIC_USE_MOCK_DATA !== 'false',
+  // Default to the real wallet. Opt *in* to the demo adapter with
+  // EXPO_PUBLIC_USE_MOCK_WALLET=true — production should never need it.
+  useMockWallet: process.env.EXPO_PUBLIC_USE_MOCK_WALLET === 'true',
+  // Default to the real backend. Seed data is opt-in for local development.
+  useMockData: process.env.EXPO_PUBLIC_USE_MOCK_DATA === 'true',
   enableAnalytics: process.env.EXPO_PUBLIC_ENABLE_ANALYTICS === 'true',
   enablePushNotifications:
     process.env.EXPO_PUBLIC_ENABLE_PUSH_NOTIFICATIONS === 'true',

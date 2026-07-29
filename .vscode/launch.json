@@ -1,0 +1,30 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      // Builds, installs and launches on whatever device adb sees, then starts
+      // Metro. Use this the first time, and after any native dependency change.
+      "name": "Android — build & run",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "npx expo run:android",
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      // Metro only. Much faster — use once the dev build is already installed.
+      // Launch the app from the emulator's launcher and it connects here.
+      "name": "Metro — dev client",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "npx expo start --dev-client",
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "name": "Metro — clear cache",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "npx expo start --dev-client --clear",
+      "cwd": "${workspaceFolder}"
+    }
+  ]
+}

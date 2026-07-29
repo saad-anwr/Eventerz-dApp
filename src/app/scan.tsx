@@ -23,6 +23,7 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button, IconButton } from '@/components/ui/button';
+import { TextField } from '@/components/ui/form';
 import { BadgeCheck, Camera, Check, QrCode, X } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
@@ -215,6 +216,8 @@ export default function ScanScreen() {
   const insets = useSafeAreaInsets();
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState<Ticket | null>(null);
+  const [manualOpen, setManualOpen] = useState(false);
+  const [manualCode, setManualCode] = useState('');
   // Guards against the camera firing the same code dozens of times per second.
   const locked = useRef(false);
 
@@ -329,19 +332,41 @@ export default function ScanScreen() {
         }}
       >
         {/*
-          Camera hardware is unavailable on simulators and in some Expo Go
-          sessions — this keeps the whole check-in flow demonstrable there.
+          Emulators have no camera. Rather than ship a fake-scan button to
+          production, offer manual entry — it exercises the same server-side
+          redemption path and is genuinely useful at a door when a phone screen
+          is too cracked or dim to scan.
         */}
-        <Button
-          label="Simulate a scan"
-          icon={QrCode}
-          variant="secondary"
-          onPress={() =>
-            handlePayload('eventerz:v1:checkin?event=e_summit&ticket=t_summit&owner=demo')
-          }
-          loading={redeem.isPending}
-          fullWidth
-        />
+        {!granted && (
+          <Button
+            label={manualOpen ? 'Hide manual entry' : 'Enter code manually'}
+            icon={QrCode}
+            variant="secondary"
+            onPress={() => setManualOpen((open) => !open)}
+            fullWidth
+          />
+        )}
+
+        {manualOpen && (
+          <View className="mt-3 gap-3">
+            <TextField
+              label="Ticket code"
+              placeholder="eventerz:v1:checkin?ticket=…&secret=…"
+              value={manualCode}
+              onChangeText={setManualCode}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            <Button
+              label="Check in"
+              onPress={() => handlePayload(manualCode.trim())}
+              loading={redeem.isPending}
+              disabled={manualCode.trim().length === 0}
+              fullWidth
+            />
+          </View>
+        )}
+
         <Text
           variant="micro"
           className="mt-3 text-center text-muted-foreground"
