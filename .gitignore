@@ -30,7 +30,11 @@ yarn-error.*
 .DS_Store
 *.pem
 
-# local env files
+# JetBrains IDE
+.idea/
+
+# local env files — `.env.example` is committed, real values are not
+.env
 .env*.local
 
 # typescript

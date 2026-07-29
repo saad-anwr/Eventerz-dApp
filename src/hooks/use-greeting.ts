@@ -1,0 +1,13 @@
+import { useMemo } from 'react';
+
+/** Time-of-day greeting for the Home header — "Good evening". */
+export function useGreeting(): string {
+  return useMemo(() => {
+    const hour = new Date().getHours();
+    if (hour < 5) return 'Still up';
+    if (hour < 12) return 'Good morning';
+    if (hour < 17) return 'Good afternoon';
+    if (hour < 22) return 'Good evening';
+    return 'Good night';
+  }, []);
+}
