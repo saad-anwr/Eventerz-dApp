@@ -240,19 +240,41 @@ async function ensureDevice() {
 
 /* ---------------------------------------------------------------- build/run */
 
+/** ABIs React Native can produce, best first. */
+const BUILDABLE_ABIS = ['arm64-v8a', 'x86_64', 'armeabi-v7a', 'x86'];
+
 /**
- * The device's real ABI. Compiling anything else is the single most common
- * cause of INSTALL_FAILED_NO_MATCHING_ABIS, and the message never says so.
+ * Pick the ABI to compile.
+ *
+ * Uses the device's full `abilist`, not just the primary, and intersects it
+ * with what we can build — an x86_64 emulator reports `x86_64,x86`, and a
+ * 64-bit ARM phone reports `arm64-v8a,armeabi-v7a`. Taking the best mutual
+ * match means the APK always installs, whichever image the AVD was built from.
+ *
+ * Getting this wrong is the single most common cause of
+ * INSTALL_FAILED_NO_MATCHING_ABIS, and that error never names the reason.
  */
 function deviceAbi(serial) {
-  const primary = trySh(ADB, [
-    '-s',
-    serial,
-    'shell',
-    'getprop',
-    'ro.product.cpu.abi',
-  ]);
-  return primary || 'arm64-v8a';
+  const getprop = (key) =>
+    trySh(ADB, ['-s', serial, 'shell', 'getprop', key]) ?? '';
+
+  const supported = getprop('ro.product.cpu.abilist')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  const primary = getprop('ro.product.cpu.abi').trim();
+  const candidates = supported.length ? supported : [primary].filter(Boolean);
+
+  const match = BUILDABLE_ABIS.find((abi) => candidates.includes(abi));
+
+  if (!match) {
+    warn(
+      `Device reports ABIs [${candidates.join(', ') || 'unknown'}], none of which ` +
+        'React Native builds. Falling back to arm64-v8a.',
+    );
+  }
+  return match ?? 'arm64-v8a';
 }
 
 function build(abi) {

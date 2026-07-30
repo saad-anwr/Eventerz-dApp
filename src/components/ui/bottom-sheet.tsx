@@ -151,7 +151,7 @@ export const BottomSheet = memo(function BottomSheet({
         style={[{ position: 'absolute', inset: 0 }, backdropStyle]}
       >
         <Animated.View
-          className="flex-1 bg-black/60"
+          className="flex-1 bg-black/75"
           onTouchEnd={close}
           accessible
           accessibilityRole="button"
@@ -179,13 +179,18 @@ export const BottomSheet = memo(function BottomSheet({
             />
           ) : null}
 
+          {/*
+            Fully opaque, not /98. At 98% the aurora background and whatever
+            text sits behind the sheet bleed faintly through the surface, which
+            reads as overlapping content rather than a deliberate translucency.
+          */}
           <View
-            className={cn(
-              'border-t border-white/10 bg-[#0a0f24]/98',
-              className,
-            )}
+            className={cn('border-t border-white/10', className)}
             style={[
-              { paddingBottom: insets.bottom + 16 },
+              {
+                backgroundColor: '#0a0f24',
+                paddingBottom: insets.bottom + 16,
+              },
               contentStyle,
             ]}
           >

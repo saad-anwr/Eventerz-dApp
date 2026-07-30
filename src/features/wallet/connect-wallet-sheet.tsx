@@ -9,10 +9,11 @@
  */
 
 import { memo, useCallback, useState } from 'react';
-import { Linking, View } from 'react-native';
+import { Linking, ScrollView, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 
 import { SUPPORTED_WALLETS } from '@/services/wallet';
+import { useAuthStore } from '@/store/auth-store';
 import { useWalletStore } from '@/store/wallet-store';
 import { toast } from '@/store/toast-store';
 import { brand } from '@/theme/colors';
@@ -32,6 +33,8 @@ import {
 import { PressableScale } from '@/components/ui/pressable-scale';
 import { Spinner } from '@/components/ui/spinner';
 import { Text } from '@/components/ui/text';
+
+import { GoogleMark } from './google-account-row';
 
 const WalletRow = memo(function WalletRow({
   wallet,
@@ -131,6 +134,10 @@ export const ConnectWalletSheet = memo(function ConnectWalletSheet({
   const status = useWalletStore((s) => s.status);
   const [pendingId, setPendingId] = useState<WalletId | null>(null);
 
+  const isLive = useAuthStore((s) => s.isLive);
+  const googleLinking = useAuthStore((s) => s.status === 'linking');
+  const signInWithGoogle = useAuthStore((s) => s.signInWithGoogle);
+
   const handleSelect = useCallback(
     async (walletId: WalletId) => {
       setPendingId(walletId);
@@ -157,6 +164,30 @@ export const ConnectWalletSheet = memo(function ConnectWalletSheet({
     [connect, onClose, onConnected],
   );
 
+  const handleGoogle = useCallback(async () => {
+    haptics.medium();
+    const ok = await signInWithGoogle();
+
+    if (ok) {
+      haptics.success();
+      const email = useAuthStore.getState().profile?.email;
+      toast.success(
+        'Signed in',
+        email ? `Welcome, ${email}` : 'Connect a wallet to finish setting up.',
+      );
+      onConnected?.();
+      onClose();
+      return;
+    }
+
+    // A cancelled sign-in clears the error and warrants no toast.
+    const error = useAuthStore.getState().error;
+    if (error) {
+      haptics.error();
+      toast.error('Google sign-in failed', error);
+    }
+  }, [signInWithGoogle, onClose, onConnected]);
+
   const openDownload = useCallback((wallet: WalletDescriptor) => {
     Linking.openURL(wallet.downloadUrl).catch(() => {
       toast.error('Could not open link', 'No browser is available.');
@@ -173,22 +204,73 @@ export const ConnectWalletSheet = memo(function ConnectWalletSheet({
       subtitle="Your wallet is your Eventerz identity"
       maxHeightRatio={0.88}
     >
-      <View className="gap-2.5 px-5 pt-4">
-        {SUPPORTED_WALLETS.map((wallet, index) => (
-          <WalletRow
-            key={wallet.id}
-            wallet={wallet}
-            index={index}
-            pending={pendingId === wallet.id}
-            disabled={busy && pendingId !== wallet.id}
-            onSelect={handleSelect}
-          />
-        ))}
-      </View>
+      {/*
+        Scrollable: five wallets plus the Google row and footer exceed the
+        sheet on shorter screens, and an unscrollable column simply overflows —
+        which looks like the sheet is broken rather than full.
+      */}
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 16 }}
+      >
+        <View className="gap-2.5">
+          {SUPPORTED_WALLETS.map((wallet, index) => (
+            <WalletRow
+              key={wallet.id}
+              wallet={wallet}
+              index={index}
+              pending={pendingId === wallet.id}
+              disabled={busy && pendingId !== wallet.id}
+              onSelect={handleSelect}
+            />
+          ))}
+        </View>
+
+        {/*
+          Google belongs here too, not only on the signed-out screen prompt.
+          Home's "Connect" button opens this sheet directly, so without it there
+          is no route to sign-in from the main screen.
+        */}
+        {isLive && (
+          <>
+            <View className="my-4 flex-row items-center gap-3">
+              <View className="h-px flex-1 bg-white/10" />
+              <Text variant="caption" className="text-muted-foreground">
+                or
+              </Text>
+              <View className="h-px flex-1 bg-white/10" />
+            </View>
+
+            <PressableScale
+              onPress={handleGoogle}
+              disabled={googleLinking || busy}
+              scaleTo={0.98}
+              accessibilityRole="button"
+              accessibilityLabel="Continue with Google"
+              accessibilityHint="Signs in for profile discovery and account recovery"
+              className="flex-row items-center justify-center gap-2.5 border border-white/12 bg-white/[0.05]"
+              style={{ height: 52, borderRadius: radius.full }}
+            >
+              {googleLinking ? <Spinner size={18} /> : <GoogleMark size={18} />}
+              <Text style={{ fontFamily: fontFamily.semibold, fontSize: 15 }}>
+                {googleLinking ? 'Waiting for Google…' : 'Continue with Google'}
+              </Text>
+            </PressableScale>
+
+            <Text
+              variant="caption"
+              className="mt-2.5 text-center text-muted-foreground"
+            >
+              Google makes your profile discoverable and the account
+              recoverable. Tickets and check-in still need a wallet.
+            </Text>
+          </>
+        )}
+      </ScrollView>
 
       <Animated.View
         entering={FadeIn.delay(320)}
-        className="mt-5 flex-row items-center gap-2 border-t border-white/10 px-5 pt-4"
+        className="mt-4 flex-row items-center gap-2 border-t border-white/10 px-5 pt-4"
       >
         <ShieldCheck size={14} color={brand.green} strokeWidth={2.2} />
         <Text variant="caption" className="flex-1 text-muted-foreground">
