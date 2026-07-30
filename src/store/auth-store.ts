@@ -21,6 +21,7 @@ import {
   type ProfileUpdate,
 } from '@/services/auth';
 import { AnalyticsEvent, analytics } from '@/services/analytics-service';
+import { walletService } from '@/services/wallet';
 
 export type GoogleLinkStatus = 'idle' | 'linking' | 'linked' | 'error';
 
@@ -105,12 +106,22 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
   linkWallet: async (address) => {
     if (!isSupabaseConfigured || !get().profile) return false;
 
-    const result = await linkWalletRemote(address);
+    set({ status: 'linking', error: null });
+
+    /*
+     * Linking now requires proving the wallet is yours (migration 0011), so this
+     * hands the signing step to `walletService` — which resolves to the real MWA
+     * adapter or the demo one, exactly as every other on-chain action does.
+     */
+    const result = await linkWalletRemote(address, (message) =>
+      walletService.signMessage(message),
+    );
+
     if (!result.ok) {
-      set({ error: result.error });
+      set({ status: 'error', error: result.error });
       return false;
     }
-    set({ profile: result.data, error: null });
+    set({ profile: result.data, status: 'linked', error: null });
     return true;
   },
 

@@ -107,6 +107,7 @@ export default function HomeScreen() {
         <HomeHeader
           onConnect={openSheet}
           onOpenNotifications={() => router.push('/notifications')}
+          onOpenMessages={() => router.push('/messages')}
           onOpenProfile={() => router.push('/(tabs)/profile')}
         />
         <WalletStrip />

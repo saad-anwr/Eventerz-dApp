@@ -22,7 +22,7 @@ import type {
   User,
 } from '@/types';
 
-import type { CreateEventInput } from '../event-repository';
+import type { CreateEventInput, UpdateEventInput } from '../event-repository';
 import {
   parseQrPayload,
   toCommunity,
@@ -67,6 +67,8 @@ interface RosterResult {
   roster: Record<string, string[]>;
   /** This viewer's own status per event. */
   mine: Record<string, RsvpState>;
+  /** 1-based waitlist place, only for events where the viewer holds one. */
+  positions: Record<string, number>;
 }
 
 /**
@@ -77,7 +79,7 @@ interface RosterResult {
  * what it yields rather than the client asking differently.
  */
 async function rosterFor(eventIds: string[]): Promise<RosterResult> {
-  if (eventIds.length === 0) return { roster: {}, mine: {} };
+  if (eventIds.length === 0) return { roster: {}, mine: {}, positions: {} };
 
   const [{ data }, me] = await Promise.all([
     client().from('rsvps').select('event_id, profile_id, status').in('event_id', eventIds),
@@ -93,12 +95,46 @@ async function rosterFor(eventIds: string[]): Promise<RosterResult> {
     if (me && r.profile_id === me) mine[r.event_id] = r.status;
   });
 
-  return { roster, mine };
+  /*
+   * One extra round trip, and only when the viewer is waitlisted somewhere.
+   * Asking per event would be an N+1 that grows with how patient the user has
+   * been, which is a strange thing to charge them for.
+   */
+  const waitlisted = Object.entries(mine)
+    .filter(([, status]) => status === 'waitlist')
+    .map(([eventId]) => eventId);
+
+  const positions = await waitlistPositions(waitlisted);
+
+  return { roster, mine, positions };
+}
+
+/**
+ * The viewer's place in the queue for each event.
+ *
+ * A failure here is not worth failing the screen over: the position is extra
+ * detail on a status the guest can already see, so an empty result renders the
+ * generic "you are on the waitlist" line and nothing looks broken.
+ */
+async function waitlistPositions(
+  eventIds: string[],
+): Promise<Record<string, number>> {
+  if (eventIds.length === 0) return {};
+
+  const { data, error } = await client().rpc('my_waitlist_positions', {
+    p_event_ids: eventIds,
+  });
+  if (error || !data) return {};
+
+  const rows = data as { event_id: string; queue_position: number }[];
+  return Object.fromEntries(rows.map((r) => [r.event_id, r.queue_position]));
 }
 
 async function hydrate(rows: EventRow[]): Promise<EventItem[]> {
-  const { roster, mine } = await rosterFor(rows.map((r) => r.id));
-  return rows.map((row) => toEventItem(row, roster[row.id] ?? [], mine[row.id]));
+  const { roster, mine, positions } = await rosterFor(rows.map((r) => r.id));
+  return rows.map((row) =>
+    toEventItem(row, roster[row.id] ?? [], mine[row.id], positions[row.id]),
+  );
 }
 
 /* -------------------------------------------------------------------------- */
@@ -168,8 +204,8 @@ export const supabaseEventRepository = {
     if (error) fail('Loading the event', error);
     if (!data) return null;
 
-    const { roster, mine } = await rosterFor([id]);
-    return toEventItem(data as EventRow, roster[id] ?? [], mine[id]);
+    const { roster, mine, positions } = await rosterFor([id]);
+    return toEventItem(data as EventRow, roster[id] ?? [], mine[id], positions[id]);
   },
 
   async listFeatured(): Promise<EventItem[]> {
@@ -313,12 +349,71 @@ export const supabaseEventRepository = {
         gate_requirement: input.gateRequirement ?? null,
         tags: input.tags,
         schedule: input.schedule ?? [],
+        latitude: input.latitude ?? null,
+        longitude: input.longitude ?? null,
+        place_id: input.placeId ?? null,
+        address: input.address ?? null,
       })
       .select()
       .single();
 
     if (error) fail('Publishing the event', error);
     return toEventItem(data as EventRow, [hostId]);
+  },
+
+  /**
+   * Edit an event. Host only, enforced server-side.
+   *
+   * Undefined fields are omitted so the RPC leaves them alone. A full-row write
+   * would send stale values for everything the form did not touch and clobber a
+   * concurrent edit from another device with them.
+   */
+  async updateEvent(
+    eventId: string,
+    patch: UpdateEventInput,
+  ): Promise<EventItem> {
+    const { error } = await client().rpc('update_event', {
+      p_event_id: eventId,
+      p_title: patch.title,
+      p_description: patch.description,
+      p_category: patch.category,
+      p_starts_at: patch.startsAt,
+      p_ends_at: patch.endsAt ?? undefined,
+      // Null and undefined mean different things to the RPC and the same thing
+      // to an optional property, so clearing an end time needs its own flag.
+      p_clear_ends_at: patch.endsAt === null,
+      p_location: patch.location,
+      p_is_online: patch.isOnline,
+      p_capacity: patch.capacity,
+      p_price: patch.price,
+      p_visibility: patch.visibility,
+      p_requires_approval: patch.requiresApproval,
+      p_tags: patch.tags,
+      p_cover_gradient: patch.coverGradient,
+      p_cover_image: patch.coverImage,
+      p_latitude: patch.latitude,
+      p_longitude: patch.longitude,
+      p_place_id: patch.placeId,
+      p_address: patch.address,
+    });
+    if (error) fail('Saving your changes', error);
+    return reloadEvent(eventId);
+  },
+
+  /**
+   * Call an event off.
+   *
+   * Soft: the row survives, every live RSVP is closed and everyone who was
+   * coming is notified. Deleting would cascade to `rsvps` and `tickets` and
+   * erase the attendance record of anyone who had already checked in.
+   */
+  async cancelEvent(eventId: string, reason?: string): Promise<EventItem> {
+    const { error } = await client().rpc('cancel_event', {
+      p_event_id: eventId,
+      p_reason: reason?.trim() || null,
+    });
+    if (error) fail('Cancelling the event', error);
+    return reloadEvent(eventId);
   },
 
   /**

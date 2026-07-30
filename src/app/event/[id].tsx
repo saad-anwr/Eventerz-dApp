@@ -20,6 +20,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { EventMapCard } from '@/components/cards/event-map-card';
 import { ProfileCard } from '@/components/cards/profile-card';
 import { AnimatedHeader } from '@/components/layout/animated-header';
 import { AvatarStack } from '@/components/ui/avatar';
@@ -34,6 +35,8 @@ import {
   Globe,
   Lock,
   MapPin,
+  MessageCircle,
+  Pencil,
   Share2,
   Ticket,
   Users,
@@ -73,11 +76,15 @@ import {
   RSVP_PRESENTATION,
   filledPercent,
   goingCount,
+  isCancelled,
+  isEditable,
   isLiveRsvp,
   myRsvpState,
   rsvpActionLabel,
+  rsvpDetail,
   spotsLeft,
 } from '@/utils/rsvp';
+import { locationOf } from '@/utils/maps';
 import { haptics } from '@/utils/haptics';
 
 const HERO_HEIGHT = 300;
@@ -452,6 +459,7 @@ export default function EventDetailScreen() {
   const filled = filledPercent(event);
   const seatsLeft = spotsLeft(event);
   const presentation = myStatus ? RSVP_PRESENTATION[myStatus] : null;
+  const cancelled = isCancelled(event);
 
   return (
     <Screen edgeTop={false} aurora={false}>
@@ -461,14 +469,29 @@ export default function EventDetailScreen() {
         threshold={HERO_HEIGHT - 90}
         onBack={() => router.back()}
         right={
-          <IconButton
-            icon={Share2}
-            label="Share event"
-            onPress={handleShare}
-            variant="glass"
-            size={38}
-            iconSize={17}
-          />
+          <View className="flex-row items-center gap-2">
+            {/* The host's entry point. Hidden once the event is cancelled or
+                over, because `update_event` refuses both — a button that can
+                only produce an error is worse than no button. */}
+            {isHost && isEditable(event) && (
+              <IconButton
+                icon={Pencil}
+                label="Edit event"
+                onPress={() => router.push(`/event/edit/${event.id}`)}
+                variant="glass"
+                size={38}
+                iconSize={16}
+              />
+            )}
+            <IconButton
+              icon={Share2}
+              label="Share event"
+              onPress={handleShare}
+              variant="glass"
+              size={38}
+              iconSize={17}
+            />
+          </View>
         }
       />
 
@@ -620,6 +643,30 @@ export default function EventDetailScreen() {
           </View>
         </Section>
 
+        {cancelled && (
+          <Section delay={100}>
+            <View
+              className="border p-4"
+              style={{
+                borderRadius: radius['2xl'],
+                borderColor: 'rgba(248,113,113,0.35)',
+                backgroundColor: 'rgba(248,113,113,0.10)',
+              }}
+            >
+              <Text
+                variant="bodySm"
+                style={{ fontFamily: fontFamily.semibold, color: '#fca5a5' }}
+              >
+                This event has been cancelled
+              </Text>
+              <Text variant="caption" className="mt-1 text-muted-foreground">
+                {event.cancelReason ??
+                  'The host called it off. Everyone holding a spot has been notified.'}
+              </Text>
+            </View>
+          </Section>
+        )}
+
         {/* This viewer's RSVP state — the host's decision lands here. */}
         {presentation && !isHost && (
           <Section delay={110}>
@@ -640,9 +687,31 @@ export default function EventDetailScreen() {
               >
                 {presentation.label}
               </Text>
+              {/*
+                `rsvpDetail` rather than the raw presentation string: the
+                waitlist case is specialised to include the guest's place in the
+                queue. "On the waitlist" alone is not actionable — third in line
+                means keep the evening free, fortieth means make other plans.
+              */}
               <Text variant="caption" className="mt-1 text-muted-foreground">
-                {presentation.detail}
+                {rsvpDetail(event, myStatus!)}
               </Text>
+              {myStatus === 'waitlist' && event.waitlistPosition ? (
+                <View
+                  className="mt-2 self-start bg-black/25 px-2.5 py-1"
+                  style={{ borderRadius: radius.full }}
+                >
+                  <Text
+                    variant="micro"
+                    style={{
+                      fontFamily: fontFamily.semibold,
+                      color: presentation.accent,
+                    }}
+                  >
+                    #{event.waitlistPosition} of {event.waitlistCount ?? 0} waiting
+                  </Text>
+                </View>
+              ) : null}
             </View>
           </Section>
         )}
@@ -659,7 +728,34 @@ export default function EventDetailScreen() {
                 showReputation
                 onPress={(u: User) => router.push(`/user/${u.id}`)}
               />
+              {/*
+                Contact host, deliberately not gated on friendship: someone
+                deciding whether to attend usually has one question, and making
+                them send a friend request first turns a thirty-second exchange
+                into a two-step negotiation. DMs were already open to any two
+                profiles under `can_access_channel`; what was missing was a way
+                in, and an inbox that showed the reply.
+              */}
+              {!isHost && currentUser && (
+                <View className="border-t border-white/10 pb-3 pt-3">
+                  <Button
+                    label="Contact host"
+                    icon={MessageCircle}
+                    variant="secondary"
+                    size="sm"
+                    fullWidth
+                    onPress={() => router.push(`/messages/${host.id}`)}
+                  />
+                </View>
+              )}
             </View>
+          </Section>
+        )}
+
+        {/* The venue. Renders nothing for an online event. */}
+        {!event.isOnline && (
+          <Section title="Where" delay={160}>
+            <EventMapCard place={locationOf(event)} />
           </Section>
         )}
 
@@ -928,11 +1024,13 @@ export default function EventDetailScreen() {
         <View className="flex-row items-center gap-3">
           <View className="flex-1">
             <Text variant="caption" className="text-muted-foreground">
-              {hasEnded
-                ? 'This event has ended'
-                : presentation
-                  ? presentation.label
-                  : event.price}
+              {cancelled
+                ? 'Cancelled by the host'
+                : hasEnded
+                  ? 'This event has ended'
+                  : presentation
+                    ? presentation.label
+                    : event.price}
             </Text>
             <Text variant="title" numberOfLines={1}>
               {hasEnded
@@ -958,21 +1056,25 @@ export default function EventDetailScreen() {
           ) : (
             <Button
               label={
-                hasEnded
-                  ? 'Event ended'
-                  : hasLiveRsvp
-                    ? going
-                      ? "You're going"
-                      : myStatus === 'pending'
-                        ? 'Requested'
-                        : 'Waitlisted'
-                    : rsvpActionLabel(event)
+                cancelled
+                  ? 'Event cancelled'
+                  : hasEnded
+                    ? 'Event ended'
+                    : hasLiveRsvp
+                      ? going
+                        ? "You're going"
+                        : myStatus === 'pending'
+                          ? 'Requested'
+                          : 'Waitlisted'
+                      : rsvpActionLabel(event)
               }
               icon={going ? Check : myStatus === 'pending' ? Clock : undefined}
               variant={hasLiveRsvp ? 'secondary' : 'primary'}
               size="lg"
               onPress={handleRsvp}
-              disabled={hasEnded}
+              // A cancelled event takes no more guests — `request_to_join`
+              // refuses it, so offering the button would only produce an error.
+              disabled={hasEnded || cancelled}
               loading={busy}
               className="flex-[1.6]"
               accessibilityHint={

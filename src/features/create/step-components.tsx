@@ -21,7 +21,6 @@ import {
   Globe,
   ImageIcon,
   Lock,
-  MapPin,
   Ticket,
   Users,
 } from '@/components/ui/icon';
@@ -29,6 +28,7 @@ import { PressableScale } from '@/components/ui/pressable-scale';
 import { Text } from '@/components/ui/text';
 import { toast } from '@/store/toast-store';
 import { useCreateEventStore } from '@/store/create-event-store';
+import { LocationPicker } from './location-picker';
 import {
   brand,
   coverGradientKeys,
@@ -315,30 +315,39 @@ export const LocationStep = memo(function LocationStep() {
           keyboardType="url"
         />
       ) : (
-        <TextField
-          label="Venue"
-          placeholder="Norrsken House, Stockholm"
-          value={draft.location}
-          onChangeText={(text) => setField('location', text)}
-          error={errors.location}
-          icon={MapPin}
-          hint="A neighbourhood is enough — exact address goes out on approval."
-        />
+        <>
+          {/*
+            A real place picker, replacing the "arrives with the native build"
+            placeholder that used to sit here. It needs no native module: search
+            is an HTTP call and the preview is a static image, so it works in Expo
+            Go and in a release build alike. See `utils/maps.ts` for why an
+            interactive map was the wrong trade.
+          */}
+          <LocationPicker
+            label="Venue"
+            placeholder="Norrsken House, Stockholm"
+            value={{
+              location: draft.location,
+              latitude: draft.latitude,
+              longitude: draft.longitude,
+              placeId: draft.placeId,
+              address: draft.address,
+            }}
+            onChange={(next) => {
+              setField('location', next.location);
+              setField('latitude', next.latitude);
+              setField('longitude', next.longitude);
+              setField('placeId', next.placeId);
+              setField('address', next.address);
+            }}
+          />
+          {errors.location && (
+            <Text variant="caption" style={{ color: '#fca5a5' }}>
+              {errors.location}
+            </Text>
+          )}
+        </>
       )}
-
-      {/*
-        TODO(maps): drop in `react-native-maps` for a venue picker once the app
-        moves to a development build. Expo Go cannot render map tiles.
-      */}
-      <View
-        className="items-center justify-center border border-dashed border-white/12 bg-white/[0.02] py-8"
-        style={{ borderRadius: radius['2xl'] }}
-      >
-        <MapPin size={22} color="#64748b" strokeWidth={1.8} />
-        <Text variant="caption" className="mt-2 text-muted-foreground">
-          Map picker arrives with the native build
-        </Text>
-      </View>
     </View>
   );
 });

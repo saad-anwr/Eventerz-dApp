@@ -14,7 +14,11 @@ import { isSupabaseConfigured } from '@/services/auth/supabase-client';
 
 import { analyticsRepository as mockAnalyticsRepository } from './analytics-repository';
 import { communityRepository as mockCommunityRepository } from './community-repository';
-import { eventRepository as mockEventRepository } from './event-repository';
+import {
+  eventRepository as mockEventRepository,
+  type UpdateEventInput,
+} from './event-repository';
+import { messageRepository as mockMessageRepository } from './message-repository';
 import { notificationRepository as mockNotificationRepository } from './notification-repository';
 import { ticketRepository as mockTicketRepository } from './ticket-repository';
 import { userRepository as mockUserRepository } from './user-repository';
@@ -27,6 +31,7 @@ import {
   supabaseTicketRepository,
   supabaseUserRepository,
 } from './supabase';
+import { supabaseMessageRepository } from './supabase/messages';
 
 /**
  * Fall back to the mock when Supabase is unconfigured even if the flag says
@@ -80,7 +85,21 @@ export const eventRepository = {
     useMockBackend
       ? mockEventRepository.guestPreview(eventId, limit)
       : supabaseEventRepository.guestPreview(eventId, limit),
+
+  updateEvent: (eventId: string, patch: UpdateEventInput) =>
+    useMockBackend
+      ? mockEventRepository.updateEvent(eventId, patch)
+      : supabaseEventRepository.updateEvent(eventId, patch),
+
+  cancelEvent: (eventId: string, reason?: string) =>
+    useMockBackend
+      ? mockEventRepository.cancelEvent(eventId, reason)
+      : supabaseEventRepository.cancelEvent(eventId, reason),
 };
+
+export const messageRepository = useMockBackend
+  ? mockMessageRepository
+  : supabaseMessageRepository;
 
 export const userRepository = useMockBackend
   ? mockUserRepository
@@ -130,4 +149,15 @@ export const ticketRepository = {
       : supabaseTicketRepository.listBadges(ownerId),
 };
 
-export type { CreateEventInput } from './event-repository';
+/**
+ * The DM channel key, re-exported from one place.
+ *
+ * Both backends derive it identically — sorted, so either participant computes
+ * the same string — and `can_access_channel` checks membership by looking for
+ * the caller's id inside it. An unsorted variant would produce two channels for
+ * one conversation and silently split it in half, so there is exactly one
+ * implementation and screens import it from here.
+ */
+export { dmChannelId } from './supabase/messages';
+
+export type { CreateEventInput, UpdateEventInput } from './event-repository';

@@ -29,6 +29,15 @@ export interface EventDraft {
   startsAt: string;
   endsAt: string;
   location: string;
+  /**
+   * Structured location, set when the host picks a place rather than typing one.
+   * All optional — an event whose venue a geocoder never saw is still a valid
+   * event, and requiring these would make the picker mandatory.
+   */
+  latitude?: number;
+  longitude?: number;
+  placeId?: string;
+  address?: string;
   isOnline: boolean;
   capacity: string;
   price: string;
@@ -213,6 +222,12 @@ export const useCreateEventStore = create<CreateEventState>()((set, get) => ({
       endsAt: d.endsAt || undefined,
       location: d.isOnline ? 'Online' : d.location.trim(),
       isOnline: d.isOnline,
+      // Only carried for in-person events. An online event with coordinates
+      // would render a map of a building nobody is going to.
+      latitude: d.isOnline ? undefined : d.latitude,
+      longitude: d.isOnline ? undefined : d.longitude,
+      placeId: d.isOnline ? undefined : d.placeId,
+      address: d.isOnline ? undefined : d.address,
       capacity: Number(d.capacity) || 100,
       price: d.isFree ? 'Free' : d.price.trim(),
       visibility: d.visibility,

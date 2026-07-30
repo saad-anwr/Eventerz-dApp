@@ -63,7 +63,8 @@
     "prettier": "^3.9.6",
     "prettier-plugin-tailwindcss": "^0.6.14",
     "tailwindcss": "^3.4.17",
-    "typescript": "~6.0.3"
+    "typescript": "~6.0.3",
+    "vitest": "^3.2.7"
   },
   "scripts": {
     "start": "expo start",
@@ -82,8 +83,10 @@
     "apk": "node scripts/build-apk.mjs",
     "android:wipe": "node scripts/run-android.mjs --wipe",
     "deps:check": "node scripts/check-deps.mjs",
-    "postinstall": "node scripts/check-deps.mjs"
+    "postinstall": "node scripts/check-deps.mjs",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "private": true,
-  "description": "Eventerz — wallet-native event infrastructure on Solana. Android/iOS app for Solana Seeker."
+  "description": "Eventerz \u2014 wallet-native event infrastructure on Solana. Android/iOS app for Solana Seeker."
 }

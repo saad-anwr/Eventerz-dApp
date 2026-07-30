@@ -19,7 +19,10 @@ import {
   Bell,
   CalendarCheck,
   CheckCheck,
+  Clock,
+  Coins,
   Info,
+  ShieldCheck,
   Ticket,
   Trophy,
   Users,
@@ -44,13 +47,31 @@ import type { AppNotification, NotificationKind } from '@/types';
 import { dayLabel, timeAgo } from '@/utils/format';
 import { haptics } from '@/utils/haptics';
 
+/**
+ * Every `kind` the app can receive, mapped to a glyph.
+ *
+ * Exhaustive by type: `Record<NotificationKind, …>` means adding a kind to the
+ * union without adding it here fails the build. That matters because the
+ * fallback for an unmapped kind is a blank space where every other row has a
+ * symbol — a silent gap nobody notices until a user asks why one notification
+ * looks broken.
+ *
+ * The database-written kinds (`rsvp`, `event`, `reminder`, `payment`,
+ * `security`, `reputation`, `ticket`) come from the SQL functions; `wallet`,
+ * `community` and `event-reminder` are the app's own.
+ */
 const KIND_META: Record<
   NotificationKind,
   { icon: LucideIcon; accent: keyof typeof accents }
 > = {
   wallet: { icon: Wallet, accent: 'purple' },
   'event-reminder': { icon: CalendarCheck, accent: 'blue' },
+  reminder: { icon: Clock, accent: 'blue' },
+  event: { icon: CalendarCheck, accent: 'purple' },
+  rsvp: { icon: Users, accent: 'blue' },
   ticket: { icon: Ticket, accent: 'cyan' },
+  payment: { icon: Coins, accent: 'green' },
+  security: { icon: ShieldCheck, accent: 'purple' },
   community: { icon: Users, accent: 'green' },
   reputation: { icon: Trophy, accent: 'cyan' },
   system: { icon: Info, accent: 'purple' },

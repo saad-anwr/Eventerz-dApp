@@ -15,7 +15,9 @@ import type {
   EventGuest,
   EventItem,
   EventVisibility,
+  Message,
   NotificationKind,
+  PaymentReceipt,
   RsvpState,
   ScheduleSlot,
   Ticket,
@@ -64,6 +66,62 @@ export type EventRow = {
   pending_count: number;
   waitlist_count: number;
   checked_in_count: number;
+
+  /*
+   * Cancellation is soft (migration 0007). The row survives so ticket holders
+   * keep the record and the route still resolves.
+   */
+  cancelled_at: string | null;
+  cancel_reason: string | null;
+
+  /*
+   * Structured location (0006), alongside the free-text `location` the host
+   * typed. Null on every event created before that migration — both clients
+   * fall back to a map search, so null is supported rather than a gap.
+   */
+  latitude: number | null;
+  longitude: number | null;
+  place_id: string | null;
+  address: string | null;
+};
+
+export type MessageRow = {
+  id: string;
+  scope: 'event' | 'dm';
+  channel_id: string;
+  sender_id: string;
+  body: string;
+  kind: 'text' | 'payment';
+  payment_id: string | null;
+  created_at: string;
+};
+
+export type PaymentRow = {
+  id: string;
+  signature: string;
+  cluster: string;
+  from_profile: string;
+  to_profile: string | null;
+  from_wallet: string;
+  to_wallet: string;
+  /** PostgREST serialises `bigint` as a string. Keep it that way. */
+  amount: string;
+  mint: string | null;
+  symbol: string;
+  decimals: number;
+  memo: string | null;
+  channel_id: string | null;
+  verified: boolean;
+  created_at: string;
+};
+
+export type FriendRequestRow = {
+  id: string;
+  requester_id: string;
+  addressee_id: string;
+  status: 'pending' | 'accepted' | 'declined';
+  created_at: string;
+  updated_at: string;
 };
 
 /** `event_guests` view — an RSVP joined to its profile and ticket. */
@@ -147,6 +205,7 @@ export function toEventItem(
   row: EventRow,
   attendeeIds: string[] = [],
   myStatus?: RsvpState,
+  waitlistPosition?: number,
 ): EventItem {
   return {
     id: row.id,
@@ -181,6 +240,52 @@ export function toEventItem(
     waitlistCount: row.waitlist_count ?? 0,
     checkedInCount: row.checked_in_count ?? 0,
     myStatus,
+    waitlistPosition,
+
+    cancelledAt: row.cancelled_at ?? undefined,
+    cancelReason: row.cancel_reason ?? undefined,
+
+    // `?? undefined`, never `?? 0`: a missing coordinate has to stay missing.
+    // Zero is the Gulf of Guinea, and a confident pin in the wrong ocean is
+    // worse than no map at all.
+    latitude: row.latitude ?? undefined,
+    longitude: row.longitude ?? undefined,
+    placeId: row.place_id ?? undefined,
+    address: row.address ?? undefined,
+  };
+}
+
+export function toMessage(row: MessageRow): Message {
+  return {
+    id: row.id,
+    scope: row.scope,
+    channelId: row.channel_id,
+    senderId: row.sender_id,
+    body: row.body,
+    kind: row.kind ?? 'text',
+    paymentId: row.payment_id ?? undefined,
+    createdAt: epoch(row.created_at),
+  };
+}
+
+export function toPaymentReceipt(row: PaymentRow): PaymentReceipt {
+  return {
+    id: row.id,
+    signature: row.signature,
+    cluster: row.cluster,
+    fromProfile: row.from_profile,
+    toProfile: row.to_profile ?? undefined,
+    fromWallet: row.from_wallet,
+    toWallet: row.to_wallet,
+    // Left as a string all the way to the formatter. See `PaymentReceipt`.
+    amount: String(row.amount),
+    mint: row.mint ?? undefined,
+    symbol: row.symbol,
+    decimals: row.decimals,
+    memo: row.memo ?? undefined,
+    channelId: row.channel_id ?? undefined,
+    verified: row.verified,
+    createdAt: epoch(row.created_at),
   };
 }
 

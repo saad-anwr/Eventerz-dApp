@@ -13,7 +13,11 @@ import {
 } from '@tanstack/react-query';
 
 import { integrationsConfig } from '@/constants/config';
-import { eventRepository, type CreateEventInput } from '@/repositories';
+import {
+  eventRepository,
+  type CreateEventInput,
+  type UpdateEventInput,
+} from '@/repositories';
 import { AnalyticsEvent, analytics, notificationService, solanaService } from '@/services';
 import { useWalletStore } from '@/store/wallet-store';
 import type { EventFilters, EventItem } from '@/types';
@@ -203,13 +207,61 @@ export function useEventGuests(eventId: string | undefined) {
   });
 }
 
-/** A few faces for viewers who cannot read the roster. */
+/**
+ * A few faces for viewers who cannot read the roster.
+ *
+ * `limit` is in the key. It used to be left out, which was harmless only
+ * because every caller passed 3 — two components wanting different sample sizes
+ * would have shared one cache entry and the second would have silently rendered
+ * the first's result.
+ */
 export function useGuestPreview(eventId: string | undefined, limit = 3) {
   return useQuery({
-    queryKey: queryKeys.guests.preview(eventId ?? ''),
+    queryKey: queryKeys.guests.preview(eventId ?? '', limit),
     queryFn: () => eventRepository.guestPreview(eventId!, limit),
     enabled: Boolean(eventId),
     staleTime: 30_000,
+  });
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Host-side event lifecycle                                                  */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Save a host's edits.
+ *
+ * Invalidates notifications too: a move or a time change writes one to every
+ * live guest, and the host is often looking at their own bell when it lands.
+ */
+export function useUpdateEvent(eventId: string | undefined) {
+  const invalidate = useGuestStateInvalidation();
+  return useMutation({
+    mutationFn: (patch: UpdateEventInput) => {
+      if (!eventId) throw new Error('No event to update.');
+      return eventRepository.updateEvent(eventId, patch);
+    },
+    onSuccess: invalidate,
+  });
+}
+
+/**
+ * Call an event off.
+ *
+ * Also cancels this device's scheduled local reminders. Without that, the phone
+ * would still buzz "starts in an hour" for an event that is not happening — the
+ * notification is queued in the OS and knows nothing about the database.
+ */
+export function useCancelEvent(eventId: string | undefined) {
+  const invalidate = useGuestStateInvalidation();
+  return useMutation({
+    mutationFn: async (reason?: string) => {
+      if (!eventId) throw new Error('No event to cancel.');
+      const updated = await eventRepository.cancelEvent(eventId, reason);
+      await notificationService.cancelEventReminders(eventId);
+      return updated;
+    },
+    onSuccess: invalidate,
   });
 }
 

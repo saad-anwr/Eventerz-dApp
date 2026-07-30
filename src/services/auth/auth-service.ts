@@ -168,29 +168,96 @@ export async function updateMyProfile(
 }
 
 /**
- * Bind the connected wallet to the signed-in Google account.
+ * Bind the connected wallet to the signed-in Google account, after proving it is
+ * theirs.
  *
- * Atomic on the server: `link_wallet` refuses a wallet already claimed by a
- * different profile rather than racing a read against a write.
+ * Three steps, none skippable:
+ *
+ *   1. `issue_wallet_link_nonce` mints a single-use challenge bound to this
+ *      account and this address, valid for five minutes.
+ *   2. The wallet signs that exact text. This is what the old implementation
+ *      never did — it took an address on trust, so any signed-in user could
+ *      claim any unclaimed wallet they could read off the explorer, along with
+ *      its reputation and ticket history.
+ *   3. The `link-wallet` Edge Function verifies the signature (Postgres has no
+ *      Ed25519) and calls a function revoked from `authenticated`, so there is
+ *      no path to a linked wallet that bypasses the check.
+ *
+ * `signMessage` is injected rather than imported so this module stays free of
+ * the wallet adapter — which is Android-only and needs a dev build, neither of
+ * which an auth service should care about.
  */
 export async function linkWallet(
   walletAddress: string,
+  signMessage: (message: string) => Promise<string>,
 ): Promise<AuthResult<ProfileRow>> {
   const supabase = getSupabaseClient();
   if (!supabase) return { ok: false, error: NOT_CONFIGURED };
 
-  const { data, error } = await supabase.rpc('link_wallet', {
-    p_wallet_address: walletAddress,
-  });
+  const { data: challenge, error: challengeError } = await supabase.rpc(
+    'issue_wallet_link_nonce',
+    { p_wallet_address: walletAddress },
+  );
 
-  if (error) {
+  if (challengeError) {
     const friendly =
-      error.code === '23505'
+      challengeError.code === '23505'
         ? 'That wallet is already linked to another Eventerz account.'
-        : error.message;
+        : challengeError.message;
     return { ok: false, error: friendly };
   }
 
+  try {
+    const message = challenge as string;
+    // MWA returns a base64 signature, which the Edge Function accepts as-is —
+    // it takes base58 or base64 precisely so neither client needs a base58
+    // implementation just to post a signature.
+    const signature = await signMessage(message);
+
+    const { data, error } = await supabase.functions.invoke('link-wallet', {
+      body: { walletAddress, message, signature },
+    });
+
+    if (error) {
+      /*
+       * `FunctionsHttpError.message` is always "Edge Function returned a
+       * non-2xx status code". The message worth showing is in the response
+       * body, which the function writes for exactly this purpose.
+       */
+      const response = (error as { context?: Response }).context;
+      let detail: string | null = null;
+      if (response && typeof response.json === 'function') {
+        try {
+          const body = await response.json();
+          if (typeof body?.error === 'string') detail = body.error;
+        } catch {
+          /* not JSON — fall through to the generic message */
+        }
+      }
+      return { ok: false, error: detail ?? 'Could not verify that wallet.' };
+    }
+
+    const profile = (data as { profile?: ProfileRow } | null)?.profile;
+    if (!profile) return { ok: false, error: 'Could not verify that wallet.' };
+    return { ok: true, data: profile };
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : 'Wallet verification failed.';
+    // Declining the signature is a choice, not a fault.
+    if (/user rejected|denied|declined|cancell?ed/i.test(message)) {
+      return { ok: false, error: 'Wallet verification was cancelled.' };
+    }
+    return { ok: false, error: message };
+  }
+}
+
+/** Detach the wallet from this account, leaving the account intact. */
+export async function unlinkWallet(): Promise<AuthResult<ProfileRow>> {
+  const supabase = getSupabaseClient();
+  if (!supabase) return { ok: false, error: NOT_CONFIGURED };
+
+  const { data, error } = await supabase.rpc('unlink_wallet');
+  if (error) return { ok: false, error: error.message };
   return { ok: true, data: data as ProfileRow };
 }
 

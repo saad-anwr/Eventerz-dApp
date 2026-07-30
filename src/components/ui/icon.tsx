@@ -51,6 +51,7 @@ export {
   CircleAlert,
   CircleHelp,
   Clock,
+  Coins,
   Compass,
   Copy,
   Ellipsis,

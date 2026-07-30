@@ -5,3 +5,6 @@ export * from './haptics';
 export * from './storage';
 export * from './async';
 export * from './rsvp';
+export * from './amount';
+export * from './maps';
+export * from './geocode';

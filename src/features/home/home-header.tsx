@@ -11,7 +11,7 @@ import { View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { Avatar } from '@/components/ui/avatar';
-import { Bell, Wallet } from '@/components/ui/icon';
+import { Bell, MessageCircle, Wallet } from '@/components/ui/icon';
 import { PressableScale } from '@/components/ui/pressable-scale';
 import { Text } from '@/components/ui/text';
 import { useGreeting } from '@/hooks/use-greeting';
@@ -25,10 +25,18 @@ import { formatSol, shortenAddress } from '@/utils/format';
 export const HomeHeader = memo(function HomeHeader({
   onConnect,
   onOpenNotifications,
+  onOpenMessages,
   onOpenProfile,
 }: {
   onConnect: () => void;
   onOpenNotifications: () => void;
+  /**
+   * Messages live in the header rather than the tab bar on purpose. The raised
+   * "Create" button only sits centred with an odd number of tabs, so a sixth tab
+   * would push it off-centre — a visible regression to the bar's whole design in
+   * exchange for one more entry point.
+   */
+  onOpenMessages: () => void;
   onOpenProfile: () => void;
 }) {
   const greeting = useGreeting();
@@ -88,6 +96,23 @@ export const HomeHeader = memo(function HomeHeader({
           <Text variant="title">Welcome to Eventerz</Text>
         )}
       </View>
+
+      {connected && (
+        <PressableScale
+          onPress={onOpenMessages}
+          scaleTo={0.9}
+          accessibilityRole="button"
+          accessibilityLabel="Messages"
+          className="items-center justify-center border border-white/10 bg-white/[0.06]"
+          style={{
+            width: TOUCH_TARGET,
+            height: TOUCH_TARGET,
+            borderRadius: radius.full,
+          }}
+        >
+          <MessageCircle size={18} color="#f8fafc" strokeWidth={2} />
+        </PressableScale>
+      )}
 
       {connected ? (
         <PressableScale

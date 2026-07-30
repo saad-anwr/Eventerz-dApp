@@ -74,6 +74,19 @@ export type DbEvent = {
   pending_count: number;
   waitlist_count: number;
   checked_in_count: number;
+
+  /* Soft cancellation (0007). The row survives so ticket holders keep the
+     record and the route still resolves. */
+  cancelled_at: string | null;
+  cancel_reason: string | null;
+
+  /* Structured location (0006), alongside the free-text `location`. Null on
+     anything created before that migration — both clients fall back to a map
+     search, so null is supported rather than a gap. */
+  latitude: number | null;
+  longitude: number | null;
+  place_id: string | null;
+  address: string | null;
 };
 
 /** `event_guests` view — an RSVP joined to its profile and ticket. */
@@ -147,6 +160,46 @@ export type DbNotification = {
   created_at: string;
 };
 
+export type DbFriendRequest = {
+  id: string;
+  requester_id: string;
+  addressee_id: string;
+  status: 'pending' | 'accepted' | 'declined';
+  created_at: string;
+  updated_at: string;
+};
+
+export type DbMessage = {
+  id: string;
+  scope: 'event' | 'dm';
+  channel_id: string;
+  sender_id: string;
+  body: string;
+  /** `payment` rows are written only by `record_payment`; see migration 0009. */
+  kind: 'text' | 'payment';
+  payment_id: string | null;
+  created_at: string;
+};
+
+export type DbPayment = {
+  id: string;
+  signature: string;
+  cluster: string;
+  from_profile: string;
+  to_profile: string | null;
+  from_wallet: string;
+  to_wallet: string;
+  /** PostgREST serialises `bigint` as a string, because it exceeds 2^53. */
+  amount: string;
+  mint: string | null;
+  symbol: string;
+  decimals: number;
+  memo: string | null;
+  channel_id: string | null;
+  verified: boolean;
+  created_at: string;
+};
+
 /** Helper: a table whose Insert allows omitting server-defaulted columns. */
 type Table<Row, Insert = Partial<Row>, Update = Partial<Row>> = {
   Row: Row;
@@ -169,6 +222,14 @@ export type Database = {
       rsvps: Table<DbRsvp>;
       tickets: Table<DbTicket>;
       notifications: Table<DbNotification>;
+      friend_requests: Table<DbFriendRequest>;
+      messages: Table<
+        DbMessage,
+        // A client may only insert plain text. Receipts come from
+        // `record_payment`; see migration 0009.
+        Pick<DbMessage, 'channel_id' | 'sender_id' | 'body' | 'scope'>
+      >;
+      payments: Table<DbPayment>;
     };
     Views: {
       event_guests: {
@@ -177,9 +238,82 @@ export type Database = {
       };
     };
     Functions: {
+      /**
+       * @deprecated Revoked in 0011 — it linked a wallet without checking that
+       * the caller held its key. Use the `link-wallet` Edge Function.
+       */
       link_wallet: {
         Args: { p_wallet_address: string };
         Returns: ProfileRow;
+      };
+      /** Returns the full challenge *text* to sign, not a bare nonce. */
+      issue_wallet_link_nonce: {
+        Args: { p_wallet_address: string };
+        Returns: string;
+      };
+      unlink_wallet: {
+        Args: Record<string, never>;
+        Returns: ProfileRow;
+      };
+      update_event: {
+        Args: {
+          p_event_id: string;
+          p_title?: string;
+          p_description?: string;
+          p_category?: string;
+          p_starts_at?: string;
+          p_ends_at?: string | null;
+          p_clear_ends_at?: boolean;
+          p_location?: string;
+          p_is_online?: boolean;
+          p_capacity?: number;
+          p_price?: string;
+          p_visibility?: string;
+          p_requires_approval?: boolean;
+          p_tags?: string[];
+          p_cover_gradient?: string;
+          p_cover_image?: string | null;
+          p_latitude?: number | null;
+          p_longitude?: number | null;
+          p_place_id?: string | null;
+          p_address?: string | null;
+        };
+        Returns: DbEvent;
+      };
+      cancel_event: {
+        Args: { p_event_id: string; p_reason?: string | null };
+        Returns: DbEvent;
+      };
+      my_waitlist_position: {
+        Args: { p_event_id: string };
+        Returns: number | null;
+      };
+      my_waitlist_positions: {
+        Args: { p_event_ids: string[] };
+        Returns: { event_id: string; queue_position: number }[];
+      };
+      my_dm_partners: {
+        Args: Record<string, never>;
+        Returns: { profile_id: string; last_message_at: string }[];
+      };
+      record_payment: {
+        Args: {
+          p_signature: string;
+          p_to_wallet: string;
+          p_amount: string;
+          p_channel_id?: string | null;
+          p_to_profile?: string | null;
+          p_memo?: string | null;
+          p_mint?: string | null;
+          p_symbol?: string;
+          p_decimals?: number;
+          p_cluster?: string;
+        };
+        Returns: DbPayment;
+      };
+      dm_channel_id: {
+        Args: { a: string; b: string };
+        Returns: string;
       };
       profile_for_wallet: {
         Args: { p_wallet_address: string };

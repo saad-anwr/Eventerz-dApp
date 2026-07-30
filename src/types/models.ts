@@ -112,6 +112,30 @@ export interface EventItem {
   checkedInCount?: number;
   /** This viewer's own RSVP state, or undefined if they never asked. */
   myStatus?: RsvpState;
+
+  /**
+   * The viewer's 1-based place in the waitlist queue, when they are on it.
+   *
+   * Cannot be derived on the client: RLS returns a waitlisted guest exactly one
+   * RSVP row — their own — so the people ahead of them are rows this client may
+   * not read. Comes from `my_waitlist_position`.
+   */
+  waitlistPosition?: number;
+
+  /** Set when the host called the event off. The row survives; see 0007. */
+  cancelledAt?: string;
+  cancelReason?: string;
+
+  /**
+   * Structured location, when the host's input resolved to a place. Undefined
+   * is a supported state, not a gap — the UI falls back to a map search on the
+   * `location` string.
+   */
+  latitude?: number;
+  longitude?: number;
+  placeId?: string;
+  /** Formatted address from the geocoder; `location` stays the host's wording. */
+  address?: string;
 }
 
 /**
@@ -208,10 +232,24 @@ export interface Community {
 /*  Notifications                                                              */
 /* -------------------------------------------------------------------------- */
 
+/**
+ * Every `kind` the database writes, plus the mobile-only ones.
+ *
+ * The SQL functions insert `rsvp`, `ticket`, `event`, `reminder`, `payment`,
+ * `security` and `reputation`; the app adds `wallet`, `community` and
+ * `event-reminder` (locally scheduled). Keeping the union complete matters
+ * because `components/ui/icon.tsx` maps kind → icon, and an unmapped kind
+ * renders a blank space where every other row has a symbol.
+ */
 export type NotificationKind =
   | 'wallet'
+  | 'event'
   | 'event-reminder'
+  | 'reminder'
+  | 'rsvp'
   | 'ticket'
+  | 'payment'
+  | 'security'
   | 'community'
   | 'reputation'
   | 'system';
@@ -225,6 +263,74 @@ export interface AppNotification {
   read: boolean;
   /** In-app route to open on tap, e.g. `/event/e_summit`. */
   href?: string;
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Messages & payments                                                        */
+/* -------------------------------------------------------------------------- */
+
+export type MessageScope = 'event' | 'dm';
+
+/**
+ * A chat message.
+ *
+ * `kind` distinguishes something typed from a payment receipt. Receipts are
+ * written only by the `record_payment` SQL function — the insert policy on
+ * `messages` pins client writes to `text` — so a client cannot post a receipt
+ * for a transfer that never happened.
+ */
+export interface Message {
+  id: string;
+  scope: MessageScope;
+  /** Event id for event chat, or `dm:<a>__<b>` sorted, for a DM. */
+  channelId: string;
+  senderId: string;
+  body: string;
+  kind: 'text' | 'payment';
+  paymentId?: string;
+  createdAt: number;
+}
+
+/** An inbox row: someone, and the last thing said. */
+export interface Conversation {
+  user: User;
+  last?: Message;
+  /**
+   * Distinguishes a friend from someone who arrived through "Contact host".
+   * An unexplained stranger in an inbox reads as spam.
+   */
+  isFriend: boolean;
+}
+
+/**
+ * A crypto transfer sent from a thread.
+ *
+ * `amount` is a string of base units, not a number: Postgres `bigint` exceeds
+ * `Number.MAX_SAFE_INTEGER`, and a silently truncated amount is the worst
+ * possible bug in a payment path. Parse with `BigInt`.
+ */
+export interface PaymentReceipt {
+  id: string;
+  signature: string;
+  cluster: string;
+  fromProfile: string;
+  toProfile?: string;
+  fromWallet: string;
+  toWallet: string;
+  amount: string;
+  /** Undefined for native SOL; an SPL mint address otherwise. */
+  mint?: string;
+  symbol: string;
+  decimals: number;
+  memo?: string;
+  channelId?: string;
+  /**
+   * False until the `verify-payment` Edge Function has checked the signature
+   * against the cluster. Render it without a tick — an unchecked claim must not
+   * look like a checked one.
+   */
+  verified: boolean;
+  createdAt: number;
 }
 
 /* -------------------------------------------------------------------------- */

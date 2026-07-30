@@ -26,7 +26,26 @@ export const queryKeys = {
   guests: {
     all: ['guests'] as const,
     list: (eventId: string) => ['guests', 'list', eventId] as const,
-    preview: (eventId: string) => ['guests', 'preview', eventId] as const,
+    /**
+     * `limit` is part of the key.
+     *
+     * It was omitted, which was harmless only because every call site passed 3:
+     * two components asking for different sample sizes would have shared one
+     * cache entry, and the second would have rendered the first's result
+     * without ever refetching. A cache key that does not include an argument
+     * the query depends on is a bug waiting for a second caller.
+     */
+    preview: (eventId: string, limit: number) =>
+      ['guests', 'preview', eventId, limit] as const,
+  },
+  messages: {
+    all: ['messages'] as const,
+    conversations: (profileId: string) =>
+      ['messages', 'conversations', profileId] as const,
+    thread: (channelId: string) => ['messages', 'thread', channelId] as const,
+    /** Receipts referenced by a thread's messages. */
+    payments: (channelId: string, ids: string[]) =>
+      ['messages', 'payments', channelId, [...ids].sort().join(',')] as const,
   },
   users: {
     all: ['users'] as const,

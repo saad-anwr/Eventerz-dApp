@@ -76,10 +76,33 @@ export interface WalletAdapter {
 /**
  * A description of what we want on-chain, independent of how it is built.
  * The mock adapter logs it; the real adapter compiles it into instructions.
+ *
+ * Two families, and the distinction matters:
+ *
+ *   • **Eventerz program intents** — `create-event`, `rsvp`, `check-in`,
+ *     `claim-badge`, `mint-ticket`. These need the deployed program, so the
+ *     adapter refuses them while `EXPO_PUBLIC_EVENTERZ_PROGRAM_ID` is unset
+ *     rather than fabricating a signature.
+ *   • **`transfer`** — a plain System Program transfer. It needs no program of
+ *     ours at all, so it must work regardless of deployment state. Gating it on
+ *     the program id would break sending crypto for a reason that has nothing to
+ *     do with it.
  */
 export type TransactionIntent =
-  | { type: 'rsvp'; eventId: string }
+  | { type: 'rsvp'; eventId: string; hostWallet?: string }
   | { type: 'mint-ticket'; eventId: string; owner: string }
-  | { type: 'check-in'; ticketId: string; eventId: string }
-  | { type: 'create-event'; eventId: string }
-  | { type: 'claim-badge'; badgeId: string };
+  | { type: 'check-in'; ticketId: string; eventId: string; attendeeWallet?: string }
+  | {
+      type: 'create-event';
+      eventId: string;
+      capacity?: number;
+      startsAt?: string;
+      endsAt?: string | null;
+      requiresApproval?: boolean;
+      priceLamports?: bigint;
+    }
+  | { type: 'cancel-event'; eventId: string }
+  | { type: 'release-seat'; eventId: string }
+  | { type: 'claim-badge'; badgeId: string }
+  /** Base units, always. A float here is a rounding error in someone's money. */
+  | { type: 'transfer'; to: string; lamports: bigint; memo?: string };

@@ -19,11 +19,20 @@ import {
   PublicKey,
   SystemProgram,
   Transaction,
+  type TransactionInstruction,
 } from '@solana/web3.js';
 import { Buffer } from 'buffer';
 import { toUint8Array } from 'js-base64';
 
 import { integrationsConfig } from '@/constants/config';
+import {
+  cancelEventInstruction,
+  checkInInstruction,
+  claimSeatInstruction,
+  createEventInstruction,
+  eventerzProgramId,
+  releaseSeatInstruction,
+} from '@/services/solana/program';
 import { SecureKeys, StorageKeys } from '@/constants/storage-keys';
 import type {
   SignedTransactionResult,
@@ -70,6 +79,108 @@ function toBase58(address: string): string {
   } catch {
     // Some wallets already hand back base58.
     return address;
+  }
+}
+
+/**
+ * Compile an intent into one instruction.
+ *
+ * Deliberately a pure function outside the class: it takes the payer and the
+ * program id and returns an instruction, so it can be unit-tested without a
+ * wallet, a network or an association intent — none of which exist in a test
+ * runner.
+ */
+function buildInstruction(
+  intent: TransactionIntent,
+  payer: PublicKey,
+  programId: PublicKey | null,
+): TransactionInstruction {
+  if (intent.type === 'transfer') {
+    const destination = new PublicKey(intent.to);
+    if (destination.equals(payer)) {
+      throw new Error('That is your own wallet.');
+    }
+    return SystemProgram.transfer({
+      fromPubkey: payer,
+      toPubkey: destination,
+      // bigint keeps the value exact all the way to the instruction. A number
+      // silently loses precision above 2^53 lamports.
+      lamports: intent.lamports,
+    });
+  }
+
+  // Guarded by the caller, but narrowing here keeps this function honest on its
+  // own rather than depending on a check somewhere else.
+  if (!programId) {
+    throw new Error('The Eventerz program is not deployed.');
+  }
+
+  switch (intent.type) {
+    case 'create-event':
+      return createEventInstruction(
+        {
+          eventId: intent.eventId,
+          host: payer,
+          capacity: intent.capacity ?? 1,
+          startsAt: intent.startsAt ?? new Date().toISOString(),
+          endsAt: intent.endsAt ?? null,
+          requiresApproval: intent.requiresApproval,
+          priceLamports: intent.priceLamports ?? 0n,
+        },
+        programId,
+      );
+
+    case 'rsvp': {
+      /*
+       * The host's wallet is required, not optional-with-a-default: a paid event
+       * settles the price to the host inside `claim_seat`, so the host account
+       * has to be in the transaction. Substituting the payer would send the
+       * money to the attendee, which would appear to work on a free event and
+       * quietly misdirect funds on a paid one.
+       */
+      if (!intent.hostWallet) {
+        throw new Error(
+          'The host has not linked a wallet, so this event has no on-chain seats.',
+        );
+      }
+      return claimSeatInstruction(
+        intent.eventId,
+        payer,
+        new PublicKey(intent.hostWallet),
+        programId,
+      );
+    }
+
+    case 'release-seat':
+      return releaseSeatInstruction(intent.eventId, payer, programId);
+
+    case 'cancel-event':
+      return cancelEventInstruction(intent.eventId, payer, programId);
+
+    case 'check-in': {
+      if (!intent.attendeeWallet) {
+        throw new Error('That guest has not linked a wallet.');
+      }
+      return checkInInstruction(
+        intent.eventId,
+        new PublicKey(intent.attendeeWallet),
+        payer,
+        programId,
+      );
+    }
+
+    /*
+     * `mint-ticket` and `claim-badge` have no instruction yet: tickets are
+     * Postgres rows plus a seat account, and compressed-NFT minting needs
+     * Bubblegum and a Merkle tree that is not provisioned. Refusing is the
+     * honest answer — the alternative is a signature for a mint that never
+     * happened.
+     */
+    case 'mint-ticket':
+    case 'claim-badge':
+      throw new Error(
+        `On-chain ${intent.type.replace(/-/g, ' ')} is not implemented yet.`,
+      );
   }
 }
 
@@ -168,16 +279,29 @@ export class MobileWalletAdapter implements WalletAdapter {
   /**
    * Sign and submit.
    *
-   * `intent` says *what* the user wants on-chain. Until the Eventerz Anchor
-   * program is deployed there are no instructions to build, so this refuses
-   * rather than fabricating a signature — a fake success would be far worse
-   * than an honest failure, because the UI would tell the user their ticket
-   * was minted when nothing happened.
+   * `intent` says *what* the user wants on-chain; this compiles it into real
+   * instructions and hands them to the wallet.
+   *
+   * Two rules that are load-bearing:
+   *
+   *  1. **A `transfer` never needs the Eventerz program.** It is a System
+   *     Program instruction, so it works whether or not anything of ours is
+   *     deployed. Gating it on `programId` would break sending crypto for a
+   *     reason that has nothing to do with it.
+   *
+   *  2. **Every other intent refuses when no program is deployed.** It does not
+   *     fabricate a signature, and it no longer sends the zero-lamport
+   *     self-transfer that used to stand in for one — that produced a real,
+   *     confirmable signature for a transaction that did nothing, which is the
+   *     worst of both worlds: the UI would report a minted ticket and the
+   *     explorer would appear to agree.
    */
   async signAndSendTransaction(
     intent: TransactionIntent,
   ): Promise<SignedTransactionResult> {
-    if (!integrationsConfig.programId) {
+    const programId = eventerzProgramId();
+
+    if (intent.type !== 'transfer' && !programId) {
       throw new Error(
         `On-chain ${intent.type.replace(/-/g, ' ')} is not available yet — ` +
           'the Eventerz program has not been deployed. Set ' +
@@ -195,23 +319,13 @@ export class MobileWalletAdapter implements WalletAdapter {
       });
 
       const payer = new PublicKey(toBase58(auth.accounts[0].address));
-      const { blockhash } = await connection.getLatestBlockhash();
+      const instruction = buildInstruction(intent, payer, programId);
 
-      /*
-       * TODO(anchor): build real instructions from the Eventerz IDL. The
-       * surrounding shape — reauthorize, build, sign, send — is already
-       * correct; only the instruction construction changes.
-       */
+      const { blockhash } = await connection.getLatestBlockhash();
       const transaction = new Transaction({
         feePayer: payer,
         recentBlockhash: blockhash,
-      }).add(
-        SystemProgram.transfer({
-          fromPubkey: payer,
-          toPubkey: payer,
-          lamports: 0,
-        }),
-      );
+      }).add(instruction);
 
       const [signature] = await wallet.signAndSendTransactions({
         transactions: [transaction],

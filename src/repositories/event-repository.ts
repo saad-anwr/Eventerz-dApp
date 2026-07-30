@@ -101,6 +101,44 @@ export interface CreateEventInput {
   coverImage?: string;
   communityId?: string;
   schedule?: ScheduleSlot[];
+
+  /**
+   * Structured location, when the host picked a place rather than typing one.
+   * All optional: an event whose location a geocoder never saw is still a valid
+   * event, and requiring these would make the place picker mandatory.
+   */
+  latitude?: number;
+  longitude?: number;
+  placeId?: string;
+  address?: string;
+}
+
+/**
+ * Fields a host may change after publishing.
+ *
+ * Every field optional, and undefined means "leave alone" — the RPC treats null
+ * the same way. `endsAt: null` is the one exception and means "clear it", since
+ * an event can legitimately lose its end time.
+ */
+export interface UpdateEventInput {
+  title?: string;
+  description?: string;
+  category?: EventItem['category'];
+  startsAt?: string;
+  endsAt?: string | null;
+  location?: string;
+  isOnline?: boolean;
+  capacity?: number;
+  price?: string;
+  visibility?: EventItem['visibility'];
+  requiresApproval?: boolean;
+  tags?: string[];
+  coverGradient?: EventItem['coverGradient'];
+  coverImage?: string;
+  latitude?: number | null;
+  longitude?: number | null;
+  placeId?: string | null;
+  address?: string | null;
 }
 
 export const eventRepository = {
@@ -274,6 +312,69 @@ export const eventRepository = {
         0,
         (event.waitlistCount ?? 0) - (was === 'waitlist' ? 1 : 0),
       ),
+    };
+    db.events[eventId] = next;
+    return next;
+  },
+
+  /**
+   * Edit an event, locally.
+   *
+   * Unlike guest approval below, this has a faithful local model — it is the
+   * host changing their own row — so it behaves rather than refusing. Undefined
+   * fields are skipped so the merge matches the RPC's "null means leave alone".
+   */
+  async updateEvent(
+    eventId: string,
+    patch: UpdateEventInput,
+  ): Promise<EventItem> {
+    await mockDelay();
+    const event = db.events[eventId];
+    if (!event) throw new Error(`Event ${eventId} not found`);
+    if (event.cancelledAt) {
+      throw new Error('This event was cancelled and can no longer be edited.');
+    }
+
+    const going = event.confirmedCount ?? event.attendeeIds.length;
+    if (patch.capacity !== undefined && patch.capacity < going) {
+      throw new Error(
+        `You already have ${going} confirmed guests. Remove some before lowering capacity to ${patch.capacity}.`,
+      );
+    }
+
+    const defined = Object.fromEntries(
+      Object.entries(patch).filter(([, value]) => value !== undefined),
+    );
+
+    const next: EventItem = {
+      ...event,
+      ...defined,
+      // `endsAt: null` means "clear it"; the spread above would leave a null in
+      // a field typed `string | undefined`.
+      endsAt: patch.endsAt === null ? undefined : (patch.endsAt ?? event.endsAt),
+      latitude: patch.latitude ?? (patch.latitude === null ? undefined : event.latitude),
+      longitude:
+        patch.longitude ?? (patch.longitude === null ? undefined : event.longitude),
+      placeId: patch.placeId ?? (patch.placeId === null ? undefined : event.placeId),
+      address: patch.address ?? (patch.address === null ? undefined : event.address),
+    };
+
+    db.events[eventId] = next;
+    return next;
+  },
+
+  async cancelEvent(eventId: string, reason?: string): Promise<EventItem> {
+    await mockDelay();
+    const event = db.events[eventId];
+    if (!event) throw new Error(`Event ${eventId} not found`);
+    if (event.cancelledAt) return event;
+
+    const next: EventItem = {
+      ...event,
+      cancelledAt: new Date().toISOString(),
+      cancelReason: reason?.trim() || undefined,
+      // Mirrors `cancel_event`: every live RSVP is closed.
+      myStatus: event.myStatus ? 'cancelled' : undefined,
     };
     db.events[eventId] = next;
     return next;

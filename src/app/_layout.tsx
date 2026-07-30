@@ -134,6 +134,9 @@ export default function RootLayout() {
                 <Stack.Screen name="user/[id]" />
                 <Stack.Screen name="dashboard" />
                 <Stack.Screen name="notifications" />
+                <Stack.Screen name="messages/index" />
+                <Stack.Screen name="messages/[id]" />
+                <Stack.Screen name="event/edit/[id]" />
                 <Stack.Screen name="settings" />
                 <Stack.Screen name="profile/edit" />
 

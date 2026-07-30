@@ -4,6 +4,7 @@ export * from './use-tickets';
 export * from './use-communities';
 export * from './use-users';
 export * from './use-notifications';
+export * from './use-messages';
 export * from './use-analytics-data';
 export * from './use-app-fonts';
 export * from './use-reduced-motion';
