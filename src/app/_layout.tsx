@@ -25,6 +25,7 @@ import { WebFrame } from '@/components/layout/web-frame';
 import { ToastHost } from '@/components/ui/toast';
 import { useLinkGoogleWallet } from '@/features/wallet/use-link-google-wallet';
 import { useAppFonts } from '@/hooks/use-app-fonts';
+import { useRealtimeSync } from '@/hooks/use-realtime-sync';
 import { queryClient } from '@/services/query-client';
 import { useAuthStore } from '@/store/auth-store';
 import { usePreferencesStore } from '@/store/preferences-store';
@@ -71,6 +72,9 @@ export default function RootLayout() {
 
   // Keep the Google account and the connected wallet bound to one identity.
   useLinkGoogleWallet();
+
+  // Stream changes from Postgres so the app stays in step with the website.
+  useRealtimeSync();
 
   const onLayoutReady = useCallback(() => {
     if (appReady) {
