@@ -33,6 +33,7 @@ const METRO_PORT = 8081;
 
 const args = process.argv.slice(2);
 const wantsPhysical = args.includes('--device');
+const wantsWipe = args.includes('--wipe');
 const avdArg = args.find((a) => !a.startsWith('--'));
 
 /* ------------------------------------------------------------------ helpers */
@@ -208,9 +209,17 @@ async function waitForBoot(timeoutMs = 600_000) {
   }
 
   die(
-    'Timed out waiting for the device to boot.\n' +
-      '  The emulator may still be initialising — check its window, then re-run.\n' +
-      '  A cold first boot of a new system image can exceed 10 minutes.',
+    [
+      'Timed out waiting for the device to boot.',
+      '',
+      '  If you recently changed the AVD’s system image (x86 → x86_64, say),',
+      '  its userdata is now incompatible and the boot hangs `offline` forever',
+      '  instead of reporting a mismatch. Reset it once with:',
+      '',
+      '    npm run android:wipe',
+      '',
+      '  Otherwise it may still be initialising — check the emulator window.',
+    ].join('\n'),
   );
 }
 
@@ -252,12 +261,19 @@ async function ensureDevice() {
     warn(`AVD "${avdArg}" not found. Available: ${avds.join(', ')}`);
   }
 
-  log(`Booting emulator "${avd}"…`);
+  log(`Booting emulator "${avd}"${wantsWipe ? ' (wiping data)' : ''}…`);
+
+  /*
+   * `-wipe-data` resets userdata. Needed after changing an AVD's system image
+   * — e.g. swapping x86 for x86_64 — because the old userdata partition is
+   * incompatible with the new image and the emulator hangs `offline` forever
+   * rather than reporting a mismatch.
+   */
+  const emulatorArgs = ['-avd', avd, '-no-boot-anim'];
+  if (wantsWipe) emulatorArgs.push('-wipe-data', '-no-snapshot-load');
+
   // Detached: the emulator must outlive this script.
-  spawn(EMULATOR, ['-avd', avd, '-no-boot-anim'], {
-    detached: true,
-    stdio: 'ignore',
-  }).unref();
+  spawn(EMULATOR, emulatorArgs, { detached: true, stdio: 'ignore' }).unref();
 
   return waitForBoot();
 }

@@ -79,7 +79,8 @@
     "android:seeker": "node scripts/run-android.mjs Seeker",
     "android:device": "node scripts/run-android.mjs --device",
     "preview": "expo start --dev-client --tunnel",
-    "apk": "node scripts/build-apk.mjs"
+    "apk": "node scripts/build-apk.mjs",
+    "android:wipe": "node scripts/run-android.mjs --wipe"
   },
   "private": true,
   "description": "Eventerz — wallet-native event infrastructure on Solana. Android/iOS app for Solana Seeker."
