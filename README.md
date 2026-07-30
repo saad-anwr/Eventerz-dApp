@@ -19,6 +19,23 @@ npx expo start
 
 Then press `a` for Android, `i` for iOS, or scan the QR code with Expo Go.
 
+> **Keep the project and `node_modules` on the same drive**, and prefer an SSD.
+>
+> Both halves of that matter, and each was measured on this machine:
+>
+> - **Speed.** `node_modules` is ~75,000 files, and Metro reads nearly all of
+>   them. From a 5400 RPM HDD a cold bundle took **13m 08s**; from an SSD, **1m
+>   10s**. Warm app starts land around 18s.
+> - **Correctness.** Splitting them across drives — project on `E:`,
+>   `node_modules` junctioned to `C:` — makes Expo Router render its stock
+>   "Welcome to Expo" screen instead of the app, with no error of any kind.
+>   `babel-preset-expo` inlines the router's app root as a path *relative to*
+>   `node_modules/expo-router`, and no relative path exists between two Windows
+>   drive letters.
+>
+> `npm run deps:check` verifies this and runs automatically after `npm install`.
+> The full explanation lives at the top of [`scripts/check-deps.mjs`](scripts/check-deps.mjs).
+
 ### Running on Android
 
 ```bash

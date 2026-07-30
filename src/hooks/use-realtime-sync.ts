@@ -43,8 +43,14 @@ export function useRealtimeSync(): void {
         'postgres_changes',
         { event: '*', schema: 'public', table: 'rsvps' },
         () => {
-          // Attendee counts are derived from rsvps, so events refresh too.
+          /*
+           * Counts ride on the `events` row (maintained by trigger in 0005), so
+           * the event keys cover the numbers. The guest keys cover the roster
+           * and preview — which is what a host watching their approval queue is
+           * looking at while someone else asks to join.
+           */
           queryClient.invalidateQueries({ queryKey: queryKeys.events.all });
+          queryClient.invalidateQueries({ queryKey: queryKeys.guests.all });
           queryClient.invalidateQueries({ queryKey: queryKeys.tickets.all });
         },
       )
@@ -52,7 +58,10 @@ export function useRealtimeSync(): void {
         'postgres_changes',
         { event: '*', schema: 'public', table: 'tickets' },
         () => {
+          // Check-in flips a ticket, which moves `checked_in_count`.
           queryClient.invalidateQueries({ queryKey: queryKeys.tickets.all });
+          queryClient.invalidateQueries({ queryKey: queryKeys.events.all });
+          queryClient.invalidateQueries({ queryKey: queryKeys.guests.all });
         },
       )
       .on(

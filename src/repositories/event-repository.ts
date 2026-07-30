@@ -10,12 +10,15 @@
 import { db } from '@/mock';
 import type {
   EventFilters,
+  EventGuest,
   EventItem,
+  GuestPreviewEntry,
   Page,
+  RsvpState,
   ScheduleSlot,
   User,
 } from '@/types';
-import { mockDelay, uid } from '@/utils';
+import { isLiveRsvp, mockDelay, uid } from '@/utils';
 
 const PAGE_SIZE = 8;
 
@@ -207,17 +210,121 @@ export const eventRepository = {
     return event;
   },
 
-  /** Toggle RSVP and return the updated event. */
-  async toggleRsvp(eventId: string, userId: string): Promise<EventItem> {
+  /**
+   * Ask to attend.
+   *
+   * Mirrors the outcome rules the SQL function enforces — full first, then
+   * approval, else straight in — so the mock and live backends behave the same
+   * way and a screen written against one works against the other.
+   */
+  async requestToJoin(eventId: string, userId: string): Promise<EventItem> {
     await mockDelay();
     const event = db.events[eventId];
     if (!event) throw new Error(`Event ${eventId} not found`);
-    const going = event.attendeeIds.includes(userId);
-    const attendeeIds = going
-      ? event.attendeeIds.filter((id) => id !== userId)
-      : [...event.attendeeIds, userId];
-    const next = { ...event, attendeeIds };
+    if (event.hostId === userId) {
+      throw new Error('You are hosting this event.');
+    }
+    if (isLiveRsvp(event.myStatus)) return event;
+
+    const going = event.confirmedCount ?? event.attendeeIds.length;
+    const status: RsvpState =
+      going >= event.capacity
+        ? 'waitlist'
+        : event.requiresApproval
+          ? 'pending'
+          : 'confirmed';
+
+    const next: EventItem = {
+      ...event,
+      myStatus: status,
+      attendeeIds:
+        status === 'confirmed'
+          ? [...new Set([...event.attendeeIds, userId])]
+          : event.attendeeIds,
+      confirmedCount: status === 'confirmed' ? going + 1 : going,
+      pendingCount:
+        (event.pendingCount ?? 0) + (status === 'pending' ? 1 : 0),
+      waitlistCount:
+        (event.waitlistCount ?? 0) + (status === 'waitlist' ? 1 : 0),
+    };
     db.events[eventId] = next;
     return next;
+  },
+
+  async cancelRsvp(eventId: string, userId: string): Promise<EventItem> {
+    await mockDelay();
+    const event = db.events[eventId];
+    if (!event) throw new Error(`Event ${eventId} not found`);
+
+    const was = event.myStatus ?? 'confirmed';
+    const next: EventItem = {
+      ...event,
+      myStatus: 'cancelled',
+      attendeeIds: event.attendeeIds.filter((id) => id !== userId),
+      confirmedCount: Math.max(
+        0,
+        (event.confirmedCount ?? event.attendeeIds.length) -
+          (was === 'confirmed' ? 1 : 0),
+      ),
+      pendingCount: Math.max(
+        0,
+        (event.pendingCount ?? 0) - (was === 'pending' ? 1 : 0),
+      ),
+      waitlistCount: Math.max(
+        0,
+        (event.waitlistCount ?? 0) - (was === 'waitlist' ? 1 : 0),
+      ),
+    };
+    db.events[eventId] = next;
+    return next;
+  },
+
+  /*
+   * Host-side moderation has no meaningful local model: the mock has one user,
+   * so there is no second party to approve. These exist so the two repositories
+   * share a shape, and they refuse rather than pretending to have done
+   * something.
+   */
+  async approveGuest(eventId: string): Promise<EventItem> {
+    throw new Error(
+      'Guest approval needs the live backend — set EXPO_PUBLIC_USE_MOCK_DATA=false.',
+    );
+  },
+
+  async declineGuest(eventId: string): Promise<EventItem> {
+    throw new Error(
+      'Guest approval needs the live backend — set EXPO_PUBLIC_USE_MOCK_DATA=false.',
+    );
+  },
+
+  /** In the mock every roster entry is a confirmed guest. */
+  async listGuests(eventId: string): Promise<EventGuest[]> {
+    await mockDelay();
+    const event = db.events[eventId];
+    if (!event) return [];
+    return event.attendeeIds.flatMap((id) => {
+      const user = db.users[id];
+      if (!user) return [];
+      return [
+        {
+          eventId,
+          profileId: id,
+          status: 'confirmed' as RsvpState,
+          name: user.name,
+          handle: user.handle,
+          walletAddress: user.walletAddress,
+          reputation: user.reputation,
+          createdAt: event.createdAt,
+        },
+      ];
+    });
+  },
+
+  async guestPreview(
+    eventId: string,
+    limit = 3,
+  ): Promise<GuestPreviewEntry[]> {
+    const guests = await eventRepository.listGuests(eventId);
+    return guests.slice(0, limit).map((g) => ({ id: g.profileId, name: g.name }));
   },
 };

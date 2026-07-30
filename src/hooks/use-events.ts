@@ -96,81 +96,120 @@ export function useEventLocations() {
   });
 }
 
+/* -------------------------------------------------------------------------- */
+/*  Guest state — request, cancel, and the host's decision                     */
+/* -------------------------------------------------------------------------- */
+
 /**
- * RSVP toggle.
- *
- * Going: signs an on-chain RSVP, then mints the NFT ticket.
- * Cancelling: revokes the ticket. The event list is updated optimistically so
- * the button flips instantly; a failure rolls the cache back.
+ * Everything that changes guest state invalidates the same keys, so a host
+ * approving someone updates that guest's own view of the event, the counters on
+ * every card and the guest list together.
  */
-export function useToggleRsvp() {
+function useGuestStateInvalidation() {
   const queryClient = useQueryClient();
-  const account = useWalletStore((s) => s.account);
+  return (updated?: EventItem) => {
+    queryClient.invalidateQueries({ queryKey: queryKeys.events.all });
+    queryClient.invalidateQueries({ queryKey: queryKeys.guests.all });
+    queryClient.invalidateQueries({ queryKey: queryKeys.tickets.all });
+    queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all });
+    if (updated) {
+      queryClient.setQueryData(queryKeys.events.detail(updated.id), updated);
+    }
+  };
+}
+
+/**
+ * Ask to attend.
+ *
+ * The server decides the outcome — confirmed, pending approval, or waitlisted —
+ * so this deliberately does *not* update optimistically. The old version
+ * assumed "not going → going" and flipped the button immediately, which showed
+ * "You're going" for an event that had actually queued a pending request or
+ * refused the call outright.
+ */
+export function useRequestToJoin() {
+  const invalidate = useGuestStateInvalidation();
   const user = useWalletStore((s) => s.user);
 
   return useMutation({
     mutationFn: async (event: EventItem) => {
-      if (!user || !account) {
-        throw new Error('Connect a wallet to RSVP.');
-      }
-      const wasGoing = event.attendeeIds.includes(user.id);
+      if (!user) throw new Error('Sign in to RSVP.');
 
       /*
-       * Ticket lifecycle lives with the RSVP: on Supabase the `rsvp()` /
-       * `cancel_rsvp()` functions allocate and revoke the ticket atomically
-       * (capacity and serial numbering are races otherwise), and the mock
-       * repository mirrors that. So this hook only sequences the on-chain step
-       * around it.
+       * Only attempt a signature when a program is actually deployed. The
+       * on-chain step is additive: RSVPs are real records in Postgres, and
+       * gating them on a program that does not exist yet would break the
+       * feature for no benefit.
        */
-      if (wasGoing) {
-        await notificationService.cancelEventReminders(event.id);
-      } else if (integrationsConfig.programId) {
-        // Only attempt a signature when a program is actually deployed —
-        // otherwise the adapter throws and the RSVP would fail for no reason.
+      if (integrationsConfig.programId) {
         await solanaService.rsvp(event.id);
       }
 
-      const updated = await eventRepository.toggleRsvp(event.id, user.id);
+      const updated = await eventRepository.requestToJoin(event.id, user.id);
 
-      if (!wasGoing) await notificationService.scheduleEventReminders(event);
+      // Reminders only make sense once a seat is actually held.
+      if (updated.myStatus === 'confirmed') {
+        await notificationService.scheduleEventReminders(updated);
+      }
+
       analytics.track(AnalyticsEvent.EventRsvp, {
         eventId: event.id,
-        going: !wasGoing,
+        status: updated.myStatus ?? 'unknown',
       });
-      return { updated, wasGoing };
+      return updated;
     },
+    onSuccess: invalidate,
+  });
+}
 
-    onMutate: async (event) => {
-      if (!user) return;
-      const key = queryKeys.events.detail(event.id);
-      await queryClient.cancelQueries({ queryKey: key });
-      const previous = queryClient.getQueryData<EventItem>(key);
-      const going = event.attendeeIds.includes(user.id);
-      queryClient.setQueryData<EventItem>(key, {
-        ...event,
-        attendeeIds: going
-          ? event.attendeeIds.filter((id) => id !== user.id)
-          : [...event.attendeeIds, user.id],
-      });
-      return { previous, key };
-    },
+export function useCancelRsvp() {
+  const invalidate = useGuestStateInvalidation();
+  const user = useWalletStore((s) => s.user);
 
-    onError: (_error, _event, context) => {
-      if (context?.previous) {
-        queryClient.setQueryData(context.key, context.previous);
-      }
+  return useMutation({
+    mutationFn: async (event: EventItem) => {
+      if (!user) throw new Error('Sign in first.');
+      await notificationService.cancelEventReminders(event.id);
+      return eventRepository.cancelRsvp(event.id, user.id);
     },
+    onSuccess: invalidate,
+  });
+}
 
-    onSettled: (result) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.events.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.tickets.all });
-      if (result) {
-        queryClient.setQueryData(
-          queryKeys.events.detail(result.updated.id),
-          result.updated,
-        );
-      }
-    },
+export function useApproveGuest() {
+  const invalidate = useGuestStateInvalidation();
+  return useMutation({
+    mutationFn: (vars: { eventId: string; profileId: string }) =>
+      eventRepository.approveGuest(vars.eventId, vars.profileId),
+    onSuccess: invalidate,
+  });
+}
+
+export function useDeclineGuest() {
+  const invalidate = useGuestStateInvalidation();
+  return useMutation({
+    mutationFn: (vars: { eventId: string; profileId: string }) =>
+      eventRepository.declineGuest(vars.eventId, vars.profileId),
+    onSuccess: invalidate,
+  });
+}
+
+/** Full roster. Comes back empty unless the viewer is the host or confirmed. */
+export function useEventGuests(eventId: string | undefined) {
+  return useQuery({
+    queryKey: queryKeys.guests.list(eventId ?? ''),
+    queryFn: () => eventRepository.listGuests(eventId!),
+    enabled: Boolean(eventId),
+  });
+}
+
+/** A few faces for viewers who cannot read the roster. */
+export function useGuestPreview(eventId: string | undefined, limit = 3) {
+  return useQuery({
+    queryKey: queryKeys.guests.preview(eventId ?? ''),
+    queryFn: () => eventRepository.guestPreview(eventId!, limit),
+    enabled: Boolean(eventId),
+    staleTime: 30_000,
   });
 }
 

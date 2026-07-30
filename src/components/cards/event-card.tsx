@@ -23,6 +23,7 @@ import {
   formatEventDate,
   isUpcoming,
 } from '@/utils/format';
+import { goingCount } from '@/utils/rsvp';
 
 import { Avatar } from '../ui/avatar';
 import { Globe, Lock, MapPin, Users } from '../ui/icon';
@@ -59,7 +60,7 @@ export const EventCard = memo(function EventCard({
       accessibilityRole="button"
       accessibilityLabel={`${event.title}, ${formatEventDate(event.startsAt)}, ${
         event.location
-      }, ${event.attendeeIds.length} attending`}
+      }, ${goingCount(event)} attending`}
       accessibilityHint="Opens the event details"
       className={cn(
         'overflow-hidden border border-white/10 bg-white/[0.035]',
@@ -227,7 +228,7 @@ export const EventCard = memo(function EventCard({
           <View className="flex-row items-center gap-1">
             <Users size={13} color="#94a2b8" strokeWidth={2} />
             <Text variant="caption" className="text-muted-foreground">
-              {event.attendeeIds.length}
+              {goingCount(event)}
             </Text>
           </View>
         </View>

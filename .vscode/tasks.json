@@ -1,4 +1,7 @@
 {
+  // These run when this folder is opened on its own. When you open
+  // C:\Eventerz\Eventerz.code-workspace instead, the workspace file's tasks
+  // (prefixed "dApp:") supersede these and can also drive the website.
   "version": "2.0.0",
   "tasks": [
     {
@@ -13,9 +16,22 @@
       "presentation": { "reveal": "silent", "panel": "dedicated" }
     },
     {
+      // Prefer this over `expo run:android`: the script resolves the SDK and
+      // JDK from the environment, local.properties or the usual install paths,
+      // waits out the AVD boot, and builds for the single ABI the device
+      // actually reports rather than all four.
       "label": "Run on Android",
       "type": "shell",
-      "command": "npx expo run:android",
+      "command": "npm run android",
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "dedicated" }
+    },
+    {
+      // For when an AVD's system image changed and its userdata no longer
+      // matches — otherwise the emulator sits "offline" indefinitely.
+      "label": "Run on Android (wipe emulator)",
+      "type": "shell",
+      "command": "npm run android:wipe",
       "problemMatcher": [],
       "presentation": { "reveal": "always", "panel": "dedicated" }
     },
@@ -24,6 +40,21 @@
       "type": "shell",
       "command": "npx expo start --dev-client",
       "isBackground": true,
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "dedicated" }
+    },
+    {
+      "label": "Preview on my phone (tunnel)",
+      "type": "shell",
+      "command": "npm run preview",
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "dedicated" }
+    },
+    {
+      "label": "Build APK",
+      "type": "shell",
+      "command": "npm run apk",
       "problemMatcher": [],
       "presentation": { "reveal": "always", "panel": "dedicated" }
     },
@@ -42,10 +73,19 @@
       "problemMatcher": []
     },
     {
+      // Verifies node_modules sits on the same drive as the source. Splitting
+      // them makes Expo Router render a blank "Welcome to Expo" screen with no
+      // error at all — see scripts/check-deps.mjs.
+      "label": "Check dependency location",
+      "type": "shell",
+      "command": "npm run deps:check",
+      "problemMatcher": []
+    },
+    {
       // Regenerates android/ after a native dependency change, then rebuilds.
       "label": "Rebuild native (prebuild + run)",
       "type": "shell",
-      "command": "npx expo prebuild --platform android --clean && npx expo run:android",
+      "command": "npx expo prebuild --platform android --clean && npm run android",
       "problemMatcher": [],
       "presentation": { "reveal": "always", "panel": "dedicated" }
     }

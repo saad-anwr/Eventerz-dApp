@@ -40,6 +40,23 @@ SplashScreen.preventAutoHideAsync().catch(() => {
   // Already hidden (fast refresh) — nothing to do.
 });
 
+/**
+ * Holds the Postgres change subscription that keeps this client in step with
+ * the website.
+ *
+ * It has to be its own component rendered *inside* `QueryClientProvider`, not a
+ * hook call in `RootLayout`. A hook in a component's body runs before that
+ * component's JSX mounts, so calling `useRealtimeSync()` in `RootLayout` put
+ * `useQueryClient()` outside the very provider `RootLayout` returns — which
+ * throws "No QueryClient set" and takes down the whole tree.
+ *
+ * Renders nothing; it exists only to own the subscription's lifetime.
+ */
+function RealtimeBridge() {
+  useRealtimeSync();
+  return null;
+}
+
 export default function RootLayout() {
   const fontsReady = useAppFonts();
   const preferencesReady = usePreferencesStore((s) => s.hasHydrated);
@@ -71,10 +88,8 @@ export default function RootLayout() {
   }, [restoreAuth]);
 
   // Keep the Google account and the connected wallet bound to one identity.
+  // Safe here: it reads Zustand stores, not React Query.
   useLinkGoogleWallet();
-
-  // Stream changes from Postgres so the app stays in step with the website.
-  useRealtimeSync();
 
   const onLayoutReady = useCallback(() => {
     if (appReady) {
@@ -92,6 +107,7 @@ export default function RootLayout() {
     <GestureHandlerRootView className="flex-1" onLayout={onLayoutReady}>
       <SafeAreaProvider>
         <QueryClientProvider client={queryClient}>
+          <RealtimeBridge />
           <ThemeProvider value={eventerzNavigationTheme}>
             <StatusBar style="light" />
 

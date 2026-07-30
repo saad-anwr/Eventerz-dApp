@@ -68,6 +68,29 @@ export type DbEvent = {
   onchain_signature: string | null;
   created_at: string;
   updated_at: string;
+
+  /* Denormalised by trigger in migration 0005 — see rows.ts for why. */
+  confirmed_count: number;
+  pending_count: number;
+  waitlist_count: number;
+  checked_in_count: number;
+};
+
+/** `event_guests` view — an RSVP joined to its profile and ticket. */
+export type DbEventGuest = {
+  event_id: string;
+  profile_id: string;
+  status: string;
+  created_at: string;
+  name: string;
+  handle: string | null;
+  avatar_url: string | null;
+  wallet_address: string | null;
+  reputation: number;
+  ticket_id: string | null;
+  ticket_serial: number | null;
+  ticket_status: string | null;
+  checked_in_at: string | null;
 };
 
 export type DbCommunity = {
@@ -147,7 +170,12 @@ export type Database = {
       tickets: Table<DbTicket>;
       notifications: Table<DbNotification>;
     };
-    Views: Record<never, never>;
+    Views: {
+      event_guests: {
+        Row: DbEventGuest;
+        Relationships: [];
+      };
+    };
     Functions: {
       link_wallet: {
         Args: { p_wallet_address: string };
@@ -157,9 +185,30 @@ export type Database = {
         Args: { p_wallet_address: string };
         Returns: ProfileRow;
       };
+      /** Legacy alias for `request_to_join`, kept for installed builds. */
       rsvp: {
         Args: { p_event_id: string };
-        Returns: DbTicket;
+        Returns: DbRsvp;
+      };
+      request_to_join: {
+        Args: { p_event_id: string };
+        Returns: DbRsvp;
+      };
+      approve_guest: {
+        Args: { p_event_id: string; p_profile_id: string };
+        Returns: DbRsvp;
+      };
+      decline_guest: {
+        Args: { p_event_id: string; p_profile_id: string };
+        Returns: DbRsvp;
+      };
+      event_guest_preview: {
+        Args: { p_event_id: string; p_limit?: number };
+        Returns: { id: string; name: string; avatar_url: string | null }[];
+      };
+      promote_from_waitlist: {
+        Args: { p_event_id: string };
+        Returns: undefined;
       };
       cancel_rsvp: {
         Args: { p_event_id: string };

@@ -12,9 +12,11 @@ import type {
   AppNotification,
   Community,
   EventCategory,
+  EventGuest,
   EventItem,
   EventVisibility,
   NotificationKind,
+  RsvpState,
   ScheduleSlot,
   Ticket,
   TicketStatus,
@@ -52,6 +54,33 @@ export type EventRow = {
   onchain_signature: string | null;
   created_at: string;
   updated_at: string;
+
+  /*
+   * Denormalised by trigger in migration 0005. Needed because the roster is no
+   * longer world-readable: a stranger must still see "42 going" without being
+   * able to list the 42, and counting from rows RLS hides would report 0.
+   */
+  confirmed_count: number;
+  pending_count: number;
+  waitlist_count: number;
+  checked_in_count: number;
+};
+
+/** `event_guests` view — an RSVP joined to its profile and ticket. */
+export type EventGuestRow = {
+  event_id: string;
+  profile_id: string;
+  status: RsvpState;
+  created_at: string;
+  name: string;
+  handle: string | null;
+  avatar_url: string | null;
+  wallet_address: string | null;
+  reputation: number;
+  ticket_id: string | null;
+  ticket_serial: number | null;
+  ticket_status: string | null;
+  checked_in_at: string | null;
 };
 
 export type CommunityRow = {
@@ -97,7 +126,7 @@ export type RsvpRow = {
   id: string;
   event_id: string;
   profile_id: string;
-  status: 'confirmed' | 'pending' | 'waitlist' | 'cancelled';
+  status: RsvpState;
   wallet_address: string | null;
   created_at: string;
 };
@@ -109,11 +138,16 @@ export type RsvpRow = {
 const epoch = (iso: string) => Date.parse(iso) || Date.now();
 
 /**
- * `attendeeIds` is not a column — it comes from a joined `rsvps` select. Callers
- * that do not need the roster pass an empty array rather than paying for the
- * join.
+ * `attendeeIds` and `myStatus` are not columns — they come from a joined `rsvps`
+ * select. Callers that do not need the roster pass nothing rather than paying
+ * for the join; the counts below come from the event row itself, so a caller
+ * that skips the join still renders correct numbers.
  */
-export function toEventItem(row: EventRow, attendeeIds: string[] = []): EventItem {
+export function toEventItem(
+  row: EventRow,
+  attendeeIds: string[] = [],
+  myStatus?: RsvpState,
+): EventItem {
   return {
     id: row.id,
     title: row.title,
@@ -137,6 +171,31 @@ export function toEventItem(row: EventRow, attendeeIds: string[] = []): EventIte
     schedule: row.schedule?.length ? row.schedule : undefined,
     featured: row.featured,
     attendeeIds,
+    createdAt: epoch(row.created_at),
+
+    // `?? 0` rather than a bare read: these columns arrive with migration 0005,
+    // and a build running against a database without it should show "0 going"
+    // rather than "NaN going".
+    confirmedCount: row.confirmed_count ?? 0,
+    pendingCount: row.pending_count ?? 0,
+    waitlistCount: row.waitlist_count ?? 0,
+    checkedInCount: row.checked_in_count ?? 0,
+    myStatus,
+  };
+}
+
+export function toEventGuest(row: EventGuestRow): EventGuest {
+  return {
+    eventId: row.event_id,
+    profileId: row.profile_id,
+    status: row.status,
+    name: row.name,
+    handle: row.handle ?? undefined,
+    avatarUrl: row.avatar_url ?? undefined,
+    walletAddress: row.wallet_address ?? undefined,
+    reputation: row.reputation,
+    ticketSerial: row.ticket_serial ?? undefined,
+    checkedInAt: row.checked_in_at ? epoch(row.checked_in_at) : undefined,
     createdAt: epoch(row.created_at),
   };
 }

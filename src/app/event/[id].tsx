@@ -45,24 +45,39 @@ import { ScreenLoader } from '@/components/ui/spinner';
 import { Text } from '@/components/ui/text';
 import { ConnectWalletSheet, useConnectWallet } from '@/features/wallet';
 import { useCommunity } from '@/hooks/use-communities';
-import { useEvent, useToggleRsvp } from '@/hooks/use-events';
+import {
+  useApproveGuest,
+  useCancelRsvp,
+  useDeclineGuest,
+  useEvent,
+  useEventGuests,
+  useGuestPreview,
+  useRequestToJoin,
+} from '@/hooks/use-events';
 import { useTicketForEvent } from '@/hooks/use-tickets';
 import { useUser, useUsers } from '@/hooks/use-users';
-import { AnalyticsEvent, analytics } from '@/services/analytics-service';
 import { toast } from '@/store/toast-store';
 import { useWalletStore } from '@/store/wallet-store';
 import { accents, brand, resolveCoverGradient } from '@/theme/colors';
 import { radius, screenPadding } from '@/theme/layout';
 import { fontFamily } from '@/theme/typography';
 import { siteConfig } from '@/constants/config';
-import type { User } from '@/types';
+import type { EventItem, User } from '@/types';
 import {
   countdownLabel,
-  fillPercent,
   formatEventDateLong,
   formatEventTimeRange,
   plural,
 } from '@/utils/format';
+import {
+  RSVP_PRESENTATION,
+  filledPercent,
+  goingCount,
+  isLiveRsvp,
+  myRsvpState,
+  rsvpActionLabel,
+  spotsLeft,
+} from '@/utils/rsvp';
 import { haptics } from '@/utils/haptics';
 
 const HERO_HEIGHT = 300;
@@ -90,6 +105,142 @@ function Section({
       )}
       {children}
     </Animated.View>
+  );
+}
+
+/**
+ * Host-side approval queue.
+ *
+ * Requests needing a decision come first — the point of the panel is that a
+ * host opens the event and immediately sees what is waiting on them. Every
+ * action goes through an RPC that re-checks host ownership server-side, so
+ * rendering this is not what authorises anything.
+ */
+function GuestManagerSection({ event }: { event: EventItem }) {
+  const { data: guests = [] } = useEventGuests(event.id);
+  const approve = useApproveGuest();
+  const decline = useDeclineGuest();
+  const busy = approve.isPending || decline.isPending;
+
+  const waiting = guests.filter(
+    (g) => g.status === 'pending' || g.status === 'waitlist',
+  );
+  const confirmed = guests.filter((g) => g.status === 'confirmed');
+
+  const act = useCallback(
+    (
+      mutation: typeof approve | typeof decline,
+      profileId: string,
+      verb: string,
+    ) => {
+      mutation.mutate(
+        { eventId: event.id, profileId },
+        {
+          onSuccess: () => {
+            haptics.success();
+            toast.success(`Guest ${verb}`);
+          },
+          onError: (error) => {
+            haptics.error();
+            toast.error(
+              `Could not ${verb === 'approved' ? 'approve' : 'decline'}`,
+              error instanceof Error ? error.message : 'Please try again.',
+            );
+          },
+        },
+      );
+    },
+    [event.id],
+  );
+
+  if (guests.length === 0) return null;
+
+  return (
+    <Section title="Guests" delay={320}>
+      <View
+        className="border border-white/10 bg-white/[0.03] p-4"
+        style={{ borderRadius: radius['2xl'] }}
+      >
+        {waiting.length > 0 && (
+          <>
+            <Text
+              variant="caption"
+              className="mb-2"
+              style={{ color: '#fbbf24', fontFamily: fontFamily.semibold }}
+            >
+              {plural(waiting.length, 'request')} waiting on you
+            </Text>
+            {waiting.map((guest) => (
+              <View
+                key={guest.profileId}
+                className="mb-2 flex-row items-center gap-3 border border-white/10 bg-white/[0.02] p-2.5"
+                style={{ borderRadius: radius.xl }}
+              >
+                <View className="flex-1">
+                  <Text
+                    variant="bodySm"
+                    numberOfLines={1}
+                    style={{ fontFamily: fontFamily.medium }}
+                  >
+                    {guest.name}
+                  </Text>
+                  <Text variant="caption" className="text-muted-foreground">
+                    {guest.status === 'waitlist' ? 'Waitlisted' : 'Requested'}
+                  </Text>
+                </View>
+                <Button
+                  label="Approve"
+                  size="sm"
+                  onPress={() => act(approve, guest.profileId, 'approved')}
+                  disabled={busy}
+                />
+                <Button
+                  label="Decline"
+                  size="sm"
+                  variant="secondary"
+                  onPress={() => act(decline, guest.profileId, 'declined')}
+                  disabled={busy}
+                />
+              </View>
+            ))}
+          </>
+        )}
+
+        {confirmed.length > 0 && (
+          <>
+            <Text
+              variant="caption"
+              className="mb-2 mt-2"
+              style={{ color: brand.green, fontFamily: fontFamily.semibold }}
+            >
+              {plural(confirmed.length, 'guest')} going
+            </Text>
+            {confirmed.slice(0, 8).map((guest) => (
+              <View
+                key={guest.profileId}
+                className="flex-row items-center justify-between py-1.5"
+              >
+                <Text variant="bodySm" numberOfLines={1} className="flex-1">
+                  {guest.name}
+                </Text>
+                <Text variant="caption" className="text-muted-foreground">
+                  {guest.checkedInAt
+                    ? 'Checked in'
+                    : guest.ticketSerial
+                      ? `#${String(guest.ticketSerial).padStart(4, '0')}`
+                      : ''}
+                </Text>
+              </View>
+            ))}
+            {confirmed.length > 8 && (
+              <Text variant="caption" className="mt-1 text-muted-foreground">
+                +{confirmed.length - 8} more
+              </Text>
+            )}
+          </>
+        )}
+      </View>
+    </Section>
   );
 }
 
@@ -139,13 +290,28 @@ export default function EventDetailScreen() {
   const { data: ticket } = useTicketForEvent(id);
   const currentUser = useWalletStore((s) => s.user);
 
+  // Computed before the loading guard below, so both must tolerate no event yet.
+  const myStatus = event ? myRsvpState(event, currentUser?.id) : undefined;
+  const isHost = Boolean(currentUser && event?.hostId === currentUser.id);
+  /*
+   * The roster is gated to the host and confirmed guests, matching the RLS in
+   * migration 0005. Everyone else gets a bounded preview instead.
+   */
+  const canSeeRoster = isHost || myStatus === 'confirmed';
+
   const attendeePreview = useMemo(
-    () => event?.attendeeIds.slice(0, 8) ?? [],
-    [event?.attendeeIds],
+    () => (canSeeRoster ? (event?.attendeeIds.slice(0, 8) ?? []) : []),
+    [canSeeRoster, event?.attendeeIds],
   );
   const { data: attendees = [] } = useUsers(attendeePreview);
+  const { data: guestPreview = [] } = useGuestPreview(
+    canSeeRoster ? undefined : event?.id,
+    3,
+  );
 
-  const toggleRsvp = useToggleRsvp();
+  const requestToJoin = useRequestToJoin();
+  const cancelRsvp = useCancelRsvp();
+  const busy = requestToJoin.isPending || cancelRsvp.isPending;
 
   const scrollHandler = useAnimatedScrollHandler((e) => {
     scrollY.value = e.contentOffset.y;
@@ -184,31 +350,68 @@ export default function EventDetailScreen() {
     });
   }, [event]);
 
+  /**
+   * Request to attend, or withdraw an existing claim.
+   *
+   * The success toast reports what the *server* decided rather than what the tap
+   * hoped for — a request against an approval-gated or full event does not mint
+   * a ticket, and saying it did was the bug.
+   */
   const handleRsvp = useCallback(() => {
     if (!event) return;
 
     requireWallet(() => {
-      const going = currentUser
-        ? event.attendeeIds.includes(currentUser.id)
-        : false;
+      const live = isLiveRsvp(myRsvpState(event, currentUser?.id));
 
-      const pendingId = going
-        ? toast.pending('Cancelling RSVP', 'Returning your ticket')
-        : toast.pending('Confirming RSVP', 'Approve the transaction in your wallet');
+      if (live) {
+        const pendingId = toast.pending(
+          'Cancelling',
+          'Releasing your spot',
+        );
+        cancelRsvp.mutate(event, {
+          onSuccess: () => {
+            toast.dismiss(pendingId);
+            haptics.success();
+            toast.info('RSVP cancelled', 'Your spot has been released.');
+          },
+          onError: (error) => {
+            toast.dismiss(pendingId);
+            haptics.error();
+            toast.error(
+              'Could not cancel',
+              error instanceof Error ? error.message : 'Please try again.',
+            );
+          },
+        });
+        return;
+      }
 
-      analytics.track(AnalyticsEvent.EventRsvp, { eventId: event.id });
+      const pendingId = toast.pending(
+        event.requiresApproval ? 'Sending request' : 'Confirming RSVP',
+        event.requiresApproval
+          ? 'Asking the host to approve you'
+          : 'Reserving your spot',
+      );
 
-      toggleRsvp.mutate(event, {
-        onSuccess: ({ wasGoing }) => {
+      requestToJoin.mutate(event, {
+        onSuccess: (updated) => {
           toast.dismiss(pendingId);
           haptics.success();
-          if (wasGoing) {
-            toast.info('RSVP cancelled', 'Your ticket has been returned.');
-          } else {
-            toast.success(
-              'You are going',
-              'Your NFT ticket has been minted to your wallet.',
-            );
+          switch (updated.myStatus) {
+            case 'pending':
+              toast.success(
+                'Requested to attend',
+                'The host has been notified. You will hear back here.',
+              );
+              break;
+            case 'waitlist':
+              toast.info(
+                'You are on the waitlist',
+                'We will let you in automatically if a spot opens.',
+              );
+              break;
+            default:
+              toast.success('You are going', 'Your ticket is ready.');
           }
         },
         onError: (error) => {
@@ -221,7 +424,7 @@ export default function EventDetailScreen() {
         },
       });
     });
-  }, [currentUser, event, requireWallet, toggleRsvp]);
+  }, [cancelRsvp, currentUser, event, requestToJoin, requireWallet]);
 
   if (isLoading) return <ScreenLoader label="Loading event" />;
 
@@ -240,14 +443,15 @@ export default function EventDetailScreen() {
   }
 
   const colors = resolveCoverGradient(event.coverGradient);
-  const going = currentUser
-    ? event.attendeeIds.includes(currentUser.id)
-    : false;
+  const going = myStatus === 'confirmed';
+  const hasLiveRsvp = isLiveRsvp(myStatus);
   const countdown = countdownLabel(event.startsAt, event.endsAt);
   const isLive = countdown === 'Live now';
   const hasEnded = countdown === 'Ended';
-  const filled = fillPercent(event.attendeeIds.length, event.capacity);
-  const spotsLeft = Math.max(0, event.capacity - event.attendeeIds.length);
+  const totalGoing = goingCount(event);
+  const filled = filledPercent(event);
+  const seatsLeft = spotsLeft(event);
+  const presentation = myStatus ? RSVP_PRESENTATION[myStatus] : null;
 
   return (
     <Screen edgeTop={false} aurora={false}>
@@ -384,25 +588,64 @@ export default function EventDetailScreen() {
               <View className="flex-row items-center gap-2">
                 <Users size={15} color="#94a2b8" strokeWidth={2.2} />
                 <Text variant="bodySm" style={{ fontFamily: fontFamily.medium }}>
-                  {plural(event.attendeeIds.length, 'guest')} going
+                  {plural(totalGoing, 'guest')} going
                 </Text>
               </View>
               <Text
                 variant="caption"
-                style={{ color: spotsLeft < 20 ? brand.cyan : '#94a2b8' }}
+                style={{ color: seatsLeft < 20 ? brand.cyan : '#94a2b8' }}
               >
-                {spotsLeft === 0
+                {seatsLeft === 0
                   ? 'Waitlist only'
-                  : `${plural(spotsLeft, 'spot')} left`}
+                  : `${plural(seatsLeft, 'spot')} left`}
               </Text>
             </View>
             <ProgressBar
               percent={filled}
               className="mt-3"
-              label={`${event.attendeeIds.length} of ${event.capacity} spots taken`}
+              label={`${totalGoing} of ${event.capacity} spots taken`}
             />
+            {/* Only the host can act on pending requests, so only the host is
+                told about them. */}
+            {isHost && (event.pendingCount ?? 0) > 0 && (
+              <Text
+                variant="caption"
+                className="mt-2"
+                style={{ color: '#fbbf24' }}
+              >
+                {plural(event.pendingCount ?? 0, 'request')} waiting on your
+                approval
+              </Text>
+            )}
           </View>
         </Section>
+
+        {/* This viewer's RSVP state — the host's decision lands here. */}
+        {presentation && !isHost && (
+          <Section delay={110}>
+            <View
+              className="border p-4"
+              style={{
+                borderRadius: radius['2xl'],
+                borderColor: `${presentation.accent}40`,
+                backgroundColor: `${presentation.accent}14`,
+              }}
+            >
+              <Text
+                variant="bodySm"
+                style={{
+                  fontFamily: fontFamily.semibold,
+                  color: presentation.accent,
+                }}
+              >
+                {presentation.label}
+              </Text>
+              <Text variant="caption" className="mt-1 text-muted-foreground">
+                {presentation.detail}
+              </Text>
+            </View>
+          </Section>
+        )}
 
         {/* Host */}
         {host && (
@@ -543,30 +786,61 @@ export default function EventDetailScreen() {
           </Section>
         )}
 
-        {/* Attendees */}
-        {attendees.length > 0 && (
+        {/*
+          Who's going. The full roster for the host and confirmed guests; a
+          bounded preview for everyone else. Which one renders is decided by
+          what the database returned, not by a prop — RLS is the gate.
+        */}
+        {totalGoing > 0 && (
           <Section title="Who's going" delay={300}>
             <View
               className="border border-white/10 bg-white/[0.03] p-4"
               style={{ borderRadius: radius['2xl'] }}
             >
-              <AvatarStack
-                users={attendees}
-                max={6}
-                size={34}
-                total={event.attendeeIds.length}
-              />
-              <Text variant="caption" className="mt-3 text-muted-foreground">
-                {attendees
-                  .slice(0, 2)
-                  .map((a) => a.name)
-                  .join(', ')}
-                {event.attendeeIds.length > 2 &&
-                  ` and ${event.attendeeIds.length - 2} others are going`}
-              </Text>
+              {canSeeRoster ? (
+                <>
+                  <AvatarStack
+                    users={attendees}
+                    max={6}
+                    size={34}
+                    total={totalGoing}
+                  />
+                  <Text variant="caption" className="mt-3 text-muted-foreground">
+                    {attendees
+                      .slice(0, 2)
+                      .map((a) => a.name)
+                      .join(', ')}
+                    {totalGoing > 2 &&
+                      ` and ${totalGoing - 2} others are going`}
+                  </Text>
+                </>
+              ) : (
+                <>
+                  <Text variant="bodySm" style={{ fontFamily: fontFamily.medium }}>
+                    {guestPreview.length === 0
+                      ? `${plural(totalGoing, 'person')} going`
+                      : `${guestPreview.map((g) => g.name.split(' ')[0]).join(', ')}${
+                          totalGoing > guestPreview.length
+                            ? ` and ${totalGoing - guestPreview.length} others are going`
+                            : guestPreview.length === 1
+                              ? ' is going'
+                              : ' are going'
+                        }`}
+                  </Text>
+                  <View className="mt-3 flex-row items-center gap-1.5">
+                    <Lock size={12} color="#94a2b8" strokeWidth={2.2} />
+                    <Text variant="caption" className="text-muted-foreground">
+                      The full guest list is visible to confirmed guests.
+                    </Text>
+                  </View>
+                </>
+              )}
             </View>
           </Section>
         )}
+
+        {/* Host-only: the approval queue. */}
+        {isHost && <GuestManagerSection event={event} />}
 
         {/* Schedule */}
         {event.schedule && event.schedule.length > 0 && (
@@ -656,40 +930,62 @@ export default function EventDetailScreen() {
             <Text variant="caption" className="text-muted-foreground">
               {hasEnded
                 ? 'This event has ended'
-                : going
-                  ? "You're on the list"
+                : presentation
+                  ? presentation.label
                   : event.price}
             </Text>
             <Text variant="title" numberOfLines={1}>
               {hasEnded
-                ? plural(event.attendeeIds.length, 'attendee')
-                : `${plural(spotsLeft, 'spot')} left`}
+                ? plural(totalGoing, 'attendee')
+                : `${plural(seatsLeft, 'spot')} left`}
             </Text>
           </View>
 
-          <Button
-            label={
-              hasEnded
-                ? 'Event ended'
-                : going
-                  ? "You're going"
+          {/*
+            The host cannot RSVP to their own event, so they get the guest count
+            instead of a button that would only ever error.
+          */}
+          {isHost ? (
+            <Button
+              label="You're hosting"
+              icon={BadgeCheck}
+              variant="secondary"
+              size="lg"
+              onPress={() => {}}
+              disabled
+              className="flex-[1.6]"
+            />
+          ) : (
+            <Button
+              label={
+                hasEnded
+                  ? 'Event ended'
+                  : hasLiveRsvp
+                    ? going
+                      ? "You're going"
+                      : myStatus === 'pending'
+                        ? 'Requested'
+                        : 'Waitlisted'
+                    : rsvpActionLabel(event)
+              }
+              icon={going ? Check : myStatus === 'pending' ? Clock : undefined}
+              variant={hasLiveRsvp ? 'secondary' : 'primary'}
+              size="lg"
+              onPress={handleRsvp}
+              disabled={hasEnded}
+              loading={busy}
+              className="flex-[1.6]"
+              accessibilityHint={
+                hasLiveRsvp
+                  ? going
+                    ? 'Cancels your RSVP and releases your spot'
+                    : 'Withdraws your request to attend'
                   : event.requiresApproval
-                    ? 'Request to join'
-                    : 'RSVP on-chain'
-            }
-            icon={going ? Check : undefined}
-            variant={going ? 'secondary' : 'primary'}
-            size="lg"
-            onPress={handleRsvp}
-            disabled={hasEnded}
-            loading={toggleRsvp.isPending}
-            className="flex-[1.6]"
-            accessibilityHint={
-              going
-                ? 'Cancels your RSVP and returns the ticket'
-                : 'Signs an on-chain RSVP and mints your NFT ticket'
-            }
-          />
+                    ? 'Sends a request for the host to approve'
+                    : 'Reserves your spot and issues your ticket'
+              }
+            />
+          )}
         </View>
       </View>
 

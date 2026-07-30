@@ -35,9 +35,52 @@ import {
  */
 export const useMockBackend = featureFlags.useMockData || !isSupabaseConfigured;
 
-export const eventRepository = useMockBackend
+const activeEventRepository = useMockBackend
   ? mockEventRepository
   : supabaseEventRepository;
+
+/**
+ * Events, with the guest-state methods behind a facade.
+ *
+ * The two backends disagree about who the caller is: the mock has to be told
+ * (`userId`), while Supabase reads `auth.uid()` server-side and would ignore
+ * anything the client passed — trusting a client-supplied id there would be a
+ * hole, not a convenience. Same reason the ticket facade below exists: callers
+ * get one signature and the difference stays here.
+ */
+export const eventRepository = {
+  ...activeEventRepository,
+
+  requestToJoin: (eventId: string, userId: string) =>
+    useMockBackend
+      ? mockEventRepository.requestToJoin(eventId, userId)
+      : supabaseEventRepository.requestToJoin(eventId),
+
+  cancelRsvp: (eventId: string, userId: string) =>
+    useMockBackend
+      ? mockEventRepository.cancelRsvp(eventId, userId)
+      : supabaseEventRepository.cancelRsvp(eventId),
+
+  approveGuest: (eventId: string, profileId: string) =>
+    useMockBackend
+      ? mockEventRepository.approveGuest(eventId)
+      : supabaseEventRepository.approveGuest(eventId, profileId),
+
+  declineGuest: (eventId: string, profileId: string) =>
+    useMockBackend
+      ? mockEventRepository.declineGuest(eventId)
+      : supabaseEventRepository.declineGuest(eventId, profileId),
+
+  listGuests: (eventId: string) =>
+    useMockBackend
+      ? mockEventRepository.listGuests(eventId)
+      : supabaseEventRepository.listGuests(eventId),
+
+  guestPreview: (eventId: string, limit?: number) =>
+    useMockBackend
+      ? mockEventRepository.guestPreview(eventId, limit)
+      : supabaseEventRepository.guestPreview(eventId, limit),
+};
 
 export const userRepository = useMockBackend
   ? mockUserRepository

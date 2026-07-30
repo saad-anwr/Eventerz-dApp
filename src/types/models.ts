@@ -88,6 +88,11 @@ export interface EventItem {
   tokenGated: boolean;
   /** Human-readable gate, e.g. "Holds ≥ 1 MadLads NFT". */
   gateRequirement?: string;
+  /**
+   * Confirmed guests, and only when this viewer may see them — the host or a
+   * confirmed guest. Empty otherwise, because the roster is gated in Postgres.
+   * Read counts from `confirmedCount`, never from this array's length.
+   */
   attendeeIds: string[];
   tags: string[];
   communityId?: string;
@@ -95,6 +100,54 @@ export interface EventItem {
   /** Set when the event is boosted onto the Home carousel. */
   featured?: boolean;
   createdAt: number;
+
+  /**
+   * Live counts, visible to everyone, maintained server-side by trigger.
+   * Optional because the mock backend has no trigger — there `attendeeIds` is
+   * the whole truth. Read them through the helpers in `utils/rsvp.ts`.
+   */
+  confirmedCount?: number;
+  pendingCount?: number;
+  waitlistCount?: number;
+  checkedInCount?: number;
+  /** This viewer's own RSVP state, or undefined if they never asked. */
+  myStatus?: RsvpState;
+}
+
+/**
+ * Mirrors the `rsvp_status` enum in Postgres.
+ *
+ * `confirmed` holds a seat and a ticket; `pending` is waiting on the host;
+ * `waitlist` is promoted automatically when a seat frees; `declined` is the
+ * host's no; `cancelled` is the guest's own withdrawal.
+ */
+export type RsvpState =
+  | 'confirmed'
+  | 'pending'
+  | 'waitlist'
+  | 'declined'
+  | 'cancelled';
+
+/** A row of the host's guest list: the RSVP joined to its profile and ticket. */
+export interface EventGuest {
+  eventId: string;
+  profileId: string;
+  status: RsvpState;
+  name: string;
+  handle?: string;
+  avatarUrl?: string;
+  walletAddress?: string;
+  reputation: number;
+  ticketSerial?: number;
+  checkedInAt?: number;
+  createdAt: number;
+}
+
+/** A bounded sample of confirmed guests, for viewers who cannot read the roster. */
+export interface GuestPreviewEntry {
+  id: string;
+  name: string;
+  avatarUrl?: string;
 }
 
 /* -------------------------------------------------------------------------- */

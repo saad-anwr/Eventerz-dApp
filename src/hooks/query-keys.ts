@@ -21,6 +21,13 @@ export const queryKeys = {
     byCommunity: (id: string) => ['events', 'by-community', id] as const,
     locations: () => ['events', 'locations'] as const,
   },
+  /** Guest lists and previews, separate from `events` so both can be
+      invalidated independently or together. */
+  guests: {
+    all: ['guests'] as const,
+    list: (eventId: string) => ['guests', 'list', eventId] as const,
+    preview: (eventId: string) => ['guests', 'preview', eventId] as const,
+  },
   users: {
     all: ['users'] as const,
     detail: (id: string) => ['users', 'detail', id] as const,

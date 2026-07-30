@@ -26,6 +26,7 @@ import {
   compactNumber,
   formatEventDate,
 } from '@/utils/format';
+import { goingCount } from '@/utils/rsvp';
 
 import { Avatar } from '../ui/avatar';
 import { Badge } from '../ui/badge';
@@ -191,7 +192,7 @@ export const FeaturedEventCard = memo(function FeaturedEventCard({
               <View className="mt-0.5 flex-row items-center gap-1">
                 <Users size={11} color="#94a2b8" strokeWidth={2} />
                 <Text variant="caption" className="text-muted-foreground">
-                  {compactNumber(event.attendeeIds.length)}
+                  {compactNumber(goingCount(event))}
                 </Text>
               </View>
             </View>
