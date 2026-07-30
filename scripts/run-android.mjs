@@ -172,22 +172,46 @@ function bootedFully(serial) {
   return trySh(ADB, ['-s', serial, 'shell', 'getprop', 'sys.boot_completed']) === '1';
 }
 
-async function waitForBoot(timeoutMs = 240_000) {
+/**
+ * Wait for a device to reach `sys.boot_completed=1`.
+ *
+ * The timeout is generous because the *first* boot of a freshly downloaded
+ * system image can take many minutes — qemu unpacks and initialises the image
+ * while adb reports the device as `offline`. Later boots are far quicker.
+ */
+async function waitForBoot(timeoutMs = 600_000) {
   const started = Date.now();
   let announced = false;
+  let lastNote = 0;
 
   while (Date.now() - started < timeoutMs) {
     const devices = attachedDevices();
     const ready = devices.find(bootedFully);
-    if (ready) return ready;
+    if (ready) {
+      log(`Booted in ${Math.round((Date.now() - started) / 1000)}s`);
+      return ready;
+    }
 
     if (devices.length && !announced) {
       log('Device attached — waiting for Android to finish booting…');
       announced = true;
     }
+
+    // Reassure every 30s; a silent multi-minute wait looks like a hang.
+    const elapsed = Math.round((Date.now() - started) / 1000);
+    if (elapsed - lastNote >= 30) {
+      lastNote = elapsed;
+      log(`…still booting (${elapsed}s). First boot of a new image is slow.`);
+    }
+
     await new Promise((r) => setTimeout(r, 3000));
   }
-  die('Timed out waiting for the device to boot.');
+
+  die(
+    'Timed out waiting for the device to boot.\n' +
+      '  The emulator may still be initialising — check its window, then re-run.\n' +
+      '  A cold first boot of a new system image can exceed 10 minutes.',
+  );
 }
 
 async function ensureDevice() {
