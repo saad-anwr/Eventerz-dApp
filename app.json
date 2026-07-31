@@ -10,7 +10,6 @@
     "backgroundColor": "#050816",
     "primaryColor": "#9945ff",
     "description": "Wallet-native event infrastructure on Solana. Discover events, RSVP on-chain, collect NFT tickets and build portable reputation.",
-    "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "xyz.eventerz.app",

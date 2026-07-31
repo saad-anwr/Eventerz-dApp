@@ -27,7 +27,6 @@ import {
   Sparkles,
   Ticket,
   Trophy,
-  UserPlus,
   Users,
   Wallet,
   type LucideIcon,

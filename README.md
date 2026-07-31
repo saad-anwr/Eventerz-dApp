@@ -151,6 +151,141 @@ clone still starts - see `.env.example`.
 | `npm run lint`          | ESLint + React Compiler rules - currently clean             |
 | `npm run format`        | Prettier over `src/`                                       |
 | `npm run prebuild`      | Regenerate `android/` after a native dependency change      |
+| `npm run build:check`   | Everything EAS will check, before you spend a build slot   |
+| `npm run eas:apk`       | Cloud APK via EAS (`preview` profile)                      |
+
+---
+
+## Building an APK
+
+Two ways. **EAS** builds in the cloud and needs no Android SDK; **`npm run apk`**
+builds locally and needs the SDK and a JDK. The artifact is the same shape - a
+release APK with the JS bundled in, so it runs without Metro.
+
+### Before the first EAS build
+
+`android/` is gitignored, so EAS regenerates it from `app.json` with
+`expo prebuild`. That is the intended flow - it means the permission and icon
+config in `app.json` is the single source of truth - but it also means anything
+gitignored never reaches the build.
+
+```bash
+npm install -g eas-cli          # or use npx eas-cli everywhere below
+npx eas-cli login
+npx eas-cli init                # writes extra.eas.projectId into app.json
+```
+
+That is the whole setup. **The environment is already in `eas.json`.**
+
+### Where the environment comes from
+
+`EXPO_PUBLIC_*` values are inlined into the bundle at build time, and locally
+they come from `.env` - which is gitignored, so EAS never sees it. Left alone,
+that produces an APK that installs, opens, and cannot reach its backend: a green
+build and a dead artifact.
+
+So the build environment lives in a `base` profile that every other profile
+extends:
+
+```jsonc
+"build": {
+  "base": {
+    "env": {
+      "EXPO_PUBLIC_SUPABASE_URL": "https://<ref>.supabase.co",
+      "EXPO_PUBLIC_SUPABASE_ANON_KEY": "<anon key>",
+      "EXPO_PUBLIC_SOLANA_NETWORK": "mainnet-beta",
+      "EXPO_PUBLIC_USE_MOCK_WALLET": "false",
+      "EXPO_PUBLIC_USE_MOCK_DATA": "false"
+    }
+  },
+  "preview": { "extends": "base", ... }
+}
+```
+
+Committing those two Supabase values is safe, and specifically so: they are
+public by design. They ship inside the APK either way, anyone can extract them
+from the artifact, and **row-level security is what protects the data** - not the
+secrecy of the key. `docs/SECURITY.md` in the website project spells this out.
+
+The two mock flags are **pinned to `false` rather than copied from `.env`**. They
+are opt-in in code, but a shipped build that read `EXPO_PUBLIC_USE_MOCK_WALLET=true`
+from somebody's local file would sign with a fake wallet. Pinning removes the
+possibility rather than relying on nobody having set it.
+
+`scripts/check-build-env.mjs` still runs as `eas-build-pre-install` and fails the
+build if the backend values are missing - now mostly as a guard against a
+mistyped key in that block.
+
+### What must NOT go in eas.json
+
+- **`SUPABASE_SERVICE_ROLE_KEY`** - bypasses RLS entirely. It is an Edge Function
+  secret and has no business in a mobile build at all.
+- **`EXPO_PUBLIC_HELIUS_RPC_URL`** - the URL embeds a billable API key. It is
+  extractable from the APK, but that is not a reason to put it in git history
+  too. Use an EAS-managed variable:
+
+  ```bash
+  npx eas-cli env:create --name EXPO_PUBLIC_HELIUS_RPC_URL \
+    --value "https://mainnet.helius-rpc.com/?api-key=..." --visibility sensitive
+  ```
+
+  Strongly recommended before a real launch - see `HANDOFF.md`. Without it the
+  app falls back to the public mainnet RPC, which is rate-limited.
+
+### Commit first - EAS builds from git
+
+EAS uploads the project by archiving what git tracks. An untracked file simply
+does not exist on the build worker, and the failure is rarely obvious: the
+`eas-build-pre-install` hook in `package.json` runs
+`node scripts/check-build-env.mjs`, so if that script is uncommitted the build
+dies with `MODULE_NOT_FOUND` before it compiles a line.
+
+```bash
+git status            # nothing untracked that the build needs
+git add -A && git commit -m "..."
+```
+
+Uncommitted *edits* to tracked files are also invisible to EAS. If a fix seems
+not to have taken effect in a build, this is almost always why.
+
+### Build
+
+```bash
+npm run build:check             # doctor + typecheck + lint + tests, locally
+npm run eas:apk                 # preview profile -> installable APK
+```
+
+EAS prints a URL when it finishes; open it on the phone, or
+`npx eas-cli build:run --platform android` to install the last build onto a
+connected device.
+
+| Profile | Output | For |
+| --- | --- | --- |
+| `preview` | APK, internal | Sideloading and device testing. **This is the one you want.** |
+| `production` | APK, internal | Solana dApp Store submission |
+| `play` | AAB, store | Google Play only - Play will not take an APK |
+
+There is deliberately no `development` profile: that requires
+`expo-dev-client`, which is not a dependency here. `npm run android` already
+covers the local dev-build workflow.
+
+### Local alternatives
+
+```bash
+npm run apk                     # release APK, arm64, via the local SDK
+npm run eas:apk:local           # EAS profile, built on this machine
+```
+
+`npm run apk` signs with the debug keystore - fine for sideloading, not for a
+store listing. EAS generates and keeps its own upload keystore, which is why the
+cloud build needs no signing setup from you.
+
+### Versioning
+
+`eas.json` sets `appVersionSource: "remote"` with
+`autoIncrement: "versionCode"`, so EAS owns the version code and bumps it every
+build. `app.json` carries the human-facing `version` ("1.0.0"); raise that by
+hand when you want the displayed version to change.
 
 ---
 
