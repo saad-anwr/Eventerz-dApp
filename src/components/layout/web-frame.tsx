@@ -4,14 +4,14 @@
  * Eventerz is a mobile app; React Native Web happily stretches it to whatever
  * the browser window is, which makes fixed-height heroes and absolutely
  * positioned bars look broken. On web we constrain the app to a phone-sized
- * column and centre it. On native this is a passthrough — zero cost, no extra
+ * column and centre it. On native this is a passthrough - zero cost, no extra
  * view in the tree.
  */
 
 import { memo, type ReactNode } from 'react';
 import { Platform, View, useWindowDimensions } from 'react-native';
 
-/** Roughly a large phone — wide enough for the tab bar, narrow enough to read. */
+/** Roughly a large phone - wide enough for the tab bar, narrow enough to read. */
 const FRAME_WIDTH = 430;
 
 export const WebFrame = memo(function WebFrame({

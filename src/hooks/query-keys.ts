@@ -1,7 +1,7 @@
 /**
  * Query key factory.
  *
- * Centralised so invalidation is precise — `queryKeys.events.all` invalidates
+ * Centralised so invalidation is precise - `queryKeys.events.all` invalidates
  * every event list without touching tickets or the profile.
  */
 

@@ -1,5 +1,5 @@
 /**
- * Eventerz brand mark — a direct port of the web app's `components/ui/logo.tsx`.
+ * Eventerz brand mark - a direct port of the web app's `components/ui/logo.tsx`.
  *
  * A 3D isometric, folded-ribbon "E" built from three purple facets (light top,
  * violet front, dark side). Pure vector, so it stays crisp from a 20px tab icon
@@ -27,7 +27,7 @@ export const EventerzMark = memo(function EventerzMark({
     /*
      * The web app nests these paths in a `translate(4 3)` group. `react-native-svg`
      * on web forwards `translateX`/`translateY` straight to the DOM, which React
-     * rejects as unknown attributes — so the offset is folded into the viewBox
+     * rejects as unknown attributes - so the offset is folded into the viewBox
      * origin instead. Same rendering, no wrapper, works on every platform.
      */
     <Svg width={size} height={size} viewBox="-4 -3 100 100" fill="none">
@@ -87,7 +87,7 @@ export const EventerzMark = memo(function EventerzMark({
 interface LogoProps {
   size?: number;
   showWordmark?: boolean;
-  /** Soft violet halo behind the mark — reads well on the dark background. */
+  /** Soft violet halo behind the mark - reads well on the dark background. */
   glow?: boolean;
   className?: string;
 }

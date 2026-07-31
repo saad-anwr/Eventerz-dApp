@@ -1,5 +1,5 @@
 /**
- * True when animations should be minimised — either the OS setting is on or
+ * True when animations should be minimised - either the OS setting is on or
  * the user turned motion down in Settings.
  *
  * Every decorative animation in the app checks this; functional transitions
@@ -23,7 +23,7 @@ export function useReducedMotion(): boolean {
         if (active) setSystemSetting(enabled);
       })
       .catch(() => {
-        // Unsupported platform — leave animations on.
+        // Unsupported platform - leave animations on.
       });
 
     const subscription = AccessibilityInfo.addEventListener(

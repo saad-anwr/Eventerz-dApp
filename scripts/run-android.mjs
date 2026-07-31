@@ -2,17 +2,17 @@
 /**
  * One-command Android launch. No Android Studio required.
  *
- *   npm run android              → first available AVD (or an attached phone)
- *   npm run android -- Seeker    → a specific AVD by name
- *   npm run android -- --device  → an attached physical device over USB
+ *   npm run android              -> first available AVD (or an attached phone)
+ *   npm run android -- Seeker    -> a specific AVD by name
+ *   npm run android -- --device  -> an attached physical device over USB
  *
  * This exists because the manual path has four independent ways to fail, and
  * each produces an error that does not name the real cause:
  *
- *   1. ANDROID_HOME unset        → "Failed to resolve the Android SDK path"
- *   2. no device booted          → the build succeeds, then nothing installs
- *   3. wrong ABI compiled        → INSTALL_FAILED_NO_MATCHING_ABIS
- *   4. Metro unreachable         → the app opens to a red screen
+ *   1. ANDROID_HOME unset        -> "Failed to resolve the Android SDK path"
+ *   2. no device booted          -> the build succeeds, then nothing installs
+ *   3. wrong ABI compiled        -> INSTALL_FAILED_NO_MATCHING_ABIS
+ *   4. Metro unreachable         -> the app opens to a red screen
  *
  * The script resolves the SDK, boots a device, reads that device's *actual*
  * ABI, builds only that ABI, installs, wires Metro's port, and launches.
@@ -113,7 +113,7 @@ function resolveSdk() {
   die(
     'Could not find the Android SDK.\n' +
       '  Set ANDROID_HOME, or add sdk.dir to android/local.properties.\n' +
-      '  Find the path in Android Studio → Settings → Languages & Frameworks → Android SDK.',
+      '  Find the path in Android Studio -> Settings -> Languages & Frameworks -> Android SDK.',
   );
 }
 
@@ -123,7 +123,7 @@ const EMULATOR = join(SDK, 'emulator', IS_WINDOWS ? 'emulator.exe' : 'emulator')
 
 /**
  * Gradle needs a JDK. Android Studio bundles one (`jbr`), so prefer that over
- * asking the user to install and configure a separate JDK — and over whatever
+ * asking the user to install and configure a separate JDK - and over whatever
  * stale Java might be first on PATH.
  */
 function resolveJdk() {
@@ -177,7 +177,7 @@ function bootedFully(serial) {
  * Wait for a device to reach `sys.boot_completed=1`.
  *
  * The timeout is generous because the *first* boot of a freshly downloaded
- * system image can take many minutes — qemu unpacks and initialises the image
+ * system image can take many minutes - qemu unpacks and initialises the image
  * while adb reports the device as `offline`. Later boots are far quicker.
  */
 async function waitForBoot(timeoutMs = 600_000) {
@@ -194,7 +194,7 @@ async function waitForBoot(timeoutMs = 600_000) {
     }
 
     if (devices.length && !announced) {
-      log('Device attached — waiting for Android to finish booting…');
+      log('Device attached - waiting for Android to finish booting...');
       announced = true;
     }
 
@@ -202,7 +202,7 @@ async function waitForBoot(timeoutMs = 600_000) {
     const elapsed = Math.round((Date.now() - started) / 1000);
     if (elapsed - lastNote >= 30) {
       lastNote = elapsed;
-      log(`…still booting (${elapsed}s). First boot of a new image is slow.`);
+      log(`...still booting (${elapsed}s). First boot of a new image is slow.`);
     }
 
     await new Promise((r) => setTimeout(r, 3000));
@@ -212,13 +212,13 @@ async function waitForBoot(timeoutMs = 600_000) {
     [
       'Timed out waiting for the device to boot.',
       '',
-      '  If you recently changed the AVD’s system image (x86 → x86_64, say),',
+      "  If you recently changed the AVD's system image (x86 -> x86_64, say),",
       '  its userdata is now incompatible and the boot hangs `offline` forever',
       '  instead of reporting a mismatch. Reset it once with:',
       '',
       '    npm run android:wipe',
       '',
-      '  Otherwise it may still be initialising — check the emulator window.',
+      '  Otherwise it may still be initialising - check the emulator window.',
     ].join('\n'),
   );
 }
@@ -231,7 +231,7 @@ async function ensureDevice() {
     if (!phone) {
       die(
         'No physical device found.\n' +
-          '  Enable Developer options → USB debugging, connect by cable, and accept\n' +
+          '  Enable Developer options -> USB debugging, connect by cable, and accept\n' +
           "  the 'Allow USB debugging' prompt on the phone.",
       );
     }
@@ -251,7 +251,7 @@ async function ensureDevice() {
 
   if (avds.length === 0) {
     die(
-      'No emulators found. Create one in Android Studio → Device Manager,\n' +
+      'No emulators found. Create one in Android Studio -> Device Manager,\n' +
         '  or attach a phone and run: npm run android -- --device',
     );
   }
@@ -261,11 +261,11 @@ async function ensureDevice() {
     warn(`AVD "${avdArg}" not found. Available: ${avds.join(', ')}`);
   }
 
-  log(`Booting emulator "${avd}"${wantsWipe ? ' (wiping data)' : ''}…`);
+  log(`Booting emulator "${avd}"${wantsWipe ? ' (wiping data)' : ''}...`);
 
   /*
    * `-wipe-data` resets userdata. Needed after changing an AVD's system image
-   * — e.g. swapping x86 for x86_64 — because the old userdata partition is
+   * - e.g. swapping x86 for x86_64 - because the old userdata partition is
    * incompatible with the new image and the emulator hangs `offline` forever
    * rather than reporting a mismatch.
    */
@@ -287,7 +287,7 @@ const BUILDABLE_ABIS = ['arm64-v8a', 'x86_64', 'armeabi-v7a', 'x86'];
  * Pick the ABI to compile.
  *
  * Uses the device's full `abilist`, not just the primary, and intersects it
- * with what we can build — an x86_64 emulator reports `x86_64,x86`, and a
+ * with what we can build - an x86_64 emulator reports `x86_64,x86`, and a
  * 64-bit ARM phone reports `arm64-v8a,armeabi-v7a`. Taking the best mutual
  * match means the APK always installs, whichever image the AVD was built from.
  *
@@ -319,7 +319,7 @@ function deviceAbi(serial) {
 
 function build(abi) {
   const gradlew = join(ROOT, 'android', IS_WINDOWS ? 'gradlew.bat' : 'gradlew');
-  log(`Building for ${abi} (one ABI — four would take ~10x longer)…`);
+  log(`Building for ${abi} (one ABI - four would take ~10x longer)...`);
 
   const status = run(
     quote(gradlew),
@@ -327,7 +327,7 @@ function build(abi) {
     { cwd: join(ROOT, 'android'), env: gradleEnv() },
   );
 
-  if (status !== 0) die('Gradle build failed — see the output above.');
+  if (status !== 0) die('Gradle build failed - see the output above.');
 }
 
 function install(serial) {
@@ -343,7 +343,7 @@ function install(serial) {
   );
   if (!existsSync(apk)) die(`APK not found at ${apk}`);
 
-  log('Installing…');
+  log('Installing...');
   if (run(quote(ADB), ['-s', serial, 'install', '-r', quote(apk)]) !== 0) {
     die('Install failed.');
   }
@@ -356,7 +356,7 @@ function wireMetro(serial) {
 }
 
 function launch(serial) {
-  log('Launching Eventerz…');
+  log('Launching Eventerz...');
   trySh(ADB, [
     '-s',
     serial,

@@ -2,7 +2,7 @@
  * Wallet-gating hook.
  *
  * `requireWallet(action)` runs `action` when a wallet is connected, and opens
- * the connect sheet otherwise — remembering the action so it fires the moment
+ * the connect sheet otherwise - remembering the action so it fires the moment
  * the connection succeeds. That way "RSVP" from a signed-out state connects and
  * RSVPs in one gesture rather than making the user tap twice.
  */

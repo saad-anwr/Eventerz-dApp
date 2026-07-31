@@ -1,10 +1,10 @@
 /**
- * Glass surface — the mobile equivalent of the web app's `.glass` and
+ * Glass surface - the mobile equivalent of the web app's `.glass` and
  * `.gradient-border` utilities.
  *
  * `expo-blur` supplies the backdrop-filter; a hairline border and an inner
  * highlight reproduce the `inner-glow` shadow. The `gradientBorder` variant
- * paints the violet→cyan rim the web app draws with a masked pseudo-element.
+ * paints the violet->cyan rim the web app draws with a masked pseudo-element.
  */
 
 import { BlurView } from 'expo-blur';
@@ -22,7 +22,7 @@ export interface GlassCardProps {
   className?: string;
   style?: ViewStyle;
   radius?: number;
-  /** Draw the violet→cyan gradient rim. */
+  /** Draw the violet->cyan gradient rim. */
   gradientBorder?: boolean;
   /** Drop the drop-shadow (useful inside scroll rails). */
   flat?: boolean;
@@ -84,7 +84,7 @@ export const GlassCard = memo(function GlassCard({
         />
       )}
 
-      {/* Inner surface — inset by 1px when a gradient rim is showing. */}
+      {/* Inner surface - inset by 1px when a gradient rim is showing. */}
       <View
         className={cn(
           'flex-1',
@@ -102,7 +102,7 @@ export const GlassCard = memo(function GlassCard({
 });
 
 /**
- * Lightweight glass — no blur, no shadow. Use inside lists where dozens are on
+ * Lightweight glass - no blur, no shadow. Use inside lists where dozens are on
  * screen at once and a real blur per row would cost frames.
  */
 export const SolidCard = memo(function SolidCard({

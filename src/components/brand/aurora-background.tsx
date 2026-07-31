@@ -3,7 +3,7 @@
  *
  * The web app layers radial gradient blobs (`components/ui/gradient-blob.tsx`)
  * behind every section. React Native has no radial gradient, so we approximate
- * with large, heavily-blurred circular Views tinted with the brand hues —
+ * with large, heavily-blurred circular Views tinted with the brand hues -
  * cheap, GPU-composited, and visually very close at these opacities.
  *
  * Purely decorative: hidden from screen readers and non-interactive.

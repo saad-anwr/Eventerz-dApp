@@ -37,7 +37,7 @@ export function buildMockNotifications(): AppNotification[] {
       id: 'n4',
       kind: 'community',
       title: 'Seeker Builders posted an update',
-      body: 'Venue confirmed — Norrsken House, Stockholm. Doors at 6:00 PM.',
+      body: 'Venue confirmed - Norrsken House, Stockholm. Doors at 6:00 PM.',
       createdAt: now - 1 * DAY,
       read: true,
       href: '/event/e_seeker',

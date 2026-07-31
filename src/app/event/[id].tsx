@@ -118,7 +118,7 @@ function Section({
 /**
  * Host-side approval queue.
  *
- * Requests needing a decision come first — the point of the panel is that a
+ * Requests needing a decision come first - the point of the panel is that a
  * host opens the event and immediately sees what is waiting on them. Every
  * action goes through an RPC that re-checks host ownership server-side, so
  * rendering this is not what authorises anything.
@@ -351,7 +351,7 @@ export default function EventDetailScreen() {
     haptics.light();
     Share.share({
       title: event.title,
-      message: `${event.title} — ${formatEventDateLong(event.startsAt)}\n${siteConfig.url}/events/${event.id}`,
+      message: `${event.title} - ${formatEventDateLong(event.startsAt)}\n${siteConfig.url}/events/${event.id}`,
     }).catch(() => {
       toast.error('Could not open share sheet');
     });
@@ -361,7 +361,7 @@ export default function EventDetailScreen() {
    * Request to attend, or withdraw an existing claim.
    *
    * The success toast reports what the *server* decided rather than what the tap
-   * hoped for — a request against an approval-gated or full event does not mint
+   * hoped for - a request against an approval-gated or full event does not mint
    * a ticket, and saying it did was the bug.
    */
   const handleRsvp = useCallback(() => {
@@ -471,7 +471,7 @@ export default function EventDetailScreen() {
         right={
           <View className="flex-row items-center gap-2">
             {/* The host's entry point. Hidden once the event is cancelled or
-                over, because `update_event` refuses both — a button that can
+                over, because `update_event` refuses both - a button that can
                 only produce an error is worse than no button. */}
             {isHost && isEditable(event) && (
               <IconButton
@@ -667,7 +667,7 @@ export default function EventDetailScreen() {
           </Section>
         )}
 
-        {/* This viewer's RSVP state — the host's decision lands here. */}
+        {/* This viewer's RSVP state - the host's decision lands here. */}
         {presentation && !isHost && (
           <Section delay={110}>
             <View
@@ -690,7 +690,7 @@ export default function EventDetailScreen() {
               {/*
                 `rsvpDetail` rather than the raw presentation string: the
                 waitlist case is specialised to include the guest's place in the
-                queue. "On the waitlist" alone is not actionable — third in line
+                queue. "On the waitlist" alone is not actionable - third in line
                 means keep the evening free, fortieth means make other plans.
               */}
               <Text variant="caption" className="mt-1 text-muted-foreground">
@@ -782,7 +782,7 @@ export default function EventDetailScreen() {
                 {event.tokenGated
                   ? (event.gateRequirement ??
                     'Your wallet must hold the required asset to RSVP.')
-                  : 'RSVP is signed from your wallet — that is what keeps this bot-free.'}
+                  : 'RSVP is signed from your wallet - that is what keeps this bot-free.'}
               </Text>
               {event.requiresApproval && (
                 <Text variant="caption" className="mt-1.5 text-muted-foreground">
@@ -818,7 +818,7 @@ export default function EventDetailScreen() {
                 </Text>
                 <Text variant="caption" className="mt-1 text-muted-foreground">
                   {ticket
-                    ? `${ticket.tier}${ticket.soulbound ? ' · soulbound' : ''} — in your wallet`
+                    ? `${ticket.tier}${ticket.soulbound ? ' · soulbound' : ''} - in your wallet`
                     : 'Minted to your wallet the moment you RSVP, for a fraction of a cent.'}
                 </Text>
               </View>
@@ -885,7 +885,7 @@ export default function EventDetailScreen() {
         {/*
           Who's going. The full roster for the host and confirmed guests; a
           bounded preview for everyone else. Which one renders is decided by
-          what the database returned, not by a prop — RLS is the gate.
+          what the database returned, not by a prop - RLS is the gate.
         */}
         {totalGoing > 0 && (
           <Section title="Who's going" delay={300}>
@@ -1072,7 +1072,7 @@ export default function EventDetailScreen() {
               variant={hasLiveRsvp ? 'secondary' : 'primary'}
               size="lg"
               onPress={handleRsvp}
-              // A cancelled event takes no more guests — `request_to_join`
+              // A cancelled event takes no more guests - `request_to_join`
               // refuses it, so offering the button would only produce an error.
               disabled={hasEnded || cancelled}
               loading={busy}

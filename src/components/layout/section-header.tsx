@@ -1,5 +1,5 @@
 /**
- * Section heading with an optional "See all" affordance — the rail header used
+ * Section heading with an optional "See all" affordance - the rail header used
  * across Home, Profile and the dashboard.
  */
 

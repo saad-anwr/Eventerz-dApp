@@ -116,7 +116,7 @@ export interface CreateEventInput {
 /**
  * Fields a host may change after publishing.
  *
- * Every field optional, and undefined means "leave alone" — the RPC treats null
+ * Every field optional, and undefined means "leave alone" - the RPC treats null
  * the same way. `endsAt: null` is the one exception and means "clear it", since
  * an event can legitimately lose its end time.
  */
@@ -182,7 +182,7 @@ export const eventRepository = {
   },
 
   /**
-   * "Recommended for you" — ranked by overlap between the user's interests and
+   * "Recommended for you" - ranked by overlap between the user's interests and
    * an event's tags/category, then by how soon it starts.
    */
   async listRecommended(user: User | null, limit = 6): Promise<EventItem[]> {
@@ -251,8 +251,8 @@ export const eventRepository = {
   /**
    * Ask to attend.
    *
-   * Mirrors the outcome rules the SQL function enforces — full first, then
-   * approval, else straight in — so the mock and live backends behave the same
+   * Mirrors the outcome rules the SQL function enforces - full first, then
+   * approval, else straight in - so the mock and live backends behave the same
    * way and a screen written against one works against the other.
    */
   async requestToJoin(eventId: string, userId: string): Promise<EventItem> {
@@ -320,8 +320,8 @@ export const eventRepository = {
   /**
    * Edit an event, locally.
    *
-   * Unlike guest approval below, this has a faithful local model — it is the
-   * host changing their own row — so it behaves rather than refusing. Undefined
+   * Unlike guest approval below, this has a faithful local model - it is the
+   * host changing their own row - so it behaves rather than refusing. Undefined
    * fields are skipped so the merge matches the RPC's "null means leave alone".
    */
   async updateEvent(
@@ -388,13 +388,13 @@ export const eventRepository = {
    */
   async approveGuest(eventId: string): Promise<EventItem> {
     throw new Error(
-      'Guest approval needs the live backend — set EXPO_PUBLIC_USE_MOCK_DATA=false.',
+      'Guest approval needs the live backend - set EXPO_PUBLIC_USE_MOCK_DATA=false.',
     );
   },
 
   async declineGuest(eventId: string): Promise<EventItem> {
     throw new Error(
-      'Guest approval needs the live backend — set EXPO_PUBLIC_USE_MOCK_DATA=false.',
+      'Guest approval needs the live backend - set EXPO_PUBLIC_USE_MOCK_DATA=false.',
     );
   },
 

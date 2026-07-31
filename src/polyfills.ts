@@ -1,8 +1,8 @@
 /**
  * Runtime polyfills.
  *
- * Imported first in the root layout — before anything that touches Solana or
- * Supabase — because these must be installed before those modules initialise.
+ * Imported first in the root layout - before anything that touches Solana or
+ * Supabase - because these must be installed before those modules initialise.
  *
  * Hermes is missing three things the Solana stack assumes exist:
  *

@@ -13,7 +13,7 @@ export function useUser(id: string | undefined) {
   });
 }
 
-/** Batch lookup for attendee rows — one query fills an entire avatar stack. */
+/** Batch lookup for attendee rows - one query fills an entire avatar stack. */
 export function useUsers(ids: string[]) {
   return useQuery({
     queryKey: queryKeys.users.many(ids),

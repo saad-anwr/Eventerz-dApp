@@ -110,7 +110,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
 
     /*
      * Linking now requires proving the wallet is yours (migration 0011), so this
-     * hands the signing step to `walletService` — which resolves to the real MWA
+     * hands the signing step to `walletService` - which resolves to the real MWA
      * adapter or the demo one, exactly as every other on-chain action does.
      */
     const result = await linkWalletRemote(address, (message) =>
@@ -129,7 +129,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
     if (!isSupabaseConfigured || !get().profile) return;
 
     const previous = get().profile;
-    // Optimistic — the profile editor should feel instant.
+    // Optimistic - the profile editor should feel instant.
     set({ profile: previous ? { ...previous, ...patch } : previous });
 
     const result = await updateMyProfile(patch);

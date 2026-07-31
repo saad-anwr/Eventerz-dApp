@@ -32,7 +32,7 @@ export const Text = forwardRef<RNText, TextProps>(function Text(
       ref={ref}
       className={cn('text-foreground', className)}
       // `maxFontSizeMultiplier` keeps very large OS font settings from breaking
-      // card layouts while still honouring dynamic type up to 1.4×.
+      // card layouts while still honouring dynamic type up to 1.4x.
       maxFontSizeMultiplier={1.4}
       style={[
         {

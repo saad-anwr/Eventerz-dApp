@@ -4,7 +4,7 @@
  * # The order of operations, and why it is this one
  *
  * The transfer happens on-chain **first**, and the receipt is written only after
- * the cluster confirms it. The other ordering — record, then send — is tempting
+ * the cluster confirms it. The other ordering - record, then send - is tempting
  * because it gives the UI something to render immediately, and it is wrong: a
  * receipt for a transfer that then fails is a lie the recipient acts on, and
  * there is no way to un-tell someone they were paid.
@@ -22,8 +22,8 @@
  *
  * # What this does not do
  *
- * SPL tokens. The plumbing beneath is token-agnostic — `payments` stores a mint,
- * decimals and a symbol, and `verify-payment` checks token balances — but a
+ * SPL tokens. The plumbing beneath is token-agnostic - `payments` stores a mint,
+ * decimals and a symbol, and `verify-payment` checks token balances - but a
  * token transfer means resolving or creating an associated token account for the
  * recipient and paying its rent, which is a materially different conversation to
  * have in a chat window.
@@ -60,7 +60,7 @@ import { haptics } from '@/utils/haptics';
 interface Recipient {
   id: string;
   name: string;
-  /** Null when they have never linked one — the blocking case. */
+  /** Null when they have never linked one - the blocking case. */
   walletAddress?: string;
 }
 
@@ -96,8 +96,8 @@ export function SendCryptoSheet({
   /**
    * Reset on close rather than on open.
    *
-   * Same visible outcome — a previous success is never still on screen when
-   * someone comes back — but it happens in an event handler instead of an
+   * Same visible outcome - a previous success is never still on screen when
+   * someone comes back - but it happens in an event handler instead of an
    * effect. Resetting in an effect keyed on `visible` triggers a second render
    * pass every time the sheet opens, which is what `react-hooks/set-state-in-effect`
    * is warning about: the state does not depend on anything external, so there
@@ -175,7 +175,7 @@ export function SendCryptoSheet({
       setPhase('sending');
 
       /*
-       * The wallet submits *and* confirms — MWA's `signAndSendTransactions`
+       * The wallet submits *and* confirms - MWA's `signAndSendTransactions`
        * returns once the cluster has accepted it. That is why there is no
        * separate confirm step here, unlike the web flow where the adapter only
        * signs.
@@ -215,9 +215,9 @@ export function SendCryptoSheet({
       haptics.error();
       setError(
         sent
-          ? // The money may have moved. Say so — telling someone a transfer
+          ? // The money may have moved. Say so - telling someone a transfer
             // failed when it did not is the worse of the two mistakes.
-            `${message} The transaction was submitted — check Explorer before sending again.`
+            `${message} The transaction was submitted - check Explorer before sending again.`
           : message,
       );
       setPhase('form');
@@ -229,7 +229,7 @@ export function SendCryptoSheet({
       await Linking.openURL(explorerTxUrl(signature));
     } catch {
       await Clipboard.setStringAsync(signature);
-      toast.info('Signature copied — no browser on this device.');
+      toast.info('Signature copied - no browser on this device.');
     }
   }, [signature]);
 
@@ -244,7 +244,7 @@ export function SendCryptoSheet({
           : recipient.name
       }
     >
-      {/* Blocking states first — an amount field is pointless if the transfer
+      {/* Blocking states first - an amount field is pointless if the transfer
           cannot happen at all. */}
       {!recipient.walletAddress ? (
         <View
@@ -351,9 +351,9 @@ export function SendCryptoSheet({
           <Button
             label={
               phase === 'sending'
-                ? 'Approve in your wallet…'
+                ? 'Approve in your wallet...'
                 : phase === 'recording'
-                  ? 'Filing the receipt…'
+                  ? 'Filing the receipt...'
                   : amount
                     ? `Send ${amount} SOL`
                     : 'Send'

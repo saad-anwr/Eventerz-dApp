@@ -37,7 +37,7 @@ const STARTUP_STORAGE_TIMEOUT_MS = 2500;
 
 // Keep the native splash up until the first screen is genuinely ready.
 SplashScreen.preventAutoHideAsync().catch(() => {
-  // Already hidden (fast refresh) — nothing to do.
+  // Already hidden (fast refresh) - nothing to do.
 });
 
 /**
@@ -47,7 +47,7 @@ SplashScreen.preventAutoHideAsync().catch(() => {
  * It has to be its own component rendered *inside* `QueryClientProvider`, not a
  * hook call in `RootLayout`. A hook in a component's body runs before that
  * component's JSX mounts, so calling `useRealtimeSync()` in `RootLayout` put
- * `useQueryClient()` outside the very provider `RootLayout` returns — which
+ * `useQueryClient()` outside the very provider `RootLayout` returns - which
  * throws "No QueryClient set" and takes down the whole tree.
  *
  * Renders nothing; it exists only to own the subscription's lifetime.

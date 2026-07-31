@@ -13,7 +13,20 @@ export const siteConfig = {
   tagline: 'Everything is On-chain. Why not your events?',
   description:
     'Eventerz is wallet-native event infrastructure on Solana. Discover events, RSVP on-chain, receive NFT tickets and Proof-of-Attendance, build portable reputation and join token-gated communities.',
-  url: 'https://eventerz-three.vercel.app',
+  /*
+   * The production domain, and it has to be: this is the origin in every link
+   * the app shares. It was a `*.vercel.app` preview URL, so sharing an event or
+   * a ticket sent people to a deploy preview rather than to the site - a link
+   * that works today and is not guaranteed to exist tomorrow.
+   *
+   * Must match `siteConfig.url` in the website's `lib/site.ts`, since both name
+   * the same pages. `EXPO_PUBLIC_SITE_URL` overrides it so a preview build can
+   * point at a preview deploy; the trailing slash is stripped because every use
+   * appends a path.
+   */
+  url: (
+    process.env.EXPO_PUBLIC_SITE_URL ?? 'https://www.eventerz.xyz'
+  ).replace(/\/$/, ''),
   creator: 'Eventerz Labs',
   links: {
     twitter: 'https://twitter.com/eventerz_web',
@@ -24,13 +37,50 @@ export const siteConfig = {
 } as const;
 
 /**
- * Solana / backend integration seams. Bodies live in `services/` — these are
+ * Solana / backend integration seams. Bodies live in `services/` - these are
  * only the values those services read.
  */
+export type SolanaCluster = 'mainnet-beta' | 'devnet' | 'testnet';
+
+const CLUSTERS: readonly SolanaCluster[] = ['mainnet-beta', 'devnet', 'testnet'];
+
+/**
+ * Validate the cluster instead of casting it.
+ *
+ * `as SolanaCluster` told the compiler the string was a cluster; it did not
+ * make it one. The value is typed by a human into a `.env`, so the realistic
+ * mistakes are `mainnet` (the cluster is `mainnet-beta`), a capitalised
+ * variant, and a stray space.
+ *
+ * An unvalidated value propagates further here than it looks. Nine call sites
+ * read this, and one of them is the `cluster` recorded on a payment row - so a
+ * typo would be **written into receipts** and their explorer links would point
+ * at a cluster that does not exist, permanently and after the money moved.
+ * `rpcEndpoint()` would meanwhile build `https://api.mainnet.solana.com`, which
+ * resolves to nothing, so every balance read and transfer fails.
+ *
+ * Falling back to mainnet is the safer wrong answer: it is where a production
+ * build was trying to go.
+ */
+function resolveCluster(): SolanaCluster {
+  const raw = process.env.EXPO_PUBLIC_SOLANA_NETWORK?.trim().toLowerCase();
+  if (!raw) return 'mainnet-beta';
+  if ((CLUSTERS as readonly string[]).includes(raw)) return raw as SolanaCluster;
+  // Common enough to be worth accepting: someone who wrote it meant mainnet-beta.
+  if (raw === 'mainnet') return 'mainnet-beta';
+
+  if (__DEV__) {
+    console.warn(
+      `[solana] EXPO_PUBLIC_SOLANA_NETWORK="${process.env.EXPO_PUBLIC_SOLANA_NETWORK}" ` +
+        `is not a Solana cluster. Falling back to mainnet-beta. ` +
+        `Valid values: ${CLUSTERS.join(', ')}.`,
+    );
+  }
+  return 'mainnet-beta';
+}
+
 export const integrationsConfig = {
-  solanaNetwork:
-    (process.env.EXPO_PUBLIC_SOLANA_NETWORK as SolanaCluster | undefined) ??
-    'mainnet-beta',
+  solanaNetwork: resolveCluster(),
   heliusRpcUrl: process.env.EXPO_PUBLIC_HELIUS_RPC_URL ?? '',
   programId: process.env.EXPO_PUBLIC_EVENTERZ_PROGRAM_ID ?? '',
   merkleTree: process.env.EXPO_PUBLIC_MERKLE_TREE_ADDRESS ?? '',
@@ -38,8 +88,6 @@ export const integrationsConfig = {
   supabaseAnonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '',
   apiBaseUrl: process.env.EXPO_PUBLIC_API_BASE_URL ?? '',
 } as const;
-
-export type SolanaCluster = 'mainnet-beta' | 'devnet' | 'testnet';
 
 /**
  * Feature flags. Everything ships behind a flag so real Solana wiring can be
@@ -51,7 +99,7 @@ export type SolanaCluster = 'mainnet-beta' | 'devnet' | 'testnet';
  */
 export const featureFlags = {
   // Default to the real wallet. Opt *in* to the demo adapter with
-  // EXPO_PUBLIC_USE_MOCK_WALLET=true — production should never need it.
+  // EXPO_PUBLIC_USE_MOCK_WALLET=true - production should never need it.
   useMockWallet: process.env.EXPO_PUBLIC_USE_MOCK_WALLET === 'true',
   // Default to the real backend. Seed data is opt-in for local development.
   useMockData: process.env.EXPO_PUBLIC_USE_MOCK_DATA === 'true',
@@ -64,5 +112,5 @@ export const featureFlags = {
 /** Simulated latency for mock repositories, so loading states are real. */
 export const MOCK_LATENCY_MS = 420;
 
-/** Deep-link scheme, kept in sync with `app.json` → `expo.scheme`. */
+/** Deep-link scheme, kept in sync with `app.json` -> `expo.scheme`. */
 export const APP_SCHEME = 'eventerz';

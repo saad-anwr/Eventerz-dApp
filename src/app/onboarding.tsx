@@ -1,5 +1,5 @@
 /**
- * Onboarding — three slides, swipeable, with a gradient progress rail.
+ * Onboarding - three slides, swipeable, with a gradient progress rail.
  *
  * The slide content animates off the same shared scroll offset as the pager,
  * so the icon parallaxes against the copy instead of moving as one block.
@@ -54,7 +54,7 @@ function Slide({
     (index + 1) * SCREEN_WIDTH,
   ];
 
-  // Icon drifts faster than the text — a subtle depth cue on swipe.
+  // Icon drifts faster than the text - a subtle depth cue on swipe.
   const iconStyle = useAnimatedStyle(() => ({
     transform: [
       {

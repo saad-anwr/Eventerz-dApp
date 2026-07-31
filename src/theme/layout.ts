@@ -37,7 +37,7 @@ export const radius = {
   full: 999,
 } as const;
 
-/** Minimum interactive size — WCAG 2.5.5 / Android accessibility guidance. */
+/** Minimum interactive size - WCAG 2.5.5 / Android accessibility guidance. */
 export const TOUCH_TARGET = 44;
 
 export const TAB_BAR_HEIGHT = 62;
@@ -67,7 +67,7 @@ function elevation(color: string, opacity: number, radius: number, y: number) {
   });
 }
 
-/** `#9945ff` → `153,69,255`, for composing rgba() strings on web. */
+/** `#9945ff` -> `153,69,255`, for composing rgba() strings on web. */
 function hexToRgb(hex: string): string {
   const n = parseInt(hex.replace('#', ''), 16);
   return `${(n >> 16) & 255},${(n >> 8) & 255},${n & 255}`;
@@ -79,12 +79,12 @@ export const shadow = {
   glowCyan: elevation('#22d3ee', 0.45, 22, 6),
 } as const;
 
-/** Ad-hoc elevation for one-off surfaces — same platform handling as above. */
+/** Ad-hoc elevation for one-off surfaces - same platform handling as above. */
 export const makeShadow = elevation;
 
 /**
  * Motion tokens. `emphasized` is the web app's `[0.22, 1, 0.36, 1]` easing
- * curve — the one Framer Motion uses for modals and card reveals.
+ * curve - the one Framer Motion uses for modals and card reveals.
  */
 export const motion = {
   duration: {
@@ -103,9 +103,9 @@ export const motion = {
   spring: {
     /** Default for press feedback and layout shifts. */
     gentle: { damping: 18, stiffness: 180, mass: 1 },
-    /** Snappier — bottom sheets, tab indicator. */
+    /** Snappier - bottom sheets, tab indicator. */
     snappy: { damping: 22, stiffness: 260, mass: 0.9 },
-    /** Bouncy — success states, counters. */
+    /** Bouncy - success states, counters. */
     bouncy: { damping: 12, stiffness: 220, mass: 0.8 },
   },
 } as const;

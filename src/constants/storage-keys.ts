@@ -18,7 +18,7 @@ export const StorageKeys = {
 } as const;
 
 export const SecureKeys = {
-  /** Mobile Wallet Adapter auth token — never leaves secure storage. */
+  /** Mobile Wallet Adapter auth token - never leaves secure storage. */
   WALLET_AUTH_TOKEN: 'eventerz.secure.wallet-auth-token',
   /** Reserved for a future session JWT once a backend exists. */
   SESSION_TOKEN: 'eventerz.secure.session-token',

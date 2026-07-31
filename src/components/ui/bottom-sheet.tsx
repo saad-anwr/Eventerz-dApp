@@ -115,7 +115,7 @@ export const BottomSheet = memo(function BottomSheet({
 
   const panGesture = Gesture.Pan()
     .onUpdate((event) => {
-      // Only track downward drags — upward should feel like a hard stop.
+      // Only track downward drags - upward should feel like a hard stop.
       translateY.value = Math.max(0, event.translationY);
     })
     .onEnd((event) => {

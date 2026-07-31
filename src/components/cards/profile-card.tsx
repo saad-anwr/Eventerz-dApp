@@ -1,5 +1,5 @@
 /**
- * Compact user row — attendee lists, search results, dashboard registrations.
+ * Compact user row - attendee lists, search results, dashboard registrations.
  */
 
 import { memo, useCallback } from 'react';
@@ -20,7 +20,7 @@ import { Text } from '../ui/text';
 export interface ProfileCardProps {
   user: User;
   onPress?: (user: User) => void;
-  /** Right-hand slot — a Follow button, status badge, etc. */
+  /** Right-hand slot - a Follow button, status badge, etc. */
   trailing?: React.ReactNode;
   /** Show the reputation score under the handle. */
   showReputation?: boolean;

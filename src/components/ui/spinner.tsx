@@ -1,5 +1,5 @@
 /**
- * Branded loading spinner — a rotating gradient arc rather than the platform
+ * Branded loading spinner - a rotating gradient arc rather than the platform
  * `ActivityIndicator`, so loading states stay on-brand.
  */
 

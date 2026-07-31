@@ -1,5 +1,5 @@
 /**
- * Communities — the same seven verticals the web app lists in its
+ * Communities - the same seven verticals the web app lists in its
  * "Built for every community" section, modelled as joinable entities.
  */
 

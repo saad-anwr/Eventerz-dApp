@@ -1,5 +1,5 @@
 /**
- * Demo accounts — ported from the web app's `lib/store/seed.ts` and extended
+ * Demo accounts - ported from the web app's `lib/store/seed.ts` and extended
  * with a few more profiles so Discover and attendee lists feel populated.
  */
 

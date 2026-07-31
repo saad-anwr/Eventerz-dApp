@@ -2,7 +2,7 @@
  * Messaging and in-chat payments.
  *
  * Screens read through these rather than touching the repository, so caching,
- * invalidation and the realtime wiring stay in one place — the same rule the
+ * invalidation and the realtime wiring stay in one place - the same rule the
  * event hooks follow.
  */
 
@@ -89,7 +89,7 @@ export function usePaymentIds(messages: Message[]): string[] {
  * File a receipt for a transfer that has already confirmed on-chain.
  *
  * Verification is fired off but not awaited. The receipt is useful the moment it
- * exists — it carries an explorer link — and making the user watch a spinner
+ * exists - it carries an explorer link - and making the user watch a spinner
  * while an RPC catches up with a transaction they already saw confirm would be
  * waiting for nothing. The tick arrives over Realtime when the Edge Function is
  * done.

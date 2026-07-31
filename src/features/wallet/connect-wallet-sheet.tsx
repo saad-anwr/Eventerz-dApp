@@ -1,5 +1,5 @@
 /**
- * Connect-wallet sheet — the mobile counterpart to the web app's
+ * Connect-wallet sheet - the mobile counterpart to the web app's
  * `components/wallet/wallet-modal.tsx`.
  *
  * Same information hierarchy: the wallet list, then the "we never touch your
@@ -206,7 +206,7 @@ export const ConnectWalletSheet = memo(function ConnectWalletSheet({
     >
       {/*
         Scrollable: five wallets plus the Google row and footer exceed the
-        sheet on shorter screens, and an unscrollable column simply overflows —
+        sheet on shorter screens, and an unscrollable column simply overflows -
         which looks like the sheet is broken rather than full.
       */}
       <ScrollView
@@ -253,7 +253,7 @@ export const ConnectWalletSheet = memo(function ConnectWalletSheet({
             >
               {googleLinking ? <Spinner size={18} /> : <GoogleMark size={18} />}
               <Text style={{ fontFamily: fontFamily.semibold, fontSize: 15 }}>
-                {googleLinking ? 'Waiting for Google…' : 'Continue with Google'}
+                {googleLinking ? 'Waiting for Google...' : 'Continue with Google'}
               </Text>
             </PressableScale>
 

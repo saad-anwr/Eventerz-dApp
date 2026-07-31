@@ -1,9 +1,9 @@
 /**
- * Gradient-filled text — the web app's `.text-gradient` utility.
+ * Gradient-filled text - the web app's `.text-gradient` utility.
  *
  * React Native cannot clip a gradient to text with CSS, so we draw the string
  * as an SVG `<Text>` and use it as the gradient's mask. Reserved for short,
- * high-impact strings (hero headline, stat values) — regular copy uses `<Text>`.
+ * high-impact strings (hero headline, stat values) - regular copy uses `<Text>`.
  */
 
 import { memo } from 'react';
@@ -23,10 +23,10 @@ export interface GradientTextProps {
   fontSize?: number;
   /** Defaults to the display family. */
   family?: string;
-  /** Height of the SVG canvas; defaults to 1.25× the font size. */
+  /** Height of the SVG canvas; defaults to 1.25x the font size. */
   height?: number;
   letterSpacing?: number;
-  /** Gradient stops; defaults to the brand purple→blue→cyan sweep. */
+  /** Gradient stops; defaults to the brand purple->blue->cyan sweep. */
   colors?: readonly string[];
 }
 
@@ -39,7 +39,7 @@ export const GradientText = memo(function GradientText({
   colors = gradients.brand.colors,
 }: GradientTextProps) {
   const canvasHeight = height ?? fontSize * 1.3;
-  // Rough advance-width estimate — SVG needs an explicit canvas width and RN
+  // Rough advance-width estimate - SVG needs an explicit canvas width and RN
   // gives no text-measurement API outside of onLayout.
   const canvasWidth = children.length * fontSize * 0.62 + fontSize;
 

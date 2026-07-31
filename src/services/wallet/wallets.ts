@@ -2,7 +2,7 @@
  * The wallets Eventerz offers, in display order.
  *
  * Seeker's built-in wallet leads because on Solana Mobile hardware it is the
- * zero-friction path — Mobile Wallet Adapter talks to it without an app switch.
+ * zero-friction path - Mobile Wallet Adapter talks to it without an app switch.
  */
 
 import type { WalletDescriptor } from '@/types';

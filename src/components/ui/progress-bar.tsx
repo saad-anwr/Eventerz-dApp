@@ -1,4 +1,4 @@
-/** Gradient progress bar — event capacity fill and the Create wizard stepper. */
+/** Gradient progress bar - event capacity fill and the Create wizard stepper. */
 
 import { LinearGradient } from 'expo-linear-gradient';
 import { memo, useEffect } from 'react';
@@ -15,7 +15,7 @@ import { motion, radius } from '@/theme/layout';
 import { cn } from '@/utils/cn';
 
 export const ProgressBar = memo(function ProgressBar({
-  /** 0–100. */
+  /** 0-100. */
   percent,
   height = 6,
   className,

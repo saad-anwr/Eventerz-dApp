@@ -31,7 +31,7 @@ export interface AvatarProps {
   /** Defaults to `name`; pass a user id for stability across renames. */
   seed?: string;
   size?: AvatarSize | number;
-  /** Ring drawn around the avatar — used for hosts and the profile header. */
+  /** Ring drawn around the avatar - used for hosts and the profile header. */
   ring?: boolean;
   className?: string;
   style?: ViewStyle;

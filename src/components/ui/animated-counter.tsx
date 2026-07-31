@@ -1,5 +1,5 @@
 /**
- * Animated counter — port of the web app's `components/ui/animated-counter.tsx`.
+ * Animated counter - port of the web app's `components/ui/animated-counter.tsx`.
  *
  * Counts up on mount with an ease-out curve. The tick runs through a Reanimated
  * shared value and writes into the Text via `setNativeProps`-style animated
@@ -21,7 +21,7 @@ import { cn } from '@/utils/cn';
 
 /**
  * A read-only TextInput is the standard trick for animating text content on
- * the UI thread — `Animated.Text` cannot animate its children, but
+ * the UI thread - `Animated.Text` cannot animate its children, but
  * `TextInput.value` is an animatable prop.
  */
 const AnimatedTextInput = Animated.createAnimatedComponent(TextInput);

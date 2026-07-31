@@ -3,7 +3,7 @@
  *
  * The text input is the primary control and always writable. Search is additive:
  * picking a suggestion attaches coordinates to what is already there, and
- * editing the text afterwards drops them — because a pin that no longer matches
+ * editing the text afterwards drops them - because a pin that no longer matches
  * the words above it is worse than no pin, and silently keeping the old
  * coordinates is how an event ends up mapped to the venue the host just decided
  * against.
@@ -72,7 +72,7 @@ export function LocationPicker({
    *
    * Clearing results and raising the spinner belong here, in the handler, not in
    * the effect below: they depend on nothing external, so doing them in an
-   * effect costs an extra render pass on every keystroke — which is what
+   * effect costs an extra render pass on every keystroke - which is what
    * `react-hooks/set-state-in-effect` objects to.
    */
   const onQueryChange = useCallback((next: string) => {
@@ -86,7 +86,7 @@ export function LocationPicker({
   }, []);
 
   /*
-   * Debounced fetch — the part that genuinely talks to an external system, and
+   * Debounced fetch - the part that genuinely talks to an external system, and
    * the only thing left in the effect. 350 ms is comfortably inside Nominatim's
    * ~1 req/s policy at typing speed, and short enough that the list feels
    * attached to the keyboard rather than to a timer.
@@ -183,7 +183,7 @@ export function LocationPicker({
         <View className="flex-row items-center gap-2 px-1">
           <Spinner size={14} />
           <Text variant="caption" className="text-muted">
-            Searching…
+            Searching...
           </Text>
         </View>
       )}
@@ -274,7 +274,7 @@ export function LocationPicker({
         </View>
       ) : (
         <Text variant="caption" className="px-1 text-muted">
-          Optional — a pinned location gets a map and directions on the event
+          Optional - a pinned location gets a map and directions on the event
           screen. Searching uses{' '}
           {geocoderName() === 'google' ? 'Google Places' : 'OpenStreetMap'}.
         </Text>

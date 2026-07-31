@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 
 /**
- * Debounce a fast-changing value — used by the Discover search field so every
+ * Debounce a fast-changing value - used by the Discover search field so every
  * keystroke does not spawn a query.
  */
 export function useDebouncedValue<T>(value: T, delay = 300): T {

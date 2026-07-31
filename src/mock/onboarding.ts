@@ -1,4 +1,4 @@
-/** Copy for the three onboarding slides — drawn from the web app's features. */
+/** Copy for the three onboarding slides - drawn from the web app's features. */
 
 export interface OnboardingSlide {
   id: string;
@@ -24,7 +24,7 @@ export const onboardingSlides: OnboardingSlide[] = [
     icon: 'Ticket',
     eyebrow: 'Fractions of a cent',
     title: 'NFT Tickets',
-    body: 'Compressed NFT tickets land in your wallet the moment you RSVP. Soulbound or transferable — the organizer sets the rules, you keep the collectible.',
+    body: 'Compressed NFT tickets land in your wallet the moment you RSVP. Soulbound or transferable - the organizer sets the rules, you keep the collectible.',
     accent: 'blue',
   },
   {

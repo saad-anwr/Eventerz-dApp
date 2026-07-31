@@ -5,7 +5,7 @@
  *
  * 1. **Re-export** the Lucide icons the app uses, so every component imports
  *    from one place and the icon set stays auditable. Only the icons in use are
- *    listed — importing all of `lucide-react-native` would pull ~1,500
+ *    listed - importing all of `lucide-react-native` would pull ~1,500
  *    components into the bundle.
  *
  * 2. **Resolve by name** for data-driven icons. `Community.icon` and
@@ -104,7 +104,7 @@ export {
 } from 'lucide-react-native';
 
 /**
- * Icons addressable by name from data files. Keep this list tight — it only
+ * Icons addressable by name from data files. Keep this list tight - it only
  * needs the icons that appear as strings in `mock/` or on a model.
  */
 const namedIcons = {
@@ -156,6 +156,6 @@ export function DynamicIcon({
 }: DynamicIconProps) {
   // `createElement` rather than `const Icon = getIcon(name); <Icon />`: the
   // latter reads to the compiler as defining a component inside render. This is
-  // a lookup in a module-level map — every icon is a stable, hoisted component.
+  // a lookup in a module-level map - every icon is a stable, hoisted component.
   return createElement(getIcon(name), { size, color, strokeWidth });
 }

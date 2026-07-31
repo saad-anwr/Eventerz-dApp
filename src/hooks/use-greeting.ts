@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 
-/** Time-of-day greeting for the Home header — "Good evening". */
+/** Time-of-day greeting for the Home header - "Good evening". */
 export function useGreeting(): string {
   return useMemo(() => {
     const hour = new Date().getHours();

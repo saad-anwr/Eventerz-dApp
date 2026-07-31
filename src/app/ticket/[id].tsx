@@ -1,5 +1,5 @@
 /**
- * Ticket detail — the screen you hold up at the door.
+ * Ticket detail - the screen you hold up at the door.
  *
  * The QR is the point, so it gets a bright card with maximum contrast; the
  * chain metadata sits below for anyone who wants to verify the asset.
@@ -9,7 +9,7 @@ import * as Clipboard from 'expo-clipboard';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback } from 'react';
-import { ScrollView, View } from 'react-native';
+import { Share, ScrollView, View } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 import Animated, { FadeIn, FadeInDown, ZoomIn } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -31,6 +31,7 @@ import {
 import { Screen } from '@/components/ui/screen';
 import { ScreenLoader } from '@/components/ui/spinner';
 import { Text } from '@/components/ui/text';
+import { siteConfig } from '@/constants/config';
 import { useEvent } from '@/hooks/use-events';
 import { useTicket } from '@/hooks/use-tickets';
 import { toast } from '@/store/toast-store';
@@ -82,6 +83,25 @@ export default function TicketDetailScreen() {
     toast.success('Asset ID copied');
   }, [ticket]);
 
+  /**
+   * Share the *event*, never the QR.
+   *
+   * The QR is the credential that gets scanned at the door, so a share sheet
+   * that put it in a group chat would be handing out the thing the ticket is.
+   * What someone actually wants to send is "I'm going to this" - which is the
+   * public event page, the same target the event screen shares.
+   */
+  const handleShare = useCallback(() => {
+    if (!event) return;
+    haptics.light();
+    Share.share({
+      title: event.title,
+      message: `I'm going to ${event.title} - ${formatEventDateLong(event.startsAt)}\n${siteConfig.url}/events/${event.id}`,
+    }).catch(() => {
+      toast.error('Could not open share sheet');
+    });
+  }, [event]);
+
   if (isLoading) return <ScreenLoader label="Loading ticket" />;
 
   if (isError || !ticket || !event) {
@@ -131,7 +151,7 @@ export default function TicketDetailScreen() {
         <IconButton
           icon={Share2}
           label="Share ticket"
-          onPress={() => toast.info('Sharing coming soon')}
+          onPress={handleShare}
           variant="glass"
           size={40}
           iconSize={18}
@@ -278,7 +298,7 @@ export default function TicketDetailScreen() {
           <View className="h-px bg-white/[0.06]" />
           <MetaLine
             label="Transferable"
-            value={ticket.soulbound ? 'No — soulbound' : 'Yes'}
+            value={ticket.soulbound ? 'No - soulbound' : 'Yes'}
           />
         </Animated.View>
 

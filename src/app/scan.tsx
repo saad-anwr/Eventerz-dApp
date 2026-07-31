@@ -9,7 +9,7 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { View } from 'react-native';
+import { Linking, View } from 'react-native';
 import Animated, {
   Easing,
   FadeIn,
@@ -24,7 +24,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button, IconButton } from '@/components/ui/button';
 import { TextField } from '@/components/ui/form';
-import { BadgeCheck, Camera, Check, QrCode, X } from '@/components/ui/icon';
+import {
+  BadgeCheck,
+  Camera,
+  Check,
+  QrCode,
+  Settings,
+  X,
+} from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import { useEvent } from '@/hooks/use-events';
@@ -122,7 +129,7 @@ function Reticle() {
   );
 }
 
-/** Success state — checkmark pops, then the event name fades in. */
+/** Success state - checkmark pops, then the event name fades in. */
 function SuccessOverlay({
   ticket,
   onDone,
@@ -254,6 +261,34 @@ export default function ScanScreen() {
 
   const granted = permission?.granted ?? false;
 
+  /*
+   * Android stops showing the system dialog after the second denial, and
+   * `requestPermission()` then resolves immediately having done nothing. Calling
+   * it anyway gave a button that was fully enabled, gave haptic feedback, and
+   * could never work - the only way out is the OS settings screen, so once
+   * `canAskAgain` is false that is what the button has to do.
+   *
+   * `permission` is null on the very first render, before the hook has read the
+   * current status. Treat that as "we can still ask": assuming the opposite
+   * would send a first-time user to Settings for a permission nobody has
+   * requested yet.
+   */
+  const canAskAgain = permission?.canAskAgain ?? true;
+
+  const handlePermission = useCallback(() => {
+    haptics.light();
+    if (canAskAgain) {
+      void requestPermission();
+      return;
+    }
+    void Linking.openSettings().catch(() => {
+      toast.error(
+        'Could not open Settings',
+        'Enable the camera for Eventerz in your device settings.',
+      );
+    });
+  }, [canAskAgain, requestPermission]);
+
   return (
     <View className="flex-1 bg-brand-bg">
       {granted && !scanned ? (
@@ -307,17 +342,16 @@ export default function ScanScreen() {
         >
           {granted
             ? 'Each scan writes attendance on-chain and mints the guest a Proof-of-Attendance badge.'
-            : 'We only use the camera while this screen is open.'}
+            : canAskAgain
+              ? 'We only use the camera while this screen is open.'
+              : 'Camera access was turned off for Eventerz. Turn it back on in Settings, then come back to this screen.'}
         </Text>
 
         {!granted && (
           <Button
-            label="Enable camera"
-            icon={Camera}
-            onPress={() => {
-              haptics.light();
-              requestPermission();
-            }}
+            label={canAskAgain ? 'Enable camera' : 'Open Settings'}
+            icon={canAskAgain ? Camera : Settings}
+            onPress={handlePermission}
             className="mt-7"
             style={{ minWidth: 220 }}
           />
@@ -333,7 +367,7 @@ export default function ScanScreen() {
       >
         {/*
           Emulators have no camera. Rather than ship a fake-scan button to
-          production, offer manual entry — it exercises the same server-side
+          production, offer manual entry - it exercises the same server-side
           redemption path and is genuinely useful at a door when a phone screen
           is too cracked or dim to scan.
         */}
@@ -351,7 +385,7 @@ export default function ScanScreen() {
           <View className="mt-3 gap-3">
             <TextField
               label="Ticket code"
-              placeholder="eventerz:v1:checkin?ticket=…&secret=…"
+              placeholder="eventerz:v1:checkin?ticket=...&secret=..."
               value={manualCode}
               onChangeText={setManualCode}
               autoCapitalize="none"
@@ -371,7 +405,7 @@ export default function ScanScreen() {
           variant="micro"
           className="mt-3 text-center text-muted-foreground"
         >
-          Organizers only — scanning redeems the guest&apos;s ticket.
+          Organizers only - scanning redeems the guest&apos;s ticket.
         </Text>
       </View>
 

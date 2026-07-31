@@ -1,8 +1,8 @@
 /**
  * Storage facade.
  *
- * `storage` → AsyncStorage (bulk, non-sensitive, Zustand persistence).
- * `secureStorage` → expo-secure-store (Keystore / Keychain backed).
+ * `storage` -> AsyncStorage (bulk, non-sensitive, Zustand persistence).
+ * `secureStorage` -> expo-secure-store (Keystore / Keychain backed).
  *
  * Both degrade to no-ops rather than throwing, so a storage failure can never
  * take down a render. SecureStore is unavailable on web, where we fall back to
@@ -28,7 +28,7 @@ export const storage = {
     try {
       await AsyncStorage.setItem(key, JSON.stringify(value));
     } catch {
-      // Quota or serialisation failure — non-fatal.
+      // Quota or serialisation failure - non-fatal.
     }
   },
   async remove(key: string): Promise<void> {

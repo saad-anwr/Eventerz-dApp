@@ -32,7 +32,7 @@ export interface PressableScaleProps extends PressableProps {
   /** Dim while pressed, on top of the scale. */
   dim?: boolean;
   className?: string;
-  /** Guarantees the ≥44px touch target even when the visual is smaller. */
+  /** Guarantees the >=44px touch target even when the visual is smaller. */
   enforceTouchTarget?: boolean;
 }
 

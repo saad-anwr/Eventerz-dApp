@@ -1,5 +1,5 @@
 /**
- * Community detail — description, membership, stats and the community's events.
+ * Community detail - description, membership, stats and the community's events.
  */
 
 import { LinearGradient } from 'expo-linear-gradient';

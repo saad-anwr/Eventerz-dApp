@@ -6,10 +6,10 @@
  * to the native Maps app.
  *
  * Why not `react-native-maps`: it is a native module. Adding it means a config
- * plugin, a prebuild and a fresh Gradle run — 17 minutes on this machine — and
+ * plugin, a prebuild and a fresh Gradle run - 17 minutes on this machine - and
  * ships a full interactive map engine to draw a picture with one pin in it. A
  * static image loads instantly with `expo-image`, needs no rebuild, and the one
- * thing a user actually wants to do with an event's map — get directions — is
+ * thing a user actually wants to do with an event's map - get directions - is
  * better served by handing off to Google Maps, which already knows where they
  * are and how they travel.
  *
@@ -92,7 +92,7 @@ export function mapLinkUrl(place: MappableLocation): string {
   if (coords) {
     params.set('query', `${coords.lat},${coords.lng}`);
     // With both, Maps pins the exact place rather than the nearest match to the
-    // coordinates — which for a building in a dense block is a different door.
+    // coordinates - which for a building in a dense block is a different door.
     if (place.placeId) params.set('query_place_id', place.placeId);
   } else {
     params.set('query', place.address || place.location);

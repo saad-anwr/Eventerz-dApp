@@ -1,5 +1,5 @@
 /**
- * Selectable tag chip — the interactive sibling of `<Badge>`.
+ * Selectable tag chip - the interactive sibling of `<Badge>`.
  * Used for category filters, interest tags and the Create wizard's tag picker.
  */
 

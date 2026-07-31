@@ -8,7 +8,7 @@
  * balance delta against the cluster and flips it.
  *
  * So an unverified receipt must not look like a verified one. It renders with a
- * clock instead of a tick and says "confirming" — true whether it is thirty
+ * clock instead of a tick and says "confirming" - true whether it is thirty
  * seconds old or a fabrication, and either way Explorer is one tap away.
  * Rendering every receipt identically would make the tick decorative, and a
  * decorative trust signal is worse than none.
@@ -30,7 +30,7 @@ import type { PaymentReceipt } from '@/types';
 
 interface PaymentReceiptCardProps {
   payment: PaymentReceipt;
-  /** True when the viewer is the sender — flips the wording, not the amount. */
+  /** True when the viewer is the sender - flips the wording, not the amount. */
   mine: boolean;
 }
 
@@ -51,7 +51,7 @@ export function PaymentReceiptCard({ payment, mine }: PaymentReceiptCardProps) {
       // No browser on the device is a real state, not a bug. The signature is
       // the useful artefact either way.
       await Clipboard.setStringAsync(payment.signature);
-      toast.info('Signature copied — no browser on this device.');
+      toast.info('Signature copied - no browser on this device.');
     }
   }, [payment.cluster, payment.signature]);
 
@@ -111,7 +111,7 @@ export function PaymentReceiptCard({ payment, mine }: PaymentReceiptCardProps) {
           <>
             <Clock size={11} color="rgba(255,255,255,0.45)" />
             <Text variant="micro" className="text-muted">
-              Confirming — tap to check on Explorer
+              Confirming - tap to check on Explorer
             </Text>
           </>
         )}

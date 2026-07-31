@@ -7,21 +7,21 @@
  * This project used to live on E:, a 5400 RPM spinning disk. `node_modules`
  * holds ~75,000 files across ~12,000 directories and Metro touches nearly all
  * of them, so a cold bundle took **13m 08s**. Moving just `node_modules` to the
- * SSD and leaving a junction behind cut that to **1m 10s** — but it silently
+ * SSD and leaving a junction behind cut that to **1m 10s** - but it silently
  * broke Expo Router, and the failure mode was baffling enough to be worth
  * recording here.
  *
  * `babel-preset-expo` inlines the router's app root as a path relative to
  * `node_modules/expo-router`. With the junction, that package resolved to its
  * real path on C: while the source stayed on E:, and there is no relative path
- * between two Windows drive letters — so Babel emitted an absolute `E:\…`
+ * between two Windows drive letters - so Babel emitted an absolute `E:\...`
  * instead. Metro's `require.context` always joins its argument onto the
  * requiring module's directory, producing:
  *
- *     C:/…/node_modules/expo-router/E:/…/Eventerz dApp/src/app
+ *     C:/.../node_modules/expo-router/E:/.../Eventerz dApp/src/app
  *
  * That matched zero files, `ctx` came back empty, and Expo Router fell through
- * to its stock "Welcome to Expo — create a file in src/app" screen. The app
+ * to its stock "Welcome to Expo - create a file in src/app" screen. The app
  * bundled, ran, threw no errors, and rendered the wrong thing.
  *
  * The whole project now lives on the SSD, so source and dependencies share a

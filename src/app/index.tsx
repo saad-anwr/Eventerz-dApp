@@ -2,8 +2,8 @@
  * Splash / route gate.
  *
  * Plays the animated Eventerz mark over a particle field, then routes to
- * onboarding (first launch) or the tab shell. The wait is real work — the
- * wallet restore is in flight — not an artificial delay, but a floor keeps the
+ * onboarding (first launch) or the tab shell. The wait is real work - the
+ * wallet restore is in flight - not an artificial delay, but a floor keeps the
  * animation from being cut off on a fast device.
  */
 

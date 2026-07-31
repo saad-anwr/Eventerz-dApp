@@ -1,5 +1,5 @@
 /**
- * Event card — direct port of the web app's `components/app/event-card.tsx`.
+ * Event card - direct port of the web app's `components/app/event-card.tsx`.
  *
  * Same anatomy: gradient cover with a category pill and calendar tile, then a
  * body with the cyan date line, title, host row and location/attendee meta.

@@ -3,7 +3,7 @@
  *
  * The wallet is the primary identity, so whenever both exist we make sure the
  * server knows they belong to the same person. Runs once per (account, wallet)
- * pair — re-linking the same address every render would be a wasted round trip.
+ * pair - re-linking the same address every render would be a wasted round trip.
  *
  * Inert when Supabase is not configured.
  */

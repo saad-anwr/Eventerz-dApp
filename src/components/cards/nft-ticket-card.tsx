@@ -2,7 +2,7 @@
  * NFT ticket card.
  *
  * Shaped like a real ticket: gradient stub, a perforated divider with notches
- * punched into both edges, and a monospace asset id — the detail that sells it
+ * punched into both edges, and a monospace asset id - the detail that sells it
  * as an on-chain object rather than a database row.
  */
 

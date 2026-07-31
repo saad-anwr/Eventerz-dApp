@@ -30,7 +30,7 @@ interface DiscoverState {
   toggleOnlineOnly: () => void;
   toggleFreeOnly: () => void;
   reset: () => void;
-  /** Count of non-default filters — drives the badge on the Filters button. */
+  /** Count of non-default filters - drives the badge on the Filters button. */
   activeCount: () => number;
 }
 

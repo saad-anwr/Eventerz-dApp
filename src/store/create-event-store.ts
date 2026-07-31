@@ -31,7 +31,7 @@ export interface EventDraft {
   location: string;
   /**
    * Structured location, set when the host picks a place rather than typing one.
-   * All optional — an event whose venue a geocoder never saw is still a valid
+   * All optional - an event whose venue a geocoder never saw is still a valid
    * event, and requiring these would make the picker mandatory.
    */
   latitude?: number;

@@ -133,12 +133,12 @@ export const GoogleAccountRow = memo(function GoogleAccountRow() {
             numberOfLines={1}
           >
             {linking
-              ? 'Waiting for Google…'
+              ? 'Waiting for Google...'
               : linked
                 ? (profile?.email ?? 'Signed in')
                 : isLive
                   ? 'Recover this account on another device'
-                  : 'Not configured — see docs/AUTH_SETUP.md'}
+                  : 'Not configured - see docs/AUTH_SETUP.md'}
           </Text>
         </View>
 
@@ -167,7 +167,7 @@ export const GoogleAccountRow = memo(function GoogleAccountRow() {
         visible={confirmUnlink}
         onClose={() => setConfirmUnlink(false)}
         title="Unlink Google?"
-        subtitle="Your wallet stays connected and your tickets, badges and reputation are unaffected — they live on-chain. You will lose the ability to recover this profile with Google."
+        subtitle="Your wallet stays connected and your tickets, badges and reputation are unaffected - they live on-chain. You will lose the ability to recover this profile with Google."
         dismissOnBackdrop={false}
       >
         <View className="flex-row gap-3">

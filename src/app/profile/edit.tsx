@@ -1,7 +1,7 @@
 /**
  * Edit profile.
  *
- * Off-chain metadata only — name, handle, bio, location, socials, interests.
+ * Off-chain metadata only - name, handle, bio, location, socials, interests.
  * The wallet address is identity and is deliberately not editable.
  */
 
@@ -148,7 +148,7 @@ export default function EditProfileScreen() {
             </Text>
           </View>
 
-          {/* Wallet — read only */}
+          {/* Wallet - read only */}
           {account && (
             <View
               className="mt-6 flex-row items-center gap-3 border border-white/10 bg-white/[0.03] p-3.5"
@@ -157,7 +157,7 @@ export default function EditProfileScreen() {
               <Wallet size={17} color="#94a2b8" strokeWidth={2} />
               <View className="flex-1">
                 <Text variant="caption" className="text-muted-foreground">
-                  Wallet — this is your identity
+                  Wallet - this is your identity
                 </Text>
                 <Text
                   style={{

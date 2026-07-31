@@ -2,7 +2,7 @@
  * Tall hero card for the Home carousel.
  *
  * Full-bleed gradient with a bottom scrim so the title stays legible, plus a
- * parallax tilt driven by the carousel's scroll position — cards scale and fade
+ * parallax tilt driven by the carousel's scroll position - cards scale and fade
  * as they leave the centre, the way Coinbase and Luma treat featured content.
  */
 
@@ -39,7 +39,7 @@ export interface FeaturedEventCardProps {
   onPress: (event: EventItem) => void;
   width: number;
   height?: number;
-  /** Carousel scroll offset in px — drives the parallax. */
+  /** Carousel scroll offset in px - drives the parallax. */
   scrollX?: SharedValue<number>;
   /** This card's index in the carousel. */
   index?: number;

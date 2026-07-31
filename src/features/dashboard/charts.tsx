@@ -23,7 +23,7 @@ import { radius } from '@/theme/layout';
 import { fontFamily } from '@/theme/typography';
 import type { AnalyticsPoint } from '@/types';
 
-/** Catmull-Rom → cubic Bézier, so the trend line reads as a smooth curve. */
+/** Catmull-Rom -> cubic Bézier, so the trend line reads as a smooth curve. */
 function smoothPath(points: { x: number; y: number }[]): string {
   if (points.length < 2) return '';
   let d = `M ${points[0].x} ${points[0].y}`;

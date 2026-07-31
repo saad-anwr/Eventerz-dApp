@@ -1,5 +1,5 @@
 /**
- * Badge / pill — port of the web app's `components/ui/badge.tsx`, same variants
+ * Badge / pill - port of the web app's `components/ui/badge.tsx`, same variants
  * and the same tinted-border-on-tinted-fill treatment.
  */
 

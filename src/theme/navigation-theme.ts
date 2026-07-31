@@ -2,7 +2,7 @@
  * React Navigation theme so native stack backgrounds and headers match the app
  * instead of flashing the default near-black on every push.
  *
- * Note: Expo Router 57 vendors React Navigation — there is no standalone
+ * Note: Expo Router 57 vendors React Navigation - there is no standalone
  * `@react-navigation/native` package to import from. `Theme`, `DarkTheme` and
  * `ThemeProvider` all come from `expo-router`.
  */

@@ -2,7 +2,7 @@
  * Ticket + badge seeds for the signed-in wallet.
  *
  * `buildMockTickets` takes the current user id so tickets always belong to
- * whoever is connected — the mock wallet mints a fresh address per session.
+ * whoever is connected - the mock wallet mints a fresh address per session.
  */
 
 import type { Badge, Ticket } from '@/types';
@@ -105,7 +105,7 @@ export function buildMockBadges(): Badge[] {
     {
       id: 'b_poap_bp',
       name: 'Breakpoint Mobile Night',
-      description: 'Proof of attendance — Singapore, Mobile Night.',
+      description: 'Proof of attendance - Singapore, Mobile Night.',
       icon: 'BadgeCheck',
       accent: 'cyan',
       earnedAt: now - 20 * DAY,

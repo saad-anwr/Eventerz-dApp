@@ -2,7 +2,7 @@
  * Bottom tab shell.
  *
  * Uses `expo-router/js-tabs` (SDK 57 moved `Tabs` here) with a fully custom bar
- * — see `navigation/tab-bar.tsx`. Screens render their own headers so each can
+ * - see `navigation/tab-bar.tsx`. Screens render their own headers so each can
  * decide whether content bleeds under the status bar.
  */
 

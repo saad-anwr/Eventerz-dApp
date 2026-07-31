@@ -1,5 +1,5 @@
 /**
- * Discover filter sheet — date, category, location, sort and the two toggles.
+ * Discover filter sheet - date, category, location, sort and the two toggles.
  * Writes straight to `discoverStore`, which is the query key input, so applying
  * a filter re-runs the feed without any prop plumbing.
  */
@@ -175,7 +175,7 @@ export const FilterSheet = memo(function FilterSheet({
         className="mt-3 text-center text-muted-foreground"
         style={{ paddingHorizontal: screenPadding }}
       >
-        Filters apply as you tap — close any time.
+        Filters apply as you tap - close any time.
       </Text>
     </BottomSheet>
   );

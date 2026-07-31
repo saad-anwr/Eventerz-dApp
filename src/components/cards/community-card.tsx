@@ -1,5 +1,5 @@
 /**
- * Community card — two shapes from one component:
+ * Community card - two shapes from one component:
  * `compact` for the Home trending rail, full-width for the Discover list.
  */
 

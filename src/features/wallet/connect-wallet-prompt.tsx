@@ -33,7 +33,7 @@ const BENEFITS = [
 
 export const ConnectWalletPrompt = memo(function ConnectWalletPrompt({
   title = 'Connect your wallet',
-  description = 'Your wallet is your Eventerz identity — no email, no password, no bots.',
+  description = 'Your wallet is your Eventerz identity - no email, no password, no bots.',
   onConnect,
 }: {
   title?: string;
@@ -131,7 +131,7 @@ export const ConnectWalletPrompt = memo(function ConnectWalletPrompt({
       {/*
         Google has to be reachable from here. Every signed-out screen renders
         this prompt instead of its header, so without it the only route to
-        account recovery — Settings → Account recovery — is behind the very
+        account recovery - Settings -> Account recovery - is behind the very
         wallet connection the user has not made yet.
       */}
       {isLive && (
@@ -158,7 +158,7 @@ export const ConnectWalletPrompt = memo(function ConnectWalletPrompt({
             <Text
               style={{ fontFamily: fontFamily.semibold, fontSize: 15 }}
             >
-              {linking ? 'Waiting for Google…' : 'Continue with Google'}
+              {linking ? 'Waiting for Google...' : 'Continue with Google'}
             </Text>
           </PressableScale>
 
@@ -166,7 +166,7 @@ export const ConnectWalletPrompt = memo(function ConnectWalletPrompt({
             variant="caption"
             className="mt-3 text-center text-muted-foreground"
           >
-            Google signs you in and keeps the account recoverable — you will
+            Google signs you in and keeps the account recoverable - you will
             still need a wallet for tickets and check-in.
           </Text>
         </View>

@@ -2,13 +2,13 @@
  * Solana Mobile Wallet Adapter.
  *
  * The real wallet: talks to Phantom / Solflare / Backpack / the Seeker's
- * built-in wallet over the MWA protocol. **Android only** — MWA is an Android
+ * built-in wallet over the MWA protocol. **Android only** - MWA is an Android
  * association intent and has no iOS equivalent.
  *
  * Requires a development build; the protocol package ships native code, so it
  * does not run in Expo Go.
  *
- * Auth tokens live in expo-secure-store — they are bearer credentials that let
+ * Auth tokens live in expo-secure-store - they are bearer credentials that let
  * us reauthorize without prompting the user again.
  */
 
@@ -53,7 +53,7 @@ const APP_IDENTITY = {
   icon: 'favicon.ico',
 } as const;
 
-/** MWA's `Chain` union — kept as literals so the type flows to `authorize`. */
+/** MWA's `Chain` union - kept as literals so the type flows to `authorize`. */
 const CHAIN_BY_CLUSTER = {
   'mainnet-beta': 'solana:mainnet',
   devnet: 'solana:devnet',
@@ -62,16 +62,44 @@ const CHAIN_BY_CLUSTER = {
 
 type MwaChain = (typeof CHAIN_BY_CLUSTER)[keyof typeof CHAIN_BY_CLUSTER];
 
+/** Warned once per launch, not once per call - this runs on every connection. */
+let warnedAboutPublicRpc = false;
+
+/**
+ * The RPC this build talks to.
+ *
+ * `EXPO_PUBLIC_HELIUS_RPC_URL` wins. The fallback is Solana's public endpoint,
+ * which works and is **not intended for production traffic**: it is shared and
+ * aggressively rate-limited, so under real load balance reads start failing and
+ * a transfer sits at "confirming" while the user wonders whether their money
+ * moved. That is the worst place in the product to be unreliable, so shipping
+ * to mainnet without a dedicated RPC says so out loud rather than degrading
+ * quietly.
+ *
+ * The cluster is validated in `constants/config`, so the template below can
+ * only ever produce a host that exists.
+ */
 function rpcEndpoint(): string {
-  if (integrationsConfig.heliusRpcUrl) return integrationsConfig.heliusRpcUrl;
+  const custom = integrationsConfig.heliusRpcUrl.trim();
+  if (custom && /^https?:\/\//i.test(custom)) return custom;
+
   const cluster = integrationsConfig.solanaNetwork;
+
+  if (cluster === 'mainnet-beta' && !warnedAboutPublicRpc) {
+    warnedAboutPublicRpc = true;
+    console.warn(
+      '[solana] Using the public mainnet RPC. It is rate-limited and not ' +
+        'suitable for production traffic - set EXPO_PUBLIC_HELIUS_RPC_URL.',
+    );
+  }
+
   if (cluster === 'mainnet-beta') return 'https://api.mainnet-beta.solana.com';
   return `https://api.${cluster}.solana.com`;
 }
 
 /**
- * MWA returns addresses base64-encoded. Everything downstream — display,
- * profiles, explorer links — expects base58, so normalise at the boundary.
+ * MWA returns addresses base64-encoded. Everything downstream - display,
+ * profiles, explorer links - expects base58, so normalise at the boundary.
  */
 function toBase58(address: string): string {
   try {
@@ -87,7 +115,7 @@ function toBase58(address: string): string {
  *
  * Deliberately a pure function outside the class: it takes the payer and the
  * program id and returns an instruction, so it can be unit-tested without a
- * wallet, a network or an association intent — none of which exist in a test
+ * wallet, a network or an association intent - none of which exist in a test
  * runner.
  */
 function buildInstruction(
@@ -96,7 +124,17 @@ function buildInstruction(
   programId: PublicKey | null,
 ): TransactionInstruction {
   if (intent.type === 'transfer') {
-    const destination = new PublicKey(intent.to);
+    /*
+     * Translated rather than left to web3.js, which throws "Invalid public key
+     * input" - true, and meaningless to someone who was trying to pay a friend.
+     * The address came from a profile, so the actionable fact is whose it is.
+     */
+    let destination: PublicKey;
+    try {
+      destination = new PublicKey(intent.to);
+    } catch {
+      throw new Error("That recipient's wallet address is not valid.");
+    }
     if (destination.equals(payer)) {
       throw new Error('That is your own wallet.');
     }
@@ -173,7 +211,7 @@ function buildInstruction(
      * `mint-ticket` and `claim-badge` have no instruction yet: tickets are
      * Postgres rows plus a seat account, and compressed-NFT minting needs
      * Bubblegum and a Merkle tree that is not provisioned. Refusing is the
-     * honest answer — the alternative is a signature for a mint that never
+     * honest answer - the alternative is a signature for a mint that never
      * happened.
      */
     case 'mint-ticket':
@@ -198,7 +236,7 @@ export class MobileWalletAdapter implements WalletAdapter {
   }
 
   async listWallets(): Promise<WalletDescriptor[]> {
-    // MWA does not enumerate wallets — Android's association picker does. The
+    // MWA does not enumerate wallets - Android's association picker does. The
     // curated list still renders so the sheet looks the same before hand-off.
     return SUPPORTED_WALLETS;
   }
@@ -291,7 +329,7 @@ export class MobileWalletAdapter implements WalletAdapter {
    *
    *  2. **Every other intent refuses when no program is deployed.** It does not
    *     fabricate a signature, and it no longer sends the zero-lamport
-   *     self-transfer that used to stand in for one — that produced a real,
+   *     self-transfer that used to stand in for one - that produced a real,
    *     confirmable signature for a transaction that did nothing, which is the
    *     worst of both worlds: the UI would report a minted ticket and the
    *     explorer would appear to agree.
@@ -303,7 +341,7 @@ export class MobileWalletAdapter implements WalletAdapter {
 
     if (intent.type !== 'transfer' && !programId) {
       throw new Error(
-        `On-chain ${intent.type.replace(/-/g, ' ')} is not available yet — ` +
+        `On-chain ${intent.type.replace(/-/g, ' ')} is not available yet - ` +
           'the Eventerz program has not been deployed. Set ' +
           'EXPO_PUBLIC_EVENTERZ_PROGRAM_ID once it is live.',
       );

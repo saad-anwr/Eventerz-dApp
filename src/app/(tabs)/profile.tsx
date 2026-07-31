@@ -2,7 +2,7 @@
  * Profile.
  *
  * Wallet identity, reputation, badges, communities and the events the user
- * organized or attended — the mobile read of the on-chain record the web app
+ * organized or attended - the mobile read of the on-chain record the web app
  * describes.
  */
 
@@ -60,7 +60,7 @@ import type { Community, EventItem } from '@/types';
 import { compactNumber, formatSol, shortenAddress } from '@/utils/format';
 import { haptics } from '@/utils/haptics';
 
-/** Reputation tiers — mirrors the web app's community reputation copy. */
+/** Reputation tiers - mirrors the web app's community reputation copy. */
 const TIERS = [
   { min: 0, label: 'Newcomer', next: 250 },
   { min: 250, label: 'Regular', next: 500 },
@@ -120,7 +120,7 @@ export default function ProfileScreen() {
     return (
       <Screen tabBarInset padded>
         {/*
-          Settings stays reachable while signed out — it holds account recovery,
+          Settings stays reachable while signed out - it holds account recovery,
           notification and privacy controls that should not require a wallet.
         */}
         <View className="flex-row justify-end pt-2">
@@ -261,7 +261,7 @@ export default function ProfileScreen() {
               </View>
             )}
             <Badge label={tier.label} variant="purple" size="sm" icon={Trophy} />
-            {/* Google is a recovery credential, not the identity — so it reads
+            {/* Google is a recovery credential, not the identity - so it reads
                 as a small "recoverable" marker rather than a sign-in badge. */}
             {googleEmail && (
               <View
@@ -351,7 +351,7 @@ export default function ProfileScreen() {
 
             <Text variant="caption" className="mt-2 text-muted-foreground">
               {tier.next === Infinity
-                ? 'Top tier reached — nothing left to climb.'
+                ? 'Top tier reached - nothing left to climb.'
                 : `${tier.next - user.reputation} more to reach ${
                     TIERS[TIERS.findIndex((t) => t.min === tier.min) + 1]?.label
                   }`}

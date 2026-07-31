@@ -1,7 +1,7 @@
 /**
  * Wallet + identity state.
  *
- * The store never talks to Solana directly — it calls `walletService`, which
+ * The store never talks to Solana directly - it calls `walletService`, which
  * resolves to the mock or real adapter. That keeps this file identical whether
  * or not Mobile Wallet Adapter is installed.
  */
@@ -50,7 +50,7 @@ export const useWalletStore = create<WalletState>()((set, get) => ({
       set({ status: 'connected', account, user });
       analytics.identify(user.id, { walletId, cluster: account.cluster });
       analytics.track(AnalyticsEvent.WalletConnected, { walletId });
-      // Balance is decorative — never let it block the connected state.
+      // Balance is decorative - never let it block the connected state.
       void get().refreshBalance();
     } catch (error) {
       set({
@@ -86,7 +86,7 @@ export const useWalletStore = create<WalletState>()((set, get) => ({
       set({ status: 'connected', account, user, isRestoring: false });
       void get().refreshBalance();
     } catch {
-      // A failed restore is not an error the user needs to see — they simply
+      // A failed restore is not an error the user needs to see - they simply
       // land on the signed-out home screen.
       set({ isRestoring: false });
     }
@@ -106,7 +106,7 @@ export const useWalletStore = create<WalletState>()((set, get) => ({
   updateProfile: async (patch) => {
     const { user } = get();
     if (!user) return;
-    // Optimistic — the profile form should feel instant.
+    // Optimistic - the profile form should feel instant.
     set({ user: { ...user, ...patch } });
     try {
       const saved = await userRepository.update(user.id, patch);
@@ -120,7 +120,7 @@ export const useWalletStore = create<WalletState>()((set, get) => ({
 }));
 
 /* -------------------------------------------------------------------------- */
-/*  Selectors — keep components subscribed to the narrowest slice possible.    */
+/*  Selectors - keep components subscribed to the narrowest slice possible.    */
 /* -------------------------------------------------------------------------- */
 
 export const selectIsConnected = (s: WalletState) => s.status === 'connected';

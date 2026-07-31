@@ -17,7 +17,7 @@ export const fontFamily = {
 } as const;
 
 /**
- * Type ramp. `size` is the base value — screens scale it with the OS font
+ * Type ramp. `size` is the base value - screens scale it with the OS font
  * setting via `useScaledFont`, so nothing here is hard-locked.
  */
 export const type = {

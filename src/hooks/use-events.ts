@@ -1,7 +1,7 @@
 /**
  * Event queries and mutations.
  *
- * Screens consume these — never the repository directly — so caching,
+ * Screens consume these - never the repository directly - so caching,
  * invalidation and optimistic updates stay in one place.
  */
 
@@ -101,7 +101,7 @@ export function useEventLocations() {
 }
 
 /* -------------------------------------------------------------------------- */
-/*  Guest state — request, cancel, and the host's decision                     */
+/*  Guest state - request, cancel, and the host's decision                     */
 /* -------------------------------------------------------------------------- */
 
 /**
@@ -125,9 +125,9 @@ function useGuestStateInvalidation() {
 /**
  * Ask to attend.
  *
- * The server decides the outcome — confirmed, pending approval, or waitlisted —
+ * The server decides the outcome - confirmed, pending approval, or waitlisted -
  * so this deliberately does *not* update optimistically. The old version
- * assumed "not going → going" and flipped the button immediately, which showed
+ * assumed "not going -> going" and flipped the button immediately, which showed
  * "You're going" for an event that had actually queued a pending request or
  * refused the call outright.
  */
@@ -211,7 +211,7 @@ export function useEventGuests(eventId: string | undefined) {
  * A few faces for viewers who cannot read the roster.
  *
  * `limit` is in the key. It used to be left out, which was harmless only
- * because every caller passed 3 — two components wanting different sample sizes
+ * because every caller passed 3 - two components wanting different sample sizes
  * would have shared one cache entry and the second would have silently rendered
  * the first's result.
  */
@@ -249,7 +249,7 @@ export function useUpdateEvent(eventId: string | undefined) {
  * Call an event off.
  *
  * Also cancels this device's scheduled local reminders. Without that, the phone
- * would still buzz "starts in an hour" for an event that is not happening — the
+ * would still buzz "starts in an hour" for an event that is not happening - the
  * notification is queued in the OS and knows nothing about the database.
  */
 export function useCancelEvent(eventId: string | undefined) {

@@ -1,8 +1,8 @@
 /**
  * Shimmer skeleton.
  *
- * Reproduces the web app's `animate-shimmer` — a highlight swept across a
- * muted block — with a single Reanimated loop driving a translated gradient.
+ * Reproduces the web app's `animate-shimmer` - a highlight swept across a
+ * muted block - with a single Reanimated loop driving a translated gradient.
  * The animation runs on the UI thread, so a screenful of skeletons costs
  * nothing on the JS thread while data loads.
  */
@@ -102,7 +102,7 @@ export const EventCardSkeleton = memo(function EventCardSkeleton() {
   );
 });
 
-/** A vertical run of card skeletons — the default list loading state. */
+/** A vertical run of card skeletons - the default list loading state. */
 export const EventListSkeleton = memo(function EventListSkeleton({
   count = 3,
 }: {

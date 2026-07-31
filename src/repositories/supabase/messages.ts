@@ -2,7 +2,7 @@
  * Messages and in-chat payments, Supabase-backed.
  *
  * Mirrors the website's `lib/supabase/data.ts` message and payment sections so
- * both clients hit the same tables with the same semantics — a receipt sent
+ * both clients hit the same tables with the same semantics - a receipt sent
  * from the app has to render identically on the web, because it is the same
  * row.
  */
@@ -38,7 +38,7 @@ function fail(context: string, error: { message: string } | null): never {
 /**
  * Canonical DM channel key.
  *
- * Sorted so both participants derive the same string from either direction —
+ * Sorted so both participants derive the same string from either direction -
  * `can_access_channel` checks membership by looking for the caller's id inside
  * this key, so an unsorted variant would produce two channels for one
  * conversation and split it in half.
@@ -52,7 +52,7 @@ export const supabaseMessageRepository = {
    * The inbox: friends **union** everyone who has actually messaged the viewer.
    *
    * Friends alone was the old rule, and it meant a host contacted through
-   * "Contact host" — by definition not yet a friend — got the message delivered
+   * "Contact host" - by definition not yet a friend - got the message delivered
    * to a thread that appeared nowhere. Friends with no messages are still
    * listed: an empty thread with someone you know is a starting point.
    */

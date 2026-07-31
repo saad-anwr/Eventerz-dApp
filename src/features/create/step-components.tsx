@@ -1,8 +1,8 @@
 /**
  * Create-event wizard steps.
  *
- * Each step is a pure function of the draft store — no props threading, no
- * local mirrors of form state — so the wizard can jump to any step and the
+ * Each step is a pure function of the draft store - no props threading, no
+ * local mirrors of form state - so the wizard can jump to any step and the
  * preview can read the same draft without duplication.
  */
 
@@ -57,7 +57,7 @@ const SUGGESTED_TAGS = [
 ];
 
 /* -------------------------------------------------------------------------- */
-/*  1 — Basics                                                                 */
+/*  1 - Basics                                                                 */
 /* -------------------------------------------------------------------------- */
 
 export const BasicsStep = memo(function BasicsStep() {
@@ -83,7 +83,7 @@ export const BasicsStep = memo(function BasicsStep() {
         value={draft.description}
         onChangeText={(text) => setField('description', text)}
         error={errors.description}
-        hint="Markdown is not supported yet — plain text reads best."
+        hint="Markdown is not supported yet - plain text reads best."
         maxLength={600}
         multiline
       />
@@ -103,7 +103,7 @@ export const BasicsStep = memo(function BasicsStep() {
 
       <FieldGroup
         title="Tags"
-        description="Up to five — they drive search and recommendations."
+        description="Up to five - they drive search and recommendations."
       >
         <View className="flex-row flex-wrap gap-2">
           {SUGGESTED_TAGS.map((tag) => {
@@ -130,7 +130,7 @@ export const BasicsStep = memo(function BasicsStep() {
 });
 
 /* -------------------------------------------------------------------------- */
-/*  2 — Schedule                                                               */
+/*  2 - Schedule                                                               */
 /* -------------------------------------------------------------------------- */
 
 /**
@@ -280,7 +280,7 @@ export const ScheduleStep = memo(function ScheduleStep() {
 });
 
 /* -------------------------------------------------------------------------- */
-/*  3 — Location                                                               */
+/*  3 - Location                                                               */
 /* -------------------------------------------------------------------------- */
 
 export const LocationStep = memo(function LocationStep() {
@@ -353,7 +353,7 @@ export const LocationStep = memo(function LocationStep() {
 });
 
 /* -------------------------------------------------------------------------- */
-/*  4 — Design                                                                 */
+/*  4 - Design                                                                 */
 /* -------------------------------------------------------------------------- */
 
 export const DesignStep = memo(function DesignStep() {
@@ -478,7 +478,7 @@ export const DesignStep = memo(function DesignStep() {
         >
           <SwitchRow
             title="Soulbound tickets"
-            description="Non-transferable — stops scalping, blocks gifting"
+            description="Non-transferable - stops scalping, blocks gifting"
             icon={Lock}
             value={draft.soulboundTickets}
             onValueChange={(next) => setField('soulboundTickets', next)}
@@ -490,7 +490,7 @@ export const DesignStep = memo(function DesignStep() {
 });
 
 /* -------------------------------------------------------------------------- */
-/*  5 — Access                                                                 */
+/*  5 - Access                                                                 */
 /* -------------------------------------------------------------------------- */
 
 export const AccessStep = memo(function AccessStep() {
@@ -529,7 +529,7 @@ export const AccessStep = memo(function AccessStep() {
             ? 'Anyone can find this in Discover.'
             : draft.visibility === 'unlisted'
               ? 'Only people with the link can see it.'
-              : 'Invite-only — hidden from search entirely.'}
+              : 'Invite-only - hidden from search entirely.'}
         </Text>
       </FieldGroup>
 
@@ -539,7 +539,7 @@ export const AccessStep = memo(function AccessStep() {
       >
         <SwitchRow
           title="Free event"
-          description="No ticket price — guests only pay network fees"
+          description="No ticket price - guests only pay network fees"
           icon={Ticket}
           value={draft.isFree}
           onValueChange={(next) => {
@@ -583,7 +583,7 @@ export const AccessStep = memo(function AccessStep() {
       {draft.tokenGated && (
         <TextField
           label="Gate requirement"
-          placeholder="Holds ≥ 1 MadLads NFT"
+          placeholder="Holds >= 1 MadLads NFT"
           value={draft.gateRequirement}
           onChangeText={(text) => setField('gateRequirement', text)}
           error={errors.gateRequirement}
@@ -596,7 +596,7 @@ export const AccessStep = memo(function AccessStep() {
 });
 
 /* -------------------------------------------------------------------------- */
-/*  6 — Review                                                                 */
+/*  6 - Review                                                                 */
 /* -------------------------------------------------------------------------- */
 
 function ReviewRow({ label, value }: { label: string; value: string }) {
@@ -718,7 +718,7 @@ export const ReviewStep = memo(function ReviewStep() {
         <Ticket size={16} color={brand.cyan} strokeWidth={2.2} />
         <Text variant="caption" className="flex-1 text-muted-foreground">
           Publishing writes the event on-chain and opens RSVPs. You approve the
-          transaction in your wallet — Eventerz never signs on your behalf.
+          transaction in your wallet - Eventerz never signs on your behalf.
         </Text>
       </View>
     </View>

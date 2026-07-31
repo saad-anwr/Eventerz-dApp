@@ -5,7 +5,7 @@
  * only when `EXPO_PUBLIC_USE_MOCK_DATA=true`. Hooks and screens import from
  * here and never learn which backend answered.
  *
- * The mock is retained deliberately — it keeps the UI runnable with no network,
+ * The mock is retained deliberately - it keeps the UI runnable with no network,
  * which is what lets a fresh clone start and makes offline UI work possible.
  */
 
@@ -35,7 +35,7 @@ import { supabaseMessageRepository } from './supabase/messages';
 
 /**
  * Fall back to the mock when Supabase is unconfigured even if the flag says
- * otherwise — an unconfigured build should show seed data, not throw on every
+ * otherwise - an unconfigured build should show seed data, not throw on every
  * screen.
  */
 export const useMockBackend = featureFlags.useMockData || !isSupabaseConfigured;
@@ -49,7 +49,7 @@ const activeEventRepository = useMockBackend
  *
  * The two backends disagree about who the caller is: the mock has to be told
  * (`userId`), while Supabase reads `auth.uid()` server-side and would ignore
- * anything the client passed — trusting a client-supplied id there would be a
+ * anything the client passed - trusting a client-supplied id there would be a
  * hole, not a convenience. Same reason the ticket facade below exists: callers
  * get one signature and the difference stays here.
  */
@@ -152,8 +152,8 @@ export const ticketRepository = {
 /**
  * The DM channel key, re-exported from one place.
  *
- * Both backends derive it identically — sorted, so either participant computes
- * the same string — and `can_access_channel` checks membership by looking for
+ * Both backends derive it identically - sorted, so either participant computes
+ * the same string - and `can_access_channel` checks membership by looking for
  * the caller's id inside it. An unsorted variant would produce two channels for
  * one conversation and silently split it in half, so there is exactly one
  * implementation and screens import it from here.

@@ -1,7 +1,7 @@
 /**
  * Typed HTTP client for the future Eventerz backend.
  *
- * Unused while `featureFlags.useMockData` is true — repositories read from the
+ * Unused while `featureFlags.useMockData` is true - repositories read from the
  * in-memory database instead. It exists so the transport concerns (base URL,
  * auth header, timeout, error shape) are settled before the first real
  * endpoint lands, and repositories only need their bodies swapped.

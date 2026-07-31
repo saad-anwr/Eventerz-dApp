@@ -10,7 +10,7 @@ export const communityRepository = {
     );
   },
 
-  /** Communities with the most momentum — Home's "Trending" rail. */
+  /** Communities with the most momentum - Home's "Trending" rail. */
   async listTrending(limit = 5): Promise<Community[]> {
     await mockDelay();
     return Object.values(db.communities)

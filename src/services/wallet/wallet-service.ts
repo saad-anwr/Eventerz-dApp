@@ -1,7 +1,7 @@
 /**
  * The single entry point screens and stores use for wallet work.
  *
- * Which adapter backs it is decided here and nowhere else — flip
+ * Which adapter backs it is decided here and nowhere else - flip
  * `EXPO_PUBLIC_USE_MOCK_WALLET=false` once a dev build has Mobile Wallet
  * Adapter installed and every caller picks up the real implementation.
  */
@@ -20,7 +20,7 @@ let adapter: WalletAdapter | null = null;
 /**
  * Mobile Wallet Adapter is an Android association intent backed by native code.
  * It cannot work on iOS or web at all, and Expo Go does not bundle the native
- * module — so asking for it there would throw on first use rather than at a
+ * module - so asking for it there would throw on first use rather than at a
  * point we can explain.
  */
 export function isMwaAvailable(): boolean {
@@ -31,7 +31,7 @@ export function isMwaAvailable(): boolean {
 /** Why the mock is in use, when it is. Surfaced in Settings. */
 export function walletAdapterReason(): string | null {
   if (featureFlags.useMockWallet) {
-    return 'Demo wallet — set EXPO_PUBLIC_USE_MOCK_WALLET=false to use a real wallet.';
+    return 'Demo wallet - set EXPO_PUBLIC_USE_MOCK_WALLET=false to use a real wallet.';
   }
   if (Platform.OS !== 'android') {
     return 'Mobile Wallet Adapter is Android-only; using the demo wallet here.';
@@ -55,7 +55,7 @@ export function isRealWallet(): boolean {
   return getWalletAdapter().id === 'mwa';
 }
 
-/** Test seam — lets a spec inject a stub without touching env vars. */
+/** Test seam - lets a spec inject a stub without touching env vars. */
 export function setWalletAdapter(next: WalletAdapter | null): void {
   adapter = next;
 }

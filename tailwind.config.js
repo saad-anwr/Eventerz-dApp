@@ -1,9 +1,9 @@
 /**
- * Eventerz — mobile Tailwind config.
+ * Eventerz - mobile Tailwind config.
  *
  * Ported 1:1 from the web app's `tailwind.config.ts` so class names mean the
  * same thing on both platforms. Web-only features (backdrop-blur, keyframes,
- * container queries) are intentionally dropped — on native those are handled
+ * container queries) are intentionally dropped - on native those are handled
  * by `<GlassCard>` (expo-blur) and Reanimated instead.
  */
 
@@ -33,7 +33,7 @@ module.exports = {
         input: '#20273c',
         ring: '#9945ff',
 
-        // Eventerz brand palette — identical values to the web app.
+        // Eventerz brand palette - identical values to the web app.
         brand: {
           bg: '#050816',
           'bg-soft': '#0a0f24',
@@ -66,7 +66,7 @@ module.exports = {
         '2xs': ['10px', '13px'],
       },
       spacing: {
-        // Touch-target floor used across interactive elements (a11y ≥ 44px).
+        // Touch-target floor used across interactive elements (a11y >= 44px).
         touch: '44px',
       },
     },

@@ -50,10 +50,10 @@ import { haptics } from '@/utils/haptics';
 /**
  * Every `kind` the app can receive, mapped to a glyph.
  *
- * Exhaustive by type: `Record<NotificationKind, …>` means adding a kind to the
+ * Exhaustive by type: `Record<NotificationKind, ...>` means adding a kind to the
  * union without adding it here fails the build. That matters because the
  * fallback for an unmapped kind is a blank space where every other row has a
- * symbol — a silent gap nobody notices until a user asks why one notification
+ * symbol - a silent gap nobody notices until a user asks why one notification
  * looks broken.
  *
  * The database-written kinds (`rsvp`, `event`, `reminder`, `payment`,

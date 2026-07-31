@@ -1,8 +1,8 @@
 /**
  * Toast queue.
  *
- * A store rather than context so any layer — including services and mutation
- * callbacks — can raise a toast without a hook or a provider in scope.
+ * A store rather than context so any layer - including services and mutation
+ * callbacks - can raise a toast without a hook or a provider in scope.
  */
 
 import { create } from 'zustand';
@@ -37,7 +37,7 @@ export const useToastStore = create<ToastState>()((set) => ({
     const id = uid('toast');
     const resolved =
       duration ?? (toast.variant === 'pending' ? 0 : DEFAULT_DURATION);
-    // Only ever show one at a time — stacked toasts on a phone are noise.
+    // Only ever show one at a time - stacked toasts on a phone are noise.
     set({ toasts: [{ ...toast, id, duration: resolved }] });
     if (resolved > 0) {
       setTimeout(() => {

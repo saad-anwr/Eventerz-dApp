@@ -4,7 +4,7 @@
  * Three things differ from the web client:
  *
  *  1. **Storage.** There is no browser localStorage. The session (which holds a
- *     refresh token) goes to expo-secure-store, not AsyncStorage — it is a
+ *     refresh token) goes to expo-secure-store, not AsyncStorage - it is a
  *     bearer credential and belongs in the Keystore/Keychain.
  *  2. **detectSessionInUrl: false.** There is no URL bar; the deep-link handler
  *     in `auth-service.ts` completes the OAuth exchange instead.
@@ -96,7 +96,7 @@ export function getSupabaseClient(): SupabaseClient<Database> | null {
         storage: secureSessionStorage,
         autoRefreshToken: true,
         persistSession: true,
-        // No URL bar on native — the deep-link handler does the exchange.
+        // No URL bar on native - the deep-link handler does the exchange.
         detectSessionInUrl: false,
         flowType: 'pkce',
       },

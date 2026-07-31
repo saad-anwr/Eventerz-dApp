@@ -6,7 +6,7 @@
   "tasks": [
     {
       // Boots the Seeker AVD without opening Android Studio.
-      // Ctrl+Shift+P → "Run Task" → "Start Seeker emulator".
+      // Ctrl+Shift+P -> "Run Task" -> "Start Seeker emulator".
       "label": "Start Seeker emulator",
       "type": "shell",
       "command": "${env:ANDROID_HOME}/emulator/emulator",
@@ -28,7 +28,7 @@
     },
     {
       // For when an AVD's system image changed and its userdata no longer
-      // matches — otherwise the emulator sits "offline" indefinitely.
+      // matches - otherwise the emulator sits "offline" indefinitely.
       "label": "Run on Android (wipe emulator)",
       "type": "shell",
       "command": "npm run android:wipe",
@@ -75,7 +75,7 @@
     {
       // Verifies node_modules sits on the same drive as the source. Splitting
       // them makes Expo Router render a blank "Welcome to Expo" screen with no
-      // error at all — see scripts/check-deps.mjs.
+      // error at all - see scripts/check-deps.mjs.
       "label": "Check dependency location",
       "type": "shell",
       "command": "npm run deps:check",

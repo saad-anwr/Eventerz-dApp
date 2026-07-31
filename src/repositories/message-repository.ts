@@ -4,7 +4,7 @@
  * Exists for the same reason every other mock repository does: a fresh clone
  * with no `.env` should still be able to open every screen and see something
  * shaped like real data. Messaging without a network cannot have a second
- * participant, so this is a single-user sandbox — messages persist for the
+ * participant, so this is a single-user sandbox - messages persist for the
  * session and nobody replies.
  *
  * Payments are the exception. `recordPayment` refuses rather than fabricating a
@@ -79,7 +79,7 @@ export const messageRepository = {
 
   async recordPayment(): Promise<PaymentReceipt> {
     throw new Error(
-      'Sending crypto needs the live backend — set EXPO_PUBLIC_USE_MOCK_DATA=false.',
+      'Sending crypto needs the live backend - set EXPO_PUBLIC_USE_MOCK_DATA=false.',
     );
   },
 

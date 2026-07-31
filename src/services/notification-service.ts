@@ -1,11 +1,11 @@
 /**
  * Push notification seam.
  *
- * Deliberately dependency-free today — `expo-notifications` is not installed,
+ * Deliberately dependency-free today - `expo-notifications` is not installed,
  * so nothing here asks for a permission the app cannot honour.
  *
  * TODO(push): `npx expo install expo-notifications expo-device`, then
- *   1. request permissions on first RSVP (not at launch — it converts badly),
+ *   1. request permissions on first RSVP (not at launch - it converts badly),
  *   2. register the Expo push token against the connected wallet address,
  *   3. schedule local reminders 24h and 1h before each RSVP'd event.
  */
@@ -33,7 +33,7 @@ export const notificationService = {
   /** Schedule 24h + 1h reminders for an event the user RSVP'd to. */
   async scheduleEventReminders(_event: EventItem): Promise<void> {
     if (!featureFlags.enablePushNotifications) return;
-    // TODO(push): Notifications.scheduleNotificationAsync(...) × 2
+    // TODO(push): Notifications.scheduleNotificationAsync(...) x 2
   },
 
   async cancelEventReminders(_eventId: string): Promise<void> {

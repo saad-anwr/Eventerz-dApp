@@ -1,5 +1,5 @@
 /**
- * Mock wallet adapter — the implementation shipping today.
+ * Mock wallet adapter - the implementation shipping today.
  *
  * It fabricates a deterministic base58-looking address per wallet, persists the
  * session so a relaunch stays connected, and simulates approval latency so the
@@ -74,7 +74,7 @@ export class MockWalletAdapter implements WalletAdapter {
       storage.get<WalletAccount>(StorageKeys.WALLET_SESSION),
       secureStorage.get(SecureKeys.WALLET_AUTH_TOKEN),
     ]);
-    // Both halves must survive — a session without its token is not reusable.
+    // Both halves must survive - a session without its token is not reusable.
     if (!account || !token) return null;
     return account;
   }

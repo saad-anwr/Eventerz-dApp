@@ -82,6 +82,8 @@
     "preview": "expo start --dev-client --tunnel",
     "apk": "node scripts/build-apk.mjs",
     "android:wipe": "node scripts/run-android.mjs --wipe",
+    "android:smoke": "node scripts/android-smoke.mjs",
+    "scripts:check": "node --check scripts/run-android.mjs && node --check scripts/build-apk.mjs && node --check scripts/check-deps.mjs && node --check scripts/android-smoke.mjs",
     "deps:check": "node scripts/check-deps.mjs",
     "postinstall": "node scripts/check-deps.mjs",
     "test": "vitest run",

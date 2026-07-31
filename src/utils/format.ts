@@ -1,5 +1,5 @@
 /**
- * Formatting helpers — ported from the web app's `lib/format.ts` so dates and
+ * Formatting helpers - ported from the web app's `lib/format.ts` so dates and
  * addresses read identically on both platforms. Dependency-free by design.
  */
 
@@ -11,7 +11,7 @@ export function uid(prefix = ''): string {
   return prefix ? `${prefix}_${id}` : id;
 }
 
-/** "just now" · "4m" · "2h" · "3d" · "12 Aug" — compact relative time. */
+/** "just now" · "4m" · "2h" · "3d" · "12 Aug" - compact relative time. */
 export function timeAgo(ts: number): string {
   const diff = Date.now() - ts;
   const sec = Math.round(diff / 1000);
@@ -28,7 +28,7 @@ export function timeAgo(ts: number): string {
   });
 }
 
-/** Clock time — "6:42 PM". */
+/** Clock time - "6:42 PM". */
 export function clockTime(ts: number): string {
   return new Date(ts).toLocaleTimeString('en-US', {
     hour: 'numeric',
@@ -36,7 +36,7 @@ export function clockTime(ts: number): string {
   });
 }
 
-/** Full timestamp — "14 Aug 2026, 6:42 PM". */
+/** Full timestamp - "14 Aug 2026, 6:42 PM". */
 export function fullTimestamp(ts: number): string {
   return new Date(ts).toLocaleString('en-US', {
     day: 'numeric',
@@ -47,7 +47,7 @@ export function fullTimestamp(ts: number): string {
   });
 }
 
-/** Timeline separator — "Today" · "Yesterday" · "Thu, 14 Aug". */
+/** Timeline separator - "Today" · "Yesterday" · "Thu, 14 Aug". */
 export function dayLabel(ts: number): string {
   const d = new Date(ts);
   const today = new Date();
@@ -63,7 +63,7 @@ export function dayLabel(ts: number): string {
   });
 }
 
-/** Event date — "Thu, Aug 14 · 6:00 PM". */
+/** Event date - "Thu, Aug 14 · 6:00 PM". */
 export function formatEventDate(iso: string): string {
   const d = new Date(iso);
   return (
@@ -77,7 +77,7 @@ export function formatEventDate(iso: string): string {
   );
 }
 
-/** Long event date — "Thursday, 14 August 2026". */
+/** Long event date - "Thursday, 14 August 2026". */
 export function formatEventDateLong(iso: string): string {
   return new Date(iso).toLocaleDateString('en-US', {
     weekday: 'long',
@@ -87,16 +87,16 @@ export function formatEventDateLong(iso: string): string {
   });
 }
 
-/** Time window — "6:00 PM – 9:30 PM" (start only when there is no end). */
+/** Time window - "6:00 PM - 9:30 PM" (start only when there is no end). */
 export function formatEventTimeRange(startIso: string, endIso?: string): string {
   const fmt = (d: Date) =>
     d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
   const start = fmt(new Date(startIso));
   if (!endIso) return start;
-  return `${start} – ${fmt(new Date(endIso))}`;
+  return `${start} - ${fmt(new Date(endIso))}`;
 }
 
-/** Calendar-tile parts — `{ month: "AUG", day: "14" }`. */
+/** Calendar-tile parts - `{ month: "AUG", day: "14" }`. */
 export function eventDateParts(iso: string): { month: string; day: string } {
   const d = new Date(iso);
   return {
@@ -105,7 +105,7 @@ export function eventDateParts(iso: string): { month: string; day: string } {
   };
 }
 
-/** Countdown to an event — "in 3 days" · "in 4h" · "Live now" · "Ended". */
+/** Countdown to an event - "in 3 days" · "in 4h" · "Live now" · "Ended". */
 export function countdownLabel(startIso: string, endIso?: string): string {
   const now = Date.now();
   const start = new Date(startIso).getTime();
@@ -125,14 +125,14 @@ export function isUpcoming(iso: string): boolean {
   return new Date(iso).getTime() > Date.now();
 }
 
-/** Truncate a wallet address — "9xQe…4dRt". */
+/** Truncate a wallet address - "9xQe...4dRt". */
 export function shortenAddress(address?: string | null, chars = 4): string {
   if (!address) return '';
   if (address.length <= chars * 2 + 1) return address;
-  return `${address.slice(0, chars)}…${address.slice(-chars)}`;
+  return `${address.slice(0, chars)}...${address.slice(-chars)}`;
 }
 
-/** Compact counts — 1200 → "1.2K", 480000 → "480K". */
+/** Compact counts - 1200 -> "1.2K", 480000 -> "480K". */
 export function compactNumber(value: number): string {
   if (Math.abs(value) < 1000) return String(value);
   if (Math.abs(value) < 1_000_000) {
@@ -143,7 +143,7 @@ export function compactNumber(value: number): string {
   return `${n % 1 === 0 ? n : n.toFixed(1)}M`;
 }
 
-/** SOL amount with the ◎ glyph — "◎ 1.84". */
+/** SOL amount with the ◎ glyph - "◎ 1.84". */
 export function formatSol(amount: number, fractionDigits = 2): string {
   return `◎ ${amount.toFixed(fractionDigits)}`;
 }
@@ -153,13 +153,13 @@ export function isFree(price: string): boolean {
   return price.trim().toLowerCase() === 'free';
 }
 
-/** Percentage of an event's capacity that is filled, clamped to 0–100. */
+/** Percentage of an event's capacity that is filled, clamped to 0-100. */
 export function fillPercent(attendees: number, capacity: number): number {
   if (capacity <= 0) return 0;
   return Math.min(100, Math.round((attendees / capacity) * 100));
 }
 
-/** Pluralise without a dependency — `plural(1, "spot")` → "1 spot". */
+/** Pluralise without a dependency - `plural(1, "spot")` -> "1 spot". */
 export function plural(count: number, singular: string, suffix = 's'): string {
   return `${count} ${singular}${count === 1 ? '' : suffix}`;
 }

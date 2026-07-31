@@ -1,7 +1,7 @@
 /**
  * Database contract, kept identical to the web app's `lib/supabase/types.ts`.
  *
- * Both must be `type` aliases rather than interfaces — supabase-js checks row
+ * Both must be `type` aliases rather than interfaces - supabase-js checks row
  * shapes against `Record<string, unknown>`, and only type aliases receive an
  * implicit index signature. Using an interface degrades every query's inferred
  * type to `never`.
@@ -69,7 +69,7 @@ export type DbEvent = {
   created_at: string;
   updated_at: string;
 
-  /* Denormalised by trigger in migration 0005 — see rows.ts for why. */
+  /* Denormalised by trigger in migration 0005 - see rows.ts for why. */
   confirmed_count: number;
   pending_count: number;
   waitlist_count: number;
@@ -81,7 +81,7 @@ export type DbEvent = {
   cancel_reason: string | null;
 
   /* Structured location (0006), alongside the free-text `location`. Null on
-     anything created before that migration — both clients fall back to a map
+     anything created before that migration - both clients fall back to a map
      search, so null is supported rather than a gap. */
   latitude: number | null;
   longitude: number | null;
@@ -89,7 +89,7 @@ export type DbEvent = {
   address: string | null;
 };
 
-/** `event_guests` view — an RSVP joined to its profile and ticket. */
+/** `event_guests` view - an RSVP joined to its profile and ticket. */
 export type DbEventGuest = {
   event_id: string;
   profile_id: string;
@@ -239,7 +239,7 @@ export type Database = {
     };
     Functions: {
       /**
-       * @deprecated Revoked in 0011 — it linked a wallet without checking that
+       * @deprecated Revoked in 0011 - it linked a wallet without checking that
        * the caller held its key. Use the `link-wallet` Edge Function.
        */
       link_wallet: {

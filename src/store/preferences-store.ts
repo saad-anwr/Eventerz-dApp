@@ -1,5 +1,5 @@
 /**
- * User preferences — persisted to AsyncStorage.
+ * User preferences - persisted to AsyncStorage.
  *
  * The app is dark-first by design; `theme: 'light'` is accepted and stored but
  * the palette currently renders dark either way. Keeping the field means the

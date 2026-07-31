@@ -29,7 +29,7 @@ export function buildMockEvents(): EventItem[] {
       id: 'e_summit',
       title: 'Solana Superteam Summit',
       description:
-        'A full day of talks, workshops and demos from the best builders in the Solana ecosystem. Network with founders, devs and investors — and grab your proof-of-attendance NFT on the way out.',
+        'A full day of talks, workshops and demos from the best builders in the Solana ecosystem. Network with founders, devs and investors - and grab your proof-of-attendance NFT on the way out.',
       hostId: 'u_maya',
       category: 'Conference',
       startsAt: new Date(now + 6 * DAY + 10 * HOUR).toISOString(),
@@ -70,7 +70,7 @@ export function buildMockEvents(): EventItem[] {
       visibility: 'public',
       requiresApproval: true,
       tokenGated: true,
-      gateRequirement: 'Holds ≥ 1 Metaplex Creator NFT',
+      gateRequirement: 'Holds >= 1 Metaplex Creator NFT',
       attendeeIds: ['u_kenji', 'u_leo', 'u_jonas'],
       tags: ['NFT', 'Meetup', 'Token-gated'],
       communityId: 'c_creators',
@@ -180,7 +180,7 @@ export function buildMockEvents(): EventItem[] {
       id: 'e_dao_call',
       title: 'Governance Deep Dive: Treasury Ops',
       description:
-        'How mature DAOs run treasuries — multisig hygiene, streaming payroll, and reporting that survives an audit.',
+        'How mature DAOs run treasuries - multisig hygiene, streaming payroll, and reporting that survives an audit.',
       hostId: 'u_nadia',
       category: 'DAO',
       startsAt: new Date(now + 8 * DAY + 16 * HOUR).toISOString(),
@@ -192,7 +192,7 @@ export function buildMockEvents(): EventItem[] {
       visibility: 'public',
       requiresApproval: false,
       tokenGated: true,
-      gateRequirement: 'Holds ≥ 100 governance tokens',
+      gateRequirement: 'Holds >= 100 governance tokens',
       attendeeIds: ['u_nadia', 'u_maya', 'u_diego'],
       tags: ['DAO', 'Governance', 'Token-gated'],
       communityId: 'c_daos',
@@ -201,7 +201,7 @@ export function buildMockEvents(): EventItem[] {
       id: 'e_seeker',
       title: 'Seeker Builders Meetup',
       description:
-        'A hardware-first evening for developers shipping on Solana Mobile. Bring your Seeker — we will test dApp Store submissions live.',
+        'A hardware-first evening for developers shipping on Solana Mobile. Bring your Seeker - we will test dApp Store submissions live.',
       hostId: 'u_jonas',
       category: 'Meetup',
       startsAt: new Date(now + 12 * DAY + 18 * HOUR).toISOString(),
@@ -282,7 +282,7 @@ export function buildMockEvents(): EventItem[] {
       id: 'e_past_bp',
       title: 'Breakpoint Side Event: Mobile Night',
       description:
-        'The Seeker launch party — 400 attendees, 400 POAPs, zero paper tickets.',
+        'The Seeker launch party - 400 attendees, 400 POAPs, zero paper tickets.',
       hostId: 'u_maya',
       category: 'Party',
       startsAt: new Date(now - 20 * DAY + 19 * HOUR).toISOString(),

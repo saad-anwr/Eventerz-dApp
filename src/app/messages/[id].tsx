@@ -74,7 +74,7 @@ function Bubble({
           <PaymentReceiptCard payment={payment} mine={mine} />
         ) : (
           /*
-           * The generated "Sent 0.4 SOL" line, shown while the receipt loads —
+           * The generated "Sent 0.4 SOL" line, shown while the receipt loads -
            * and permanently for anyone who can read the message but not the
            * payment, which RLS on `payments` allows in an event channel.
            */
@@ -288,7 +288,7 @@ export default function DirectMessageScreen() {
             <TextInput
               value={text}
               onChangeText={setText}
-              placeholder={isSelf ? 'This is you.' : `Message ${firstName}…`}
+              placeholder={isSelf ? 'This is you.' : `Message ${firstName}...`}
               placeholderTextColor="rgba(255,255,255,0.40)"
               editable={!isSelf && Boolean(meId)}
               multiline

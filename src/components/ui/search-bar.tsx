@@ -1,6 +1,6 @@
 /**
  * Search field with a focus glow that mirrors the web app's `.focus-glow`
- * utility — the border warms to brand purple and a soft ring appears.
+ * utility - the border warms to brand purple and a soft ring appears.
  */
 
 import { memo, useCallback, useState } from 'react';

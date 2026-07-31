@@ -1,5 +1,5 @@
 /**
- * Centred modal — the web app's `wallet-modal` treatment: scrim, gradient-rim
+ * Centred modal - the web app's `wallet-modal` treatment: scrim, gradient-rim
  * card, scale-and-lift entrance.
  *
  * Use `<BottomSheet>` for anything list-shaped; this is for confirmations and

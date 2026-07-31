@@ -13,7 +13,7 @@
  *     convenience, not a control.
  *
  * Cancellation sits at the bottom, visually separated and behind a confirm step.
- * It is soft — the row survives so ticket holders keep the record — but it closes
+ * It is soft - the row survives so ticket holders keep the record - but it closes
  * every live RSVP and notifies everyone, so it is not an action to put next to
  * "Save".
  */
@@ -44,7 +44,7 @@ import { EVENT_CATEGORIES, type EventCategory, type EventItem } from '@/types';
 import { goingCount, hasEnded, isCancelled } from '@/utils/rsvp';
 import { haptics } from '@/utils/haptics';
 
-/** The editable shape, as strings — what the fields actually hold. */
+/** The editable shape, as strings - what the fields actually hold. */
 interface Draft {
   title: string;
   description: string;
@@ -89,7 +89,7 @@ export default function EditEventScreen() {
 
   /*
    * Seed once, from the first load. Re-seeding on every refetch would discard
-   * whatever the host was typing the moment a Realtime event landed — and this
+   * whatever the host was typing the moment a Realtime event landed - and this
    * screen is subscribed to the very table it edits, so that happens constantly.
    */
   const seeded = useRef(false);
@@ -167,7 +167,7 @@ export default function EditEventScreen() {
       patch.location = nextLocation;
     }
 
-    // Coordinates travel with the location. An online event drops them — a map
+    // Coordinates travel with the location. An online event drops them - a map
     // of an online event is a map of nowhere.
     if (current.isOnline) {
       if (original.latitude !== undefined) {
@@ -348,7 +348,7 @@ export default function EditEventScreen() {
             value={draft.capacity}
             onChangeText={(v) => set('capacity', v)}
             keyboardType="number-pad"
-            hint={going > 0 ? `${going} confirmed — cannot go below this.` : undefined}
+            hint={going > 0 ? `${going} confirmed - cannot go below this.` : undefined}
           />
           <TextField
             label="Price"
@@ -383,7 +383,7 @@ export default function EditEventScreen() {
         )}
 
         <Button
-          label={update.isPending ? 'Saving…' : 'Save changes'}
+          label={update.isPending ? 'Saving...' : 'Save changes'}
           fullWidth
           size="lg"
           loading={update.isPending}
@@ -403,7 +403,7 @@ export default function EditEventScreen() {
           <Text variant="title">Cancel this event</Text>
           <Text variant="bodySm" className="text-muted">
             Everyone holding a spot is notified and their RSVP is closed. The
-            event page stays up so ticket holders keep the record — it cannot be
+            event page stays up so ticket holders keep the record - it cannot be
             un-cancelled.
           </Text>
 
@@ -413,13 +413,13 @@ export default function EditEventScreen() {
                 label="Why? (optional)"
                 value={cancelReason}
                 onChangeText={setCancelReason}
-                placeholder="Venue fell through — we'll reschedule."
+                placeholder="Venue fell through - we'll reschedule."
                 hint="Included in the notification guests receive."
               />
               <Button
                 label={
                   cancel.isPending
-                    ? 'Cancelling…'
+                    ? 'Cancelling...'
                     : going > 0
                       ? `Yes, cancel and notify ${going}`
                       : 'Yes, cancel this event'

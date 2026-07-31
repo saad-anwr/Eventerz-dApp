@@ -24,7 +24,7 @@ import type { EventItem, RsvpState } from '@/types';
  *
  * This file mirrors the website's `lib/events.test.ts` assertion for assertion.
  * The two modules are hand-maintained 1:1 ports, and the failure mode of drift is
- * not a crash — it is a guest seeing "Requested to attend" on the website and
+ * not a crash - it is a guest seeing "Requested to attend" on the website and
  * something else in the app, and having to work out whether they mean the same
  * thing. The literal strings below are asserted on both sides on purpose: they
  * are the contract, not an implementation detail.
@@ -207,7 +207,7 @@ describe('RSVP_PRESENTATION parity with the website', () => {
    * The exact strings from `Eventerz/lib/events.ts`.
    *
    * Duplicated here rather than imported, because the two projects are separate
-   * packages with no shared module — which is the whole reason drift is possible.
+   * packages with no shared module - which is the whole reason drift is possible.
    * If these ever need to differ, that is a product decision and this test is
    * where it gets made explicitly.
    */

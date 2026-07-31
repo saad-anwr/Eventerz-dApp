@@ -1,8 +1,8 @@
 /**
  * Empty and error states.
  *
- * Both share the same anatomy — haloed icon, headline, supporting line,
- * optional action — so a list that flips between "no results" and "failed to
+ * Both share the same anatomy - haloed icon, headline, supporting line,
+ * optional action - so a list that flips between "no results" and "failed to
  * load" does not jump around.
  */
 
@@ -23,7 +23,7 @@ interface StateProps {
   description?: string;
   actionLabel?: string;
   onAction?: () => void;
-  /** Halo tint — defaults to brand purple. */
+  /** Halo tint - defaults to brand purple. */
   accent?: string;
   className?: string;
 }

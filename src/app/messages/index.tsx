@@ -3,7 +3,7 @@
  *
  * The list is friends **union** everyone who has actually messaged you. Friends
  * alone was the website's old rule and it meant a host contacted through
- * "Contact host" — by definition not yet a friend — had the message delivered to
+ * "Contact host" - by definition not yet a friend - had the message delivered to
  * a thread that appeared nowhere. Friends with no messages are still listed: an
  * empty thread with someone you know is a starting point, not clutter.
  */

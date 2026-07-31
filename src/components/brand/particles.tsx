@@ -1,5 +1,5 @@
 /**
- * Drifting particle field — port of the web app's `components/ui/particles.tsx`.
+ * Drifting particle field - port of the web app's `components/ui/particles.tsx`.
  *
  * Used on the splash and onboarding screens. Each particle is one small
  * Reanimated view running an independent loop on the UI thread; the count is

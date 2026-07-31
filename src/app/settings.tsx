@@ -6,6 +6,7 @@
  * choices survive a relaunch.
  */
 
+import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Linking, ScrollView, View } from 'react-native';
@@ -96,18 +97,36 @@ function LinkRow({
   title: string;
   description?: string;
   value?: string;
-  onPress: () => void;
+  /**
+   * Omit for a row that only reports something (Version). Such a row then
+   * renders as plain content: no press feedback, no chevron, and no
+   * `accessibilityRole="button"`.
+   *
+   * It used to be required, so the Version row passed `() => {}` - which faded
+   * on touch and announced itself to a screen reader as a button, both of which
+   * promise an action that does not exist.
+   */
+  onPress?: () => void;
   external?: boolean;
   destructive?: boolean;
 }) {
   const tint = destructive ? '#f87171' : '#94a2b8';
 
+  // A chevron is a promise that something happens next; only interactive rows
+  // may make it.
+  const Container = onPress ? PressableFade : View;
+  const interactionProps = onPress
+    ? {
+        onPress,
+        accessibilityRole: 'button' as const,
+        accessibilityLabel: title,
+        accessibilityHint: description,
+      }
+    : {};
+
   return (
-    <PressableFade
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityLabel={title}
-      accessibilityHint={description}
+    <Container
+      {...interactionProps}
       className="flex-row items-center gap-3 py-3.5"
       style={{ minHeight: TOUCH_TARGET }}
     >
@@ -145,16 +164,24 @@ function LinkRow({
         </Text>
       )}
 
-      {external ? (
-        <ExternalLink size={15} color="#64748b" strokeWidth={2} />
-      ) : (
-        <ChevronRight size={16} color="#64748b" strokeWidth={2.2} />
-      )}
-    </PressableFade>
+      {onPress &&
+        (external ? (
+          <ExternalLink size={15} color="#64748b" strokeWidth={2} />
+        ) : (
+          <ChevronRight size={16} color="#64748b" strokeWidth={2.2} />
+        ))}
+    </Container>
   );
 }
 
 const Divider = () => <View className="h-px bg-white/[0.06]" />;
+
+/**
+ * Read from the config rather than typed in, because a hard-coded string is a
+ * lie the moment `app.json` is bumped - and the version people quote in bug
+ * reports is the one thing here that has to be true.
+ */
+const appVersion = Constants.expoConfig?.version ?? '-';
 
 export default function SettingsScreen() {
   const router = useRouter();
@@ -272,7 +299,7 @@ export default function SettingsScreen() {
               <View className="flex-1">
                 <Text variant="title">Theme</Text>
                 <Text variant="caption" className="mt-0.5 text-muted-foreground">
-                  Eventerz is dark-first — light mode is on the roadmap
+                  Eventerz is dark-first - light mode is on the roadmap
                 </Text>
               </View>
             </View>
@@ -374,14 +401,14 @@ export default function SettingsScreen() {
           <Divider />
           <SwitchRow
             title="Product updates"
-            description="New Eventerz features — rarely, we promise"
+            description="New Eventerz features - rarely, we promise"
             icon={Info}
             value={preferences.notifications.productUpdates}
             onValueChange={() => preferences.toggleNotification('productUpdates')}
           />
         </Group>
 
-        {/* Account — Google is secondary to the wallet, so it sits above the
+        {/* Account - Google is secondary to the wallet, so it sits above the
             wallet group as "how you get back in", not "how you sign in". */}
         <Group title="Account recovery">
           <GoogleAccountRow />
@@ -488,12 +515,9 @@ export default function SettingsScreen() {
             external
           />
           <Divider />
-          <LinkRow
-            icon={Info}
-            title="Version"
-            value="1.0.0"
-            onPress={() => {}}
-          />
+          {/* Informational - no onPress, so it renders inert rather than as a
+              button that does nothing. */}
+          <LinkRow icon={Info} title="Version" value={appVersion} />
         </Group>
 
         {/* Developer */}
@@ -558,7 +582,7 @@ export default function SettingsScreen() {
         visible={signOutVisible}
         onClose={() => setSignOutVisible(false)}
         title="Disconnect wallet?"
-        subtitle="Your tickets, badges and reputation stay on-chain — reconnecting restores everything."
+        subtitle="Your tickets, badges and reputation stay on-chain - reconnecting restores everything."
         dismissOnBackdrop={false}
       >
         <View className="flex-row gap-3">

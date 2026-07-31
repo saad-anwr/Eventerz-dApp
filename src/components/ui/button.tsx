@@ -1,5 +1,5 @@
 /**
- * Button — the mobile counterpart to the web app's `components/ui/button.tsx`.
+ * Button - the mobile counterpart to the web app's `components/ui/button.tsx`.
  *
  * Same five variants (primary gradient, glass secondary, outline, ghost, link)
  * and the same pill geometry, rebuilt with `expo-linear-gradient` for the fill
@@ -59,7 +59,7 @@ const SIZES: Record<
   lg: { height: 56, paddingX: 28, fontSize: 16, icon: 19, gap: 10 },
 };
 
-/** Foreground colour per variant — icons and label share it. */
+/** Foreground colour per variant - icons and label share it. */
 const FOREGROUND: Record<ButtonVariant, string> = {
   primary: '#ffffff',
   secondary: '#f8fafc',
@@ -171,7 +171,7 @@ export const Button = memo(function Button({
 });
 
 /**
- * Icon-only button — a circular variant used in headers and card corners.
+ * Icon-only button - a circular variant used in headers and card corners.
  * Always renders at the 44px floor regardless of the glyph size.
  */
 export const IconButton = memo(function IconButton({
@@ -186,7 +186,7 @@ export const IconButton = memo(function IconButton({
 }: {
   icon: LucideIcon;
   onPress?: () => void;
-  /** Screen-reader label — required, since there is no visible text. */
+  /** Screen-reader label - required, since there is no visible text. */
   label: string;
   variant?: 'secondary' | 'ghost' | 'glass';
   size?: number;

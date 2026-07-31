@@ -8,7 +8,7 @@ export const userRepository = {
     return db.users[id] ?? null;
   },
 
-  /** Batch lookup — used by attendee rows so one call fills a whole list. */
+  /** Batch lookup - used by attendee rows so one call fills a whole list. */
   async getMany(ids: string[]): Promise<User[]> {
     await mockDelay();
     return ids.map((id) => db.users[id]).filter((u): u is User => Boolean(u));
@@ -40,7 +40,7 @@ export const userRepository = {
 
     const user: User = {
       id: uid('u'),
-      name: `${address.slice(0, 4)}…${address.slice(-4)}`,
+      name: `${address.slice(0, 4)}...${address.slice(-4)}`,
       handle: `sol${address.slice(0, 6).toLowerCase()}`,
       walletAddress: address,
       authMethod: 'wallet',

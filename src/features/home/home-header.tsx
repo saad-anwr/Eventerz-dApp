@@ -1,5 +1,5 @@
 /**
- * Home header — greeting, wallet chip and the notification bell.
+ * Home header - greeting, wallet chip and the notification bell.
  *
  * Signed out it shows a "Connect" pill; connected it shows the truncated
  * address and SOL balance, which is the fastest way to reassure someone the
@@ -33,7 +33,7 @@ export const HomeHeader = memo(function HomeHeader({
   /**
    * Messages live in the header rather than the tab bar on purpose. The raised
    * "Create" button only sits centred with an odd number of tabs, so a sixth tab
-   * would push it off-centre — a visible regression to the bar's whole design in
+   * would push it off-centre - a visible regression to the bar's whole design in
    * exchange for one more entry point.
    */
   onOpenMessages: () => void;

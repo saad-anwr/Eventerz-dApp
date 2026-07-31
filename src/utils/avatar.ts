@@ -1,5 +1,5 @@
 /**
- * Deterministic gradient avatars — ported from the web app's `lib/avatar.ts`.
+ * Deterministic gradient avatars - ported from the web app's `lib/avatar.ts`.
  * The same seed produces the same gradient on web and mobile.
  */
 
@@ -27,7 +27,7 @@ export function initials(name: string): string {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
-/** Deterministic pick from any list — used for mock variety. */
+/** Deterministic pick from any list - used for mock variety. */
 export function pickBySeed<T>(seed: string, list: readonly T[]): T {
   return list[hash(seed) % list.length];
 }

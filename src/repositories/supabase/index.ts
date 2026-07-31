@@ -1,7 +1,7 @@
 /**
  * Supabase-backed repositories.
  *
- * Same shape as the mock repositories — `repositories/index.ts` picks between
+ * Same shape as the mock repositories - `repositories/index.ts` picks between
  * them from one flag, so screens and hooks never learn which is in play.
  */
 
@@ -56,7 +56,7 @@ function fail(context: string, error: { message: string } | null): never {
   throw new Error(error?.message ?? `${context} failed.`);
 }
 
-/** The signed-in user's id, or null. Reads the cached session — no round trip. */
+/** The signed-in user's id, or null. Reads the cached session - no round trip. */
 async function currentUserId(): Promise<string | null> {
   const { data } = await client().auth.getSession();
   return data.session?.user.id ?? null;
@@ -74,7 +74,7 @@ interface RosterResult {
 /**
  * Rosters and own-status for a set of events, in one round trip rather than N.
  *
- * The same query serves everyone — it returns the full roster for events the
+ * The same query serves everyone - it returns the full roster for events the
  * viewer hosts or attends and just their own row elsewhere, because RLS decides
  * what it yields rather than the client asking differently.
  */
@@ -233,7 +233,7 @@ export const supabaseEventRepository = {
 
   /**
    * Interest-matched. Postgres has no cheap "overlap score" without a custom
-   * function, so we over-fetch a little and rank in memory — fine at this size.
+   * function, so we over-fetch a little and rank in memory - fine at this size.
    */
   async listRecommended(user: User | null, limit = 6): Promise<EventItem[]> {
     const { data, error } = await client()
@@ -279,7 +279,7 @@ export const supabaseEventRepository = {
   /**
    * Events the viewer has a live relationship with.
    *
-   * Includes pending and waitlisted, not only confirmed — someone who has asked
+   * Includes pending and waitlisted, not only confirmed - someone who has asked
    * to join needs somewhere to watch for the host's answer. Declined and
    * cancelled are excluded: listing them here would read as still being in the
    * running.
@@ -419,8 +419,8 @@ export const supabaseEventRepository = {
   /**
    * Ask to attend.
    *
-   * The server decides the outcome — confirmed, pending approval, or waitlisted
-   * — because capacity and approval must be evaluated atomically with the seat
+   * The server decides the outcome - confirmed, pending approval, or waitlisted
+   * - because capacity and approval must be evaluated atomically with the seat
    * being granted. The reloaded event carries the resulting `myStatus`, so the
    * screen renders the real state rather than an optimistic guess.
    */
@@ -539,7 +539,7 @@ export const supabaseUserRepository = {
    *
    * Unlike the mock, this cannot *create* a row: RLS requires `auth.uid()`, and
    * a wallet on its own is not an authenticated session. So a wallet with no
-   * linked account gets a local, unsaved identity — enough to browse, not
+   * linked account gets a local, unsaved identity - enough to browse, not
    * enough to RSVP. That is exactly the wallet-primary model: the wallet is the
    * identity, but the account behind it is created by linking Google.
    */
@@ -554,7 +554,7 @@ export const supabaseUserRepository = {
 
     return {
       id: `wallet:${address}`,
-      name: `${address.slice(0, 4)}…${address.slice(-4)}`,
+      name: `${address.slice(0, 4)}...${address.slice(-4)}`,
       handle: `sol${address.slice(0, 6).toLowerCase()}`,
       walletAddress: address,
       authMethod: 'wallet',
@@ -568,7 +568,7 @@ export const supabaseUserRepository = {
     // Unsaved wallet-only identities have no row to update yet.
     if (id.startsWith('wallet:')) {
       throw new Error(
-        'Link a Google account before editing your profile — there is nothing to save to yet.',
+        'Link a Google account before editing your profile - there is nothing to save to yet.',
       );
     }
 
@@ -725,7 +725,7 @@ export const supabaseTicketRepository = {
 
   /**
    * Redeem a scanned code. The server verifies the secret and that the caller
-   * hosts the event — the client is never trusted with either check.
+   * hosts the event - the client is never trusted with either check.
    */
   async redeemQr(payload: string): Promise<Ticket> {
     const parsed = parseQrPayload(payload);
@@ -756,7 +756,7 @@ export const supabaseTicketRepository = {
       return {
         id: `poap_${r.id}`,
         name: 'Proof of Attendance',
-        description: 'You showed up — recorded on your profile.',
+        description: 'You showed up - recorded on your profile.',
         icon: 'BadgeCheck',
         accent: 'cyan' as const,
         earnedAt: Date.parse(r.checked_in_at) || Date.now(),
@@ -834,7 +834,7 @@ export const supabaseAnalyticsRepository = {
     const all = (tickets ?? []) as { status: string; event_id: string }[];
     const used = all.filter((t) => t.status === 'used').length;
 
-    // Revenue derives from each event's price string × its tickets. Prices are
+    // Revenue derives from each event's price string x its tickets. Prices are
     // display strings ("0.5 SOL"), so parse defensively.
     const priceOf = new Map(
       (events ?? []).map((e) => {

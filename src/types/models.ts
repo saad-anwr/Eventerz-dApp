@@ -58,7 +58,7 @@ export type EventVisibility = 'public' | 'private' | 'unlisted';
 
 export interface ScheduleSlot {
   id: string;
-  /** "10:00" — local to the event's location. */
+  /** "10:00" - local to the event's location. */
   time: string;
   title: string;
   speaker?: string;
@@ -70,7 +70,7 @@ export interface EventItem {
   title: string;
   description: string;
   hostId: string;
-  /** Key into `theme/colors.ts` → `coverGradients`. */
+  /** Key into `theme/colors.ts` -> `coverGradients`. */
   coverGradient: CoverGradientKey;
   /** Optional remote banner; the gradient renders when absent. */
   coverImage?: string;
@@ -81,15 +81,15 @@ export interface EventItem {
   location: string;
   isOnline: boolean;
   capacity: number;
-  /** Display string — "Free" or "0.5 SOL". */
+  /** Display string - "Free" or "0.5 SOL". */
   price: string;
   visibility: EventVisibility;
   requiresApproval: boolean;
   tokenGated: boolean;
-  /** Human-readable gate, e.g. "Holds ≥ 1 MadLads NFT". */
+  /** Human-readable gate, e.g. "Holds >= 1 MadLads NFT". */
   gateRequirement?: string;
   /**
-   * Confirmed guests, and only when this viewer may see them — the host or a
+   * Confirmed guests, and only when this viewer may see them - the host or a
    * confirmed guest. Empty otherwise, because the roster is gated in Postgres.
    * Read counts from `confirmedCount`, never from this array's length.
    */
@@ -103,7 +103,7 @@ export interface EventItem {
 
   /**
    * Live counts, visible to everyone, maintained server-side by trigger.
-   * Optional because the mock backend has no trigger — there `attendeeIds` is
+   * Optional because the mock backend has no trigger - there `attendeeIds` is
    * the whole truth. Read them through the helpers in `utils/rsvp.ts`.
    */
   confirmedCount?: number;
@@ -117,7 +117,7 @@ export interface EventItem {
    * The viewer's 1-based place in the waitlist queue, when they are on it.
    *
    * Cannot be derived on the client: RLS returns a waitlisted guest exactly one
-   * RSVP row — their own — so the people ahead of them are rows this client may
+   * RSVP row - their own - so the people ahead of them are rows this client may
    * not read. Comes from `my_waitlist_position`.
    */
   waitlistPosition?: number;
@@ -128,7 +128,7 @@ export interface EventItem {
 
   /**
    * Structured location, when the host's input resolved to a place. Undefined
-   * is a supported state, not a gap — the UI falls back to a map search on the
+   * is a supported state, not a gap - the UI falls back to a map search on the
    * `location` string.
    */
   latitude?: number;
@@ -238,7 +238,7 @@ export interface Community {
  * The SQL functions insert `rsvp`, `ticket`, `event`, `reminder`, `payment`,
  * `security` and `reputation`; the app adds `wallet`, `community` and
  * `event-reminder` (locally scheduled). Keeping the union complete matters
- * because `components/ui/icon.tsx` maps kind → icon, and an unmapped kind
+ * because `components/ui/icon.tsx` maps kind -> icon, and an unmapped kind
  * renders a blank space where every other row has a symbol.
  */
 export type NotificationKind =
@@ -275,8 +275,8 @@ export type MessageScope = 'event' | 'dm';
  * A chat message.
  *
  * `kind` distinguishes something typed from a payment receipt. Receipts are
- * written only by the `record_payment` SQL function — the insert policy on
- * `messages` pins client writes to `text` — so a client cannot post a receipt
+ * written only by the `record_payment` SQL function - the insert policy on
+ * `messages` pins client writes to `text` - so a client cannot post a receipt
  * for a transfer that never happened.
  */
 export interface Message {
@@ -326,7 +326,7 @@ export interface PaymentReceipt {
   channelId?: string;
   /**
    * False until the `verify-payment` Edge Function has checked the signature
-   * against the cluster. Render it without a tick — an unchecked claim must not
+   * against the cluster. Render it without a tick - an unchecked claim must not
    * look like a checked one.
    */
   verified: boolean;

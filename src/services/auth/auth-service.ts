@@ -1,7 +1,7 @@
 /**
  * Google sign-in for React Native.
  *
- * Flow (PKCE — the only correct choice for a public client, since a mobile app
+ * Flow (PKCE - the only correct choice for a public client, since a mobile app
  * cannot keep a client secret):
  *
  *   1. Ask Supabase for the Google consent URL, telling it to return to our
@@ -9,10 +9,10 @@
  *   2. Open it in an in-app browser tab (`openAuthSessionAsync`), which shares
  *      cookies with the system browser so an already-signed-in Google account
  *      needs one tap, and closes itself on redirect.
- *   3. Google → Supabase → `eventerz://auth/callback?code=…`
+ *   3. Google -> Supabase -> `eventerz://auth/callback?code=...`
  *   4. Exchange the code for a session. The verifier never leaves the device.
  *
- * Everything returns a discriminated result rather than throwing — each failure
+ * Everything returns a discriminated result rather than throwing - each failure
  * here is user-facing (consent denied, browser dismissed, no network).
  */
 
@@ -29,11 +29,11 @@ export type AuthResult<T = void> =
   | { ok: false; error: string; cancelled?: boolean };
 
 const NOT_CONFIGURED =
-  'Sign-in is not configured. Set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY — see docs/AUTH_SETUP.md.';
+  'Sign-in is not configured. Set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY - see docs/AUTH_SETUP.md.';
 
 /**
- * Where Google returns the user. Must be registered in Supabase →
- * Authentication → URL Configuration → Redirect URLs, exactly as produced here.
+ * Where Google returns the user. Must be registered in Supabase ->
+ * Authentication -> URL Configuration -> Redirect URLs, exactly as produced here.
  */
 export function authRedirectUrl(): string {
   return Linking.createURL('auth/callback', { scheme: APP_SCHEME });
@@ -68,7 +68,7 @@ export async function signInWithGoogle(): Promise<AuthResult<ProfileRow | null>>
     provider: 'google',
     options: {
       redirectTo,
-      // We drive the browser ourselves — Supabase must not try to navigate.
+      // We drive the browser ourselves - Supabase must not try to navigate.
       skipBrowserRedirect: true,
       queryParams: { access_type: 'offline', prompt: 'select_account' },
     },
@@ -176,7 +176,7 @@ export async function updateMyProfile(
  *   1. `issue_wallet_link_nonce` mints a single-use challenge bound to this
  *      account and this address, valid for five minutes.
  *   2. The wallet signs that exact text. This is what the old implementation
- *      never did — it took an address on trust, so any signed-in user could
+ *      never did - it took an address on trust, so any signed-in user could
  *      claim any unclaimed wallet they could read off the explorer, along with
  *      its reputation and ticket history.
  *   3. The `link-wallet` Edge Function verifies the signature (Postgres has no
@@ -184,7 +184,7 @@ export async function updateMyProfile(
  *      no path to a linked wallet that bypasses the check.
  *
  * `signMessage` is injected rather than imported so this module stays free of
- * the wallet adapter — which is Android-only and needs a dev build, neither of
+ * the wallet adapter - which is Android-only and needs a dev build, neither of
  * which an auth service should care about.
  */
 export async function linkWallet(
@@ -209,7 +209,7 @@ export async function linkWallet(
 
   try {
     const message = challenge as string;
-    // MWA returns a base64 signature, which the Edge Function accepts as-is —
+    // MWA returns a base64 signature, which the Edge Function accepts as-is -
     // it takes base58 or base64 precisely so neither client needs a base58
     // implementation just to post a signature.
     const signature = await signMessage(message);
@@ -231,7 +231,7 @@ export async function linkWallet(
           const body = await response.json();
           if (typeof body?.error === 'string') detail = body.error;
         } catch {
-          /* not JSON — fall through to the generic message */
+          /* not JSON - fall through to the generic message */
         }
       }
       return { ok: false, error: detail ?? 'Could not verify that wallet.' };

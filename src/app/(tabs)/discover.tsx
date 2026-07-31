@@ -281,7 +281,7 @@ export default function DiscoverScreen() {
           ) : events.length > 0 && !feed.hasNextPage ? (
             <View className="items-center py-8">
               <Text variant="caption" className="text-muted-foreground">
-                That&apos;s everything — {plural(total, 'event')}
+                That&apos;s everything - {plural(total, 'event')}
               </Text>
             </View>
           ) : null

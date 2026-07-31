@@ -1,5 +1,5 @@
 /**
- * Create Event — six-step wizard.
+ * Create Event - six-step wizard.
  *
  * The draft lives in `createEventStore`, so this file only owns navigation
  * between steps, validation gating and the publish mutation. Publishing signs

@@ -2,7 +2,7 @@
  * Eventerz colour tokens.
  *
  * Single source of truth for anything that cannot go through a Tailwind class
- * — gradient stops, shadow colours, SVG fills, status-bar tint, navigation
+ * - gradient stops, shadow colours, SVG fills, status-bar tint, navigation
  * theme. Values are byte-identical to the web app's `tailwind.config.ts` and
  * the HSL tokens in `app/globals.css`.
  */
@@ -48,9 +48,9 @@ export const status = {
 } as const;
 
 /**
- * The signature Eventerz gradient — `linear-gradient(135deg, …)` on web.
+ * The signature Eventerz gradient - `linear-gradient(135deg, ...)` on web.
  * On native, feed `colors` to `<LinearGradient>` with `start`/`end` of
- * `{x:0,y:0}` → `{x:1,y:1}` to reproduce the 135° angle.
+ * `{x:0,y:0}` -> `{x:1,y:1}` to reproduce the 135° angle.
  */
 export const gradients = {
   brand: {
@@ -92,7 +92,7 @@ export const gradients = {
 /**
  * Named cover gradients for events and avatars. Keys are stored on the data
  * model (`EventItem.coverGradient`) exactly like the web app stores Tailwind
- * class strings — the key is portable, the colours resolve per-platform.
+ * class strings - the key is portable, the colours resolve per-platform.
  */
 export const coverGradients = {
   'purple-blue': [brand.purple, brand.blue],

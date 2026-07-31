@@ -2,7 +2,7 @@
  * Database row shapes for `0002_events.sql`, plus mappers to the domain models
  * the UI already speaks.
  *
- * Declared as `type` aliases, never interfaces — supabase-js checks rows
+ * Declared as `type` aliases, never interfaces - supabase-js checks rows
  * against `Record<string, unknown>`, and only type aliases get an implicit
  * index signature. An interface silently degrades every query to `never`.
  */
@@ -76,7 +76,7 @@ export type EventRow = {
 
   /*
    * Structured location (0006), alongside the free-text `location` the host
-   * typed. Null on every event created before that migration — both clients
+   * typed. Null on every event created before that migration - both clients
    * fall back to a map search, so null is supported rather than a gap.
    */
   latitude: number | null;
@@ -124,7 +124,7 @@ export type FriendRequestRow = {
   updated_at: string;
 };
 
-/** `event_guests` view — an RSVP joined to its profile and ticket. */
+/** `event_guests` view - an RSVP joined to its profile and ticket. */
 export type EventGuestRow = {
   event_id: string;
   profile_id: string;
@@ -196,7 +196,7 @@ export type RsvpRow = {
 const epoch = (iso: string) => Date.parse(iso) || Date.now();
 
 /**
- * `attendeeIds` and `myStatus` are not columns — they come from a joined `rsvps`
+ * `attendeeIds` and `myStatus` are not columns - they come from a joined `rsvps`
  * select. Callers that do not need the roster pass nothing rather than paying
  * for the join; the counts below come from the event row itself, so a caller
  * that skips the join still renders correct numbers.

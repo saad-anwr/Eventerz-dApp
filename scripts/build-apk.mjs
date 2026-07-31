@@ -2,21 +2,21 @@
 /**
  * Build a standalone APK you can install on a real phone.
  *
- *   npm run apk            → release APK, arm64 (dApp Store submission)
- *   npm run apk -- --debug → debug APK that still needs Metro
- *   npm run apk -- --all   → all ABIs (slower; only needed for wide release)
+ *   npm run apk            -> release APK, arm64 (dApp Store submission)
+ *   npm run apk -- --debug -> debug APK that still needs Metro
+ *   npm run apk -- --all   -> all ABIs (slower; only needed for wide release)
  *
  * Why this is separate from `npm run android`:
  *
  * A *debug* build loads its JavaScript from Metro at runtime, so the phone has
  * to be on your network with the dev server up. A *release* build bundles the
- * JS into the APK — it runs standalone, which is what you need for real
+ * JS into the APK - it runs standalone, which is what you need for real
  * device testing away from your machine and for submission.
  *
  * Signing: the release buildType is configured to sign with the debug keystore
  * (android/app/build.gradle), so the APK installs on any phone. That is fine
  * for testing and sideloading. Before submitting to the Solana dApp Store,
- * replace it with your own upload key — see
+ * replace it with your own upload key - see
  * https://reactnative.dev/docs/signed-apk-android
  */
 
@@ -64,10 +64,10 @@ const gradleArgs = [
   '--console=plain',
 ];
 
-log(`Building ${variant.toLowerCase()} APK for ${abis}…`);
+log(`Building ${variant.toLowerCase()} APK for ${abis}...`);
 if (!isDebug) {
   log('Release bundles the JS, so the APK runs without Metro.');
-  log('Signed with the debug keystore — fine for sideloading, not for the store.');
+  log('Signed with the debug keystore - fine for sideloading, not for the store.');
 }
 
 const result = spawnSync(gradlew, gradleArgs, {
@@ -76,7 +76,7 @@ const result = spawnSync(gradlew, gradleArgs, {
   env: { ...process.env, ANDROID_HOME: SDK, ANDROID_SDK_ROOT: SDK },
 });
 
-if (result.status !== 0) die('Build failed — see the output above.');
+if (result.status !== 0) die('Build failed - see the output above.');
 
 const apk = join(
   ROOT, 'android', 'app', 'build', 'outputs', 'apk',
@@ -99,7 +99,7 @@ if (existsSync(apk)) {
   console.log(`  ${apk}\n`);
   log('To put it on your phone:');
   console.log('  adb install -r "' + apk + '"');
-  console.log('  …or copy the file across and open it (allow unknown sources).\n');
+  console.log('  ...or copy the file across and open it (allow unknown sources).\n');
 } else {
   die(`Expected an APK at ${apk} but it is not there.`);
 }

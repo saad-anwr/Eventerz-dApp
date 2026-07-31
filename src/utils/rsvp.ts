@@ -22,7 +22,7 @@ export function goingCount(event: EventItem): number {
  * The viewer's own state for this event.
  *
  * `myStatus` is authoritative when present. The roster fallback exists for the
- * mock backend, where membership is the only signal — and it can only ever mean
+ * mock backend, where membership is the only signal - and it can only ever mean
  * `confirmed`, since the mock has no approval concept.
  */
 export function myRsvpState(
@@ -34,7 +34,7 @@ export function myRsvpState(
   return undefined;
 }
 
-/** Seats left, floored at zero — capacity can be lowered below the headcount. */
+/** Seats left, floored at zero - capacity can be lowered below the headcount. */
 export function spotsLeft(event: EventItem): number {
   return Math.max(0, event.capacity - goingCount(event));
 }
@@ -49,7 +49,7 @@ export function filledPercent(event: EventItem): number {
   return Math.min(100, Math.round((goingCount(event) / event.capacity) * 100));
 }
 
-/** True when the viewer holds a seat — the gate for chat and the guest list. */
+/** True when the viewer holds a seat - the gate for chat and the guest list. */
 export function isConfirmed(
   event: EventItem,
   userId: string | null | undefined,
@@ -57,7 +57,7 @@ export function isConfirmed(
   return myRsvpState(event, userId) === 'confirmed';
 }
 
-/** The host called it off. Soft — the row and its screen survive. */
+/** The host called it off. Soft - the row and its screen survive. */
 export function isCancelled(event: EventItem): boolean {
   return Boolean(event.cancelledAt);
 }
@@ -85,7 +85,7 @@ export function isEditable(event: EventItem): boolean {
 export interface RsvpPresentation {
   label: string;
   detail: string;
-  /** Resolved hex, not a Tailwind class — used for borders and icon tints. */
+  /** Resolved hex, not a Tailwind class - used for borders and icon tints. */
   accent: string;
 }
 
@@ -123,7 +123,7 @@ export const RSVP_PRESENTATION: Record<RsvpState, RsvpPresentation> = {
 /**
  * Label for the primary action, given what the viewer can actually do next.
  *
- * The button must not promise something the server will not do — a button
+ * The button must not promise something the server will not do - a button
  * saying "RSVP" that produces a pending request is what made the old flow feel
  * broken.
  */
@@ -144,7 +144,7 @@ export function isLiveRsvp(status: RsvpState | undefined): boolean {
  * "On the waitlist" alone is not actionable: third in line means keep the
  * evening free, fortieth means make other plans, and the difference is the
  * entire decision. Falls back to the generic sentence when the position has not
- * loaded — an unknown position must not render as "you are 0th".
+ * loaded - an unknown position must not render as "you are 0th".
  */
 export function waitlistDetail(event: EventItem): string {
   const position = event.waitlistPosition;
@@ -156,7 +156,7 @@ export function waitlistDetail(event: EventItem): string {
   return `You are ${formatOrdinal(position)} in line. You will be let in automatically if enough spots open.`;
 }
 
-/** 1 → "1st", 2 → "2nd", 11 → "11th", 22 → "22nd". */
+/** 1 -> "1st", 2 -> "2nd", 11 -> "11th", 22 -> "22nd". */
 export function formatOrdinal(n: number): string {
   // The teens are the exception every naive implementation gets wrong: 11, 12
   // and 13 take "th" even though 1, 2 and 3 take "st", "nd", "rd".

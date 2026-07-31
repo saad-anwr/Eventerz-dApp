@@ -4,7 +4,7 @@
  *
  * Each function describes one product action in domain terms and delegates
  * signing to the active wallet adapter. Today the adapter is the mock, so
- * these return simulated signatures — but the call sites in the UI are already
+ * these return simulated signatures - but the call sites in the UI are already
  * final. Wiring Anchor/Metaplex means filling in the bodies here only.
  *
  * TODO(anchor):   load the Eventerz IDL, build instructions with @coral-xyz/anchor

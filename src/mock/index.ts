@@ -2,7 +2,7 @@
  * In-memory mock database.
  *
  * Repositories read and write through this module and nothing else, so the day
- * a real API arrives only `repositories/*.ts` change — screens, hooks and
+ * a real API arrives only `repositories/*.ts` change - screens, hooks and
  * stores are untouched.
  */
 
@@ -58,7 +58,7 @@ function seed(): MockDatabase {
 
 export const db: MockDatabase = seed();
 
-/** Reset to pristine seed data — used by Settings → "Reset demo data". */
+/** Reset to pristine seed data - used by Settings -> "Reset demo data". */
 export function resetMockDatabase(): void {
   const fresh = seed();
   db.users = fresh.users;

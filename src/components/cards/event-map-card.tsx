@@ -3,19 +3,19 @@
  *
  * A **static image** plus a hand-off to the native Maps app, not an interactive
  * map. `react-native-maps` is a native module: adding it means a config plugin,
- * a prebuild and a fresh Gradle run — 17 minutes on this machine — to ship a
+ * a prebuild and a fresh Gradle run - 17 minutes on this machine - to ship a
  * full map engine for a picture with one pin in it. And the thing a user
  * actually wants from an event's map is directions, which Google Maps does
  * better than any embedded view because it already knows where they are.
  *
  * Three states, all of which have to look deliberate:
  *
- *   • **Pinned, with a Maps key** — the image, plus Open and Directions.
- *   • **Unpinned or no key** — the address and the same two buttons. The
+ *   • **Pinned, with a Maps key** - the image, plus Open and Directions.
+ *   • **Unpinned or no key** - the address and the same two buttons. The
  *     link-out needs no key, so this is a reduced card rather than a broken one.
  *     It is also the common case for events created before migration 0006, so it
  *     must not look like something failed to load.
- *   • **Online** — renders nothing. A map of an online event is a map of
+ *   • **Online** - renders nothing. A map of an online event is a map of
  *     nowhere.
  */
 
@@ -144,7 +144,7 @@ export function EventMapCard({ place }: EventMapCardProps) {
             {!coords && (
               <Text variant="caption" className="mt-0.5 text-muted">
                 {hasGoogleMapsKey()
-                  ? 'Approximate — the host did not pin an exact spot.'
+                  ? 'Approximate - the host did not pin an exact spot.'
                   : 'Open in Maps to search for this address.'}
               </Text>
             )}

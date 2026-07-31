@@ -1,5 +1,5 @@
 /**
- * Public user profile — the read-only view of someone else's on-chain record.
+ * Public user profile - the read-only view of someone else's on-chain record.
  */
 
 import { LinearGradient } from 'expo-linear-gradient';

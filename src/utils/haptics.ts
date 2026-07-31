@@ -20,7 +20,7 @@ const supported = Platform.OS === 'ios' || Platform.OS === 'android';
 function safe(run: () => Promise<unknown>) {
   if (!enabled || !supported) return;
   run().catch(() => {
-    // Haptics are decorative — a failure must never surface to the user.
+    // Haptics are decorative - a failure must never surface to the user.
   });
 }
 

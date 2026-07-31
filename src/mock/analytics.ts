@@ -1,5 +1,5 @@
 /**
- * Organizer dashboard seeds — mirrors the numbers shown on the web app's
+ * Organizer dashboard seeds - mirrors the numbers shown on the web app's
  * organizer section so the two dashboards tell the same story.
  */
 
@@ -20,7 +20,7 @@ export const mockOrganizerStats: OrganizerStats = {
   },
 };
 
-/** Monthly ticket mints, 0–100 scale — drives the dashboard chart. */
+/** Monthly ticket mints, 0-100 scale - drives the dashboard chart. */
 export const mockMintsSeries: AnalyticsPoint[] = [
   { label: 'Jan', value: 32 },
   { label: 'Feb', value: 41 },
