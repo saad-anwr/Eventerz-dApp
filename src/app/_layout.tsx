@@ -13,11 +13,11 @@ import '@/polyfills';
 import '@/global.css';
 
 import { QueryClientProvider } from '@tanstack/react-query';
-import { Stack, ThemeProvider } from 'expo-router';
+import { Stack, ThemeProvider, type ErrorBoundaryProps } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useState } from 'react';
-import { View } from 'react-native';
+import { Pressable, Text as RNText, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
@@ -39,6 +39,76 @@ const STARTUP_STORAGE_TIMEOUT_MS = 2500;
 SplashScreen.preventAutoHideAsync().catch(() => {
   // Already hidden (fast refresh) - nothing to do.
 });
+
+/**
+ * Root error boundary.
+ *
+ * Exported from the root layout, so it catches anything thrown by a screen that
+ * does not define its own. Without it a render error takes the app to React
+ * Native's red screen in development and to a blank one in a release build,
+ * with no way out but force-quitting - which on Android also loses the back
+ * stack.
+ *
+ * `retry` re-mounts the failed segment rather than restarting the app, so a
+ * transient failure (a query that raced a sign-out, a malformed row) costs a
+ * tap.
+ *
+ * Deliberately plain: no `Screen`, no theme hooks, no store reads. This renders
+ * *because* something below failed, and pulling in the same providers that may
+ * have caused it is how an error boundary throws inside itself.
+ */
+export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
+  return (
+    <View
+      style={{
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#050816',
+        padding: 24,
+        gap: 12,
+      }}
+    >
+      <RNText
+        style={{
+          color: '#ffffff',
+          fontSize: 22,
+          fontWeight: '700',
+          textAlign: 'center',
+        }}
+      >
+        Something broke
+      </RNText>
+      <RNText
+        style={{ color: '#94a3b8', fontSize: 14, textAlign: 'center', lineHeight: 21 }}
+      >
+        This is our fault, not yours. Trying again usually works.
+      </RNText>
+      <RNText
+        style={{ color: 'rgba(148,163,184,0.65)', fontSize: 11, textAlign: 'center' }}
+        numberOfLines={3}
+      >
+        {error.message}
+      </RNText>
+      <Pressable
+        onPress={retry}
+        accessibilityRole="button"
+        accessibilityLabel="Try again"
+        style={{
+          marginTop: 14,
+          paddingVertical: 12,
+          paddingHorizontal: 26,
+          borderRadius: 999,
+          backgroundColor: '#9945ff',
+        }}
+      >
+        <RNText style={{ color: '#fff', fontWeight: '600', fontSize: 14 }}>
+          Try again
+        </RNText>
+      </Pressable>
+    </View>
+  );
+}
 
 /**
  * Holds the Postgres change subscription that keeps this client in step with
