@@ -209,6 +209,13 @@ export default function RootLayout() {
                 <Stack.Screen name="event/edit/[id]" />
                 <Stack.Screen name="settings" />
                 <Stack.Screen name="friends" />
+                {/* OAuth landing. Android delivers the redirect deep link to
+                    the app as well as to the browser session, so this route
+                    has to exist or a successful sign-in renders the 404. */}
+                <Stack.Screen
+                  name="auth/callback"
+                  options={{ animation: 'fade', gestureEnabled: false }}
+                />
                 <Stack.Screen name="profile/edit" />
 
                 {/* Modal-style routes */}

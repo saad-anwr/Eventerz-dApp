@@ -582,6 +582,14 @@ export const supabaseUserRepository = {
         website: patch.website ?? null,
         twitter: patch.twitter ?? null,
         interests: patch.interests,
+        /*
+         * Only written when the patch carries it. `?? null` here would blank an
+         * existing picture on every unrelated save - the profile form does not
+         * send `avatarUrl`, so every "Save changes" would silently delete it.
+         */
+        ...(patch.avatarUrl !== undefined
+          ? { avatar_url: patch.avatarUrl }
+          : {}),
       })
       .eq('id', id)
       .select()

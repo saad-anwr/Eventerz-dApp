@@ -5,6 +5,7 @@
  * web app's `lib/avatar.ts` so a user looks identical across platforms.
  */
 
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { memo } from 'react';
 import { View, type ViewStyle } from 'react-native';
@@ -33,6 +34,14 @@ export interface AvatarProps {
   size?: AvatarSize | number;
   /** Ring drawn around the avatar - used for hosts and the profile header. */
   ring?: boolean;
+  /**
+   * A real picture, when there is one.
+   *
+   * The gradient-initial is still rendered underneath rather than replaced: it
+   * is what shows while the image loads, and what remains if the URL 404s. A
+   * broken avatar should look like a person, not like a hole.
+   */
+  uri?: string | null;
   className?: string;
   style?: ViewStyle;
 }
@@ -42,6 +51,7 @@ export const Avatar = memo(function Avatar({
   seed,
   size = 'md',
   ring = false,
+  uri,
   className,
   style,
 }: AvatarProps) {
@@ -82,6 +92,18 @@ export const Avatar = memo(function Avatar({
       >
         {initials(name)}
       </Text>
+
+      {/* Drawn over the initials, so the gradient is the placeholder and the
+          fallback in one - no separate loading state to manage. */}
+      {uri ? (
+        <Image
+          source={{ uri }}
+          contentFit="cover"
+          transition={180}
+          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+          accessibilityIgnoresInvertColors
+        />
+      ) : null}
     </View>
   );
 });

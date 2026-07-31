@@ -187,7 +187,16 @@ export function EventerzTabBar({
   return (
     <View
       className="absolute bottom-0 left-0 right-0"
-      style={{ paddingBottom: insets.bottom }}
+      style={{
+        paddingBottom: insets.bottom,
+        /*
+         * Same reason as the event screen's RSVP bar: on Android `elevation`
+         * decides draw order, and a bar with none sits below every card
+         * (`shadow.card` is 8), so a long list scrolls straight through it.
+         * Above cards, below the toast at 24.
+         */
+        elevation: 12,
+      }}
     >
       {/* Backdrop */}
       <View className="absolute inset-0 overflow-hidden">

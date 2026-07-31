@@ -5,6 +5,7 @@
  * The wallet address is identity and is deliberately not editable.
  */
 
+import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
@@ -14,11 +15,22 @@ import { Avatar } from '@/components/ui/avatar';
 import { Button, IconButton } from '@/components/ui/button';
 import { Chip } from '@/components/ui/chip';
 import { FieldGroup, TextField } from '@/components/ui/form';
-import { ArrowLeft, Check, Link2, MapPin, Wallet } from '@/components/ui/icon';
+import {
+  ArrowLeft,
+  Camera,
+  Check,
+  Link2,
+  MapPin,
+  Wallet,
+} from '@/components/ui/icon';
+import { PressableScale } from '@/components/ui/pressable-scale';
 import { Screen } from '@/components/ui/screen';
+import { Spinner } from '@/components/ui/spinner';
 import { Text } from '@/components/ui/text';
+import { uploadAvatar } from '@/repositories/supabase/avatars';
 import { toast } from '@/store/toast-store';
 import { useWalletStore } from '@/store/wallet-store';
+import { brand } from '@/theme/colors';
 import { radius, screenPadding } from '@/theme/layout';
 import { fontFamily } from '@/theme/typography';
 import { shortenAddress } from '@/utils/format';
@@ -55,6 +67,62 @@ export default function EditProfileScreen() {
   const [interests, setInterests] = useState<string[]>(user?.interests ?? []);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | undefined>();
+
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(
+    user?.avatarUrl ?? null,
+  );
+  const [uploading, setUploading] = useState(false);
+
+  /**
+   * Pick and upload a profile picture.
+   *
+   * Uploaded immediately rather than on Save. The file has to reach storage
+   * before `avatar_url` can point at it, and deferring means holding a local
+   * `file://` URI in form state that is meaningless to every other client -
+   * and that would be written to the row verbatim if the upload later failed.
+   */
+  const pickAvatar = useCallback(async () => {
+    if (uploading || !user) return;
+    haptics.light();
+
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      toast.error(
+        'Photo access needed',
+        'Enable photo permissions to choose a picture.',
+      );
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      // Square, because every avatar in the app is rendered in a circle.
+      aspect: [1, 1],
+      quality: 0.85,
+    });
+    if (result.canceled || !result.assets[0]) return;
+
+    setUploading(true);
+    try {
+      const url = await uploadAvatar(user.id, result.assets[0].uri);
+      setAvatarUrl(url);
+      // Persist straight away: the picture is already in storage, and leaving
+      // the row pointing at the old one until Save would be a picture that
+      // exists and is not used.
+      await updateProfile({ avatarUrl: url });
+      haptics.success();
+      toast.success('Picture updated');
+    } catch (e) {
+      haptics.error();
+      toast.error(
+        'Could not upload that picture',
+        e instanceof Error ? e.message : undefined,
+      );
+    } finally {
+      setUploading(false);
+    }
+  }, [uploading, user, updateProfile]);
 
   const toggleInterest = useCallback((interest: string) => {
     haptics.selection();
@@ -142,9 +210,44 @@ export default function EditProfileScreen() {
         >
           {/* Avatar */}
           <View className="items-center">
-            <Avatar name={name || user.name} seed={user.id} size="xl" ring />
+            <PressableScale
+              onPress={pickAvatar}
+              disabled={uploading}
+              accessibilityRole="button"
+              accessibilityLabel="Change profile picture"
+            >
+              <Avatar
+                name={name || user.name}
+                seed={user.id}
+                size="xl"
+                ring
+                uri={avatarUrl}
+              />
+              {/* Camera affordance. Without it the avatar is just a picture -
+                  nothing says it can be tapped. */}
+              <View
+                className="absolute bottom-0 right-0 items-center justify-center border-2 border-[#050816]"
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: 16,
+                  backgroundColor: brand.purple,
+                }}
+              >
+                {uploading ? (
+                  <Spinner size={14} />
+                ) : (
+                  <Camera size={15} color="#ffffff" strokeWidth={2.2} />
+                )}
+              </View>
+            </PressableScale>
+
             <Text variant="caption" className="mt-3 text-muted-foreground">
-              Your avatar is generated from your wallet
+              {uploading
+                ? 'Uploading...'
+                : avatarUrl
+                  ? 'Tap to change your picture'
+                  : 'Tap to add a picture, or keep the one from your wallet'}
             </Text>
           </View>
 

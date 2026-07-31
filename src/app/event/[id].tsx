@@ -8,7 +8,7 @@
 
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Share, View } from 'react-native';
 import Animated, {
   Extrapolation,
@@ -48,6 +48,7 @@ import { ScreenLoader } from '@/components/ui/spinner';
 import { Text } from '@/components/ui/text';
 import { ConnectWalletSheet, useConnectWallet } from '@/features/wallet';
 import { useCommunity } from '@/hooks/use-communities';
+import { FeeCancelled, useFee } from '@/hooks/use-fee';
 import {
   useApproveGuest,
   useCancelRsvp,
@@ -288,6 +289,16 @@ export default function EventDetailScreen() {
   const insets = useSafeAreaInsets();
   const scrollY = useSharedValue(0);
 
+  /**
+   * Measured height of the sticky RSVP bar, so the scroll content can reserve
+   * exactly that much. Seeded with a sensible first-paint value - the real one
+   * arrives on the bar's first `onLayout`, one frame later.
+   */
+  const [barHeight, setBarHeight] = useState(96 + insets.bottom);
+
+  /** $1 in SOL, taken before the RSVP is sent. Free on devnet/testnet. */
+  const { payFee: payRsvpFee, paying: payingFee } = useFee('rsvp');
+
   const { sheetVisible, requireWallet, closeSheet, handleConnected } =
     useConnectWallet();
 
@@ -318,7 +329,9 @@ export default function EventDetailScreen() {
 
   const requestToJoin = useRequestToJoin();
   const cancelRsvp = useCancelRsvp();
-  const busy = requestToJoin.isPending || cancelRsvp.isPending;
+  // Includes the fee step: the wallet is open and the button must not look
+  // idle while a charge is waiting to be approved.
+  const busy = requestToJoin.isPending || cancelRsvp.isPending || payingFee;
 
   const scrollHandler = useAnimatedScrollHandler((e) => {
     scrollY.value = e.contentOffset.y;
@@ -393,14 +406,37 @@ export default function EventDetailScreen() {
         return;
       }
 
-      const pendingId = toast.pending(
-        event.requiresApproval ? 'Sending request' : 'Confirming RSVP',
-        event.requiresApproval
-          ? 'Asking the host to approve you'
-          : 'Reserving your spot',
-      );
+      /*
+       * Fee first, RSVP second.
+       *
+       * The other order gives away a free RSVP whenever the payment fails, and
+       * there is no way to withdraw a seat that has already been granted. The
+       * cost of this ordering is the opposite case - fee taken, RSVP failed -
+       * which is recoverable and is called out explicitly below rather than
+       * hidden behind "please try again".
+       */
+      void (async () => {
+        let feeSignature: string | null = null;
+        try {
+          feeSignature = await payRsvpFee();
+        } catch (error) {
+          if (error instanceof FeeCancelled) return;
+          haptics.error();
+          toast.error(
+            'Could not take the RSVP fee',
+            error instanceof Error ? error.message : 'Please try again.',
+          );
+          return;
+        }
 
-      requestToJoin.mutate(event, {
+        const pendingId = toast.pending(
+          event.requiresApproval ? 'Sending request' : 'Confirming RSVP',
+          event.requiresApproval
+            ? 'Asking the host to approve you'
+            : 'Reserving your spot',
+        );
+
+        requestToJoin.mutate(event, {
         onSuccess: (updated) => {
           toast.dismiss(pendingId);
           haptics.success();
@@ -426,12 +462,26 @@ export default function EventDetailScreen() {
           haptics.error();
           toast.error(
             'RSVP failed',
-            error instanceof Error ? error.message : 'Please try again.',
+            feeSignature
+              ? // The money moved. Saying only "try again" would invite a
+                // second charge for a seat they may already have paid for.
+                'Your fee was taken but the RSVP did not go through. Contact support with your wallet address - do not pay again.'
+              : error instanceof Error
+                ? error.message
+                : 'Please try again.',
           );
         },
-      });
+        });
+      })();
     });
-  }, [cancelRsvp, currentUser, event, requestToJoin, requireWallet]);
+  }, [
+    cancelRsvp,
+    currentUser,
+    event,
+    payRsvpFee,
+    requestToJoin,
+    requireWallet,
+  ]);
 
   if (isLoading) return <ScreenLoader label="Loading event" />;
 
@@ -499,7 +549,7 @@ export default function EventDetailScreen() {
         onScroll={scrollHandler}
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 140 }}
+        contentContainerStyle={{ paddingBottom: barHeight + 24 }}
       >
         {/* Hero */}
         <View style={{ height: HERO_HEIGHT, overflow: 'hidden' }}>
@@ -812,14 +862,36 @@ export default function EventDetailScreen() {
               >
                 <Ticket size={26} color="#f8fafc" strokeWidth={1.7} />
               </View>
+              {/*
+                Three states, and the copy has to match the one you are in.
+
+                It used to say "Minted to your wallet the moment you RSVP, for a
+                fraction of a cent" whenever no ticket was found - to someone
+                who had just RSVP'd, that reads as a mint that did not happen.
+                Compressed-NFT minting is not implemented at all (the wallet
+                adapter refuses `mint-ticket` outright), so the sentence was
+                describing a feature that does not exist.
+
+                A ticket row with no `assetId` is still a real, scannable ticket
+                - it is the QR at the door that admits you. Only the on-chain
+                half is missing, and that is what this now says.
+              */}
               <View className="flex-1">
                 <Text variant="title">
-                  {ticket ? `Ticket #${String(ticket.serial).padStart(4, '0')}` : 'Compressed NFT'}
+                  {ticket
+                    ? `Ticket #${String(ticket.serial).padStart(4, '0')}`
+                    : going
+                      ? 'Being issued'
+                      : 'Your ticket'}
                 </Text>
                 <Text variant="caption" className="mt-1 text-muted-foreground">
                   {ticket
-                    ? `${ticket.tier}${ticket.soulbound ? ' · soulbound' : ''} - in your wallet`
-                    : 'Minted to your wallet the moment you RSVP, for a fraction of a cent.'}
+                    ? ticket.assetId
+                      ? `${ticket.tier}${ticket.soulbound ? ' · soulbound' : ''} - in your wallet`
+                      : `${ticket.tier} - scannable at the door. Not yet on-chain.`
+                    : going
+                      ? 'Your ticket is being created. Pull to refresh in a moment.'
+                      : 'RSVP to get a ticket with a QR code for the door.'}
                 </Text>
               </View>
               {ticket && (
@@ -1012,13 +1084,28 @@ export default function EventDetailScreen() {
         </Section>
       </Animated.ScrollView>
 
-      {/* Sticky RSVP bar */}
+      {/*
+        Sticky RSVP bar.
+
+        `elevation` is not decoration here. On Android it decides draw order and
+        beats `zIndex`, and this bar had none while every card below carries 8
+        (`shadow.card`) - so the map card drew straight through it and the
+        "99 spots left" line collided with the address. Opaque background for
+        the same reason: at 98% the content behind still read through.
+
+        Its height is measured rather than assumed. The scroll content used a
+        fixed 140pt of bottom padding, which ignored `insets.bottom` - so on a
+        gesture-nav device the bar is taller than the gap reserved for it and
+        the last card slides underneath.
+      */}
       <View
-        className="absolute bottom-0 left-0 right-0 border-t border-white/10 bg-[#070b1c]/98"
+        onLayout={(e) => setBarHeight(e.nativeEvent.layout.height)}
+        className="absolute bottom-0 left-0 right-0 border-t border-white/10 bg-[#070b1c]"
         style={{
           paddingHorizontal: screenPadding,
           paddingTop: 14,
           paddingBottom: insets.bottom + 14,
+          elevation: 16,
         }}
       >
         <View className="flex-row items-center gap-3">

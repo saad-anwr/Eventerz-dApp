@@ -7,12 +7,12 @@
  */
 
 import { memo } from 'react';
-import { View } from 'react-native';
+import { Platform, View } from 'react-native';
 import Animated, { SlideInUp, SlideOutUp } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { brand, status } from '@/theme/colors';
-import { makeShadow, radius } from '@/theme/layout';
+import { radius } from '@/theme/layout';
 import { useToastStore, type ToastVariant } from '@/store/toast-store';
 import { haptics } from '@/utils/haptics';
 
@@ -36,6 +36,32 @@ const ACCENT: Record<ToastVariant, string> = {
   pending: brand.purple,
 };
 
+/**
+ * High enough to beat every other surface in the app.
+ *
+ * On Android `elevation` decides draw order and overrides `zIndex`. The toast
+ * used `makeShadow(..., radius 20, ...)`, and that helper derives elevation as
+ * `radius / 3` - so the toast sat at 7 while `shadow.card` is 8 and
+ * `shadow.glow` is 9. Any card, and any avatar with a glow, drew *on top of the
+ * toast*: the profile avatar and the Edit button punched straight through it,
+ * and the message underneath was unreadable.
+ *
+ * Elevation is set on the container as well as the card - a child cannot lift
+ * itself above a sibling of its parent.
+ */
+const TOAST_ANDROID_ELEVATION = 24;
+
+const TOAST_ELEVATION = Platform.select({
+  ios: {
+    shadowColor: '#000000',
+    shadowOpacity: 0.5,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 8 },
+  },
+  android: { elevation: TOAST_ANDROID_ELEVATION, shadowColor: '#000000' },
+  default: { boxShadow: '0px 8px 20px rgba(0,0,0,0.5)' },
+});
+
 export const ToastHost = memo(function ToastHost() {
   const toasts = useToastStore((s) => s.toasts);
   const dismiss = useToastStore((s) => s.dismiss);
@@ -46,7 +72,12 @@ export const ToastHost = memo(function ToastHost() {
   return (
     <View
       className="absolute left-0 right-0 px-4"
-      style={{ top: insets.top + 8, zIndex: 200, pointerEvents: 'box-none' }}
+      style={{
+        top: insets.top + 8,
+        zIndex: 200,
+        elevation: TOAST_ANDROID_ELEVATION,
+        pointerEvents: 'box-none',
+      }}
     >
       {toasts.map((item) => {
         const Icon = ICONS[item.variant];
@@ -65,10 +96,10 @@ export const ToastHost = memo(function ToastHost() {
             }
           >
             <View
-              className="flex-row items-center gap-3 border border-white/10 bg-[#0b1024]/98 p-3.5"
+              className="flex-row items-center gap-3 border border-white/10 bg-[#0b1024] p-3.5"
               style={{
                 borderRadius: radius['2xl'],
-                ...makeShadow('#000000', 0.5, 20, 8),
+                ...TOAST_ELEVATION,
               }}
             >
               <View

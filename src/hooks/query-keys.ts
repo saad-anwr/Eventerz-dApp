@@ -47,6 +47,11 @@ export const queryKeys = {
     payments: (channelId: string, ids: string[]) =>
       ['messages', 'payments', channelId, [...ids].sort().join(',')] as const,
   },
+  /** Keyed by wallet address - the chain's key, not the profile's. */
+  holdings: {
+    all: ['holdings'] as const,
+    byAddress: (address: string) => ['holdings', address] as const,
+  },
   friends: {
     all: ['friends'] as const,
     list: (profileId: string) => ['friends', 'list', profileId] as const,

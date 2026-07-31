@@ -27,6 +27,14 @@ export interface User {
   website?: string;
   twitter?: string;
   walletAddress?: string;
+  /**
+   * Uploaded profile picture, when there is one. Absent means the deterministic
+   * gradient-initial avatar.
+   *
+   * `toUser` has always mapped this from `profiles.avatar_url`; the field was
+   * missing from the type, so every read dropped it and nothing could write it.
+   */
+  avatarUrl?: string;
   authMethod: AuthMethod;
   /** Portable on-chain reputation score. */
   reputation: number;

@@ -33,6 +33,7 @@ import {
 } from '@/features/create/step-components';
 import { ConnectWalletPrompt, ConnectWalletSheet, useConnectWallet } from '@/features/wallet';
 import { useCreateEvent } from '@/hooks/use-events';
+import { FeeCancelled, useFee } from '@/hooks/use-fee';
 import { toast } from '@/store/toast-store';
 import { CREATE_STEPS, useCreateEventStore } from '@/store/create-event-store';
 import { screenPadding } from '@/theme/layout';
@@ -62,6 +63,9 @@ export default function CreateScreen() {
 
   const createEvent = useCreateEvent();
 
+  /** $5 in SOL, taken before the event is written. Free on devnet/testnet. */
+  const { payFee: payCreateFee, paying: payingFee } = useFee('createEvent');
+
   const isLast = step === CREATE_STEPS.length - 1;
   const StepComponent = STEP_COMPONENTS[step];
 
@@ -79,29 +83,57 @@ export default function CreateScreen() {
 
     // Publish.
     haptics.medium();
-    const pendingId = toast.pending(
-      'Publishing event',
-      'Approve the transaction in your wallet',
-    );
 
-    createEvent.mutate(toInput(), {
-      onSuccess: (event) => {
-        toast.dismiss(pendingId);
-        haptics.success();
-        toast.success('Event published', 'Your event is live and open for RSVPs.');
-        reset();
-        router.replace(`/event/${event.id}`);
-      },
-      onError: (error) => {
-        toast.dismiss(pendingId);
+    /*
+     * The $5 fee is taken before the event is written, and it is
+     * non-refundable. Publishing first would give away a free event whenever
+     * the payment failed, and an event cannot be un-published once guests can
+     * see it.
+     */
+    void (async () => {
+      let feeSignature: string | null = null;
+      try {
+        feeSignature = await payCreateFee();
+      } catch (error) {
+        if (error instanceof FeeCancelled) return;
         haptics.error();
         toast.error(
-          'Could not publish',
+          'Could not take the creation fee',
           error instanceof Error ? error.message : 'Please try again.',
         );
-      },
-    });
-  }, [createEvent, isLast, next, reset, router, toInput]);
+        return;
+      }
+
+      const pendingId = toast.pending(
+        'Publishing event',
+        'Approve the transaction in your wallet',
+      );
+
+      createEvent.mutate(toInput(), {
+        onSuccess: (event) => {
+          toast.dismiss(pendingId);
+          haptics.success();
+          toast.success('Event published', 'Your event is live and open for RSVPs.');
+          reset();
+          router.replace(`/event/${event.id}`);
+        },
+        onError: (error) => {
+          toast.dismiss(pendingId);
+          haptics.error();
+          toast.error(
+            'Could not publish',
+            feeSignature
+              ? // Money moved and no event exists. Telling them to try again
+                // invites a second $5 charge for the same event.
+                'Your fee was taken but the event was not created. Contact support with your wallet address - do not pay again.'
+              : error instanceof Error
+                ? error.message
+                : 'Please try again.',
+          );
+        },
+      });
+    })();
+  }, [createEvent, isLast, next, payCreateFee, reset, router, toInput]);
 
   const handleBack = useCallback(() => {
     haptics.light();
@@ -214,7 +246,7 @@ export default function CreateScreen() {
             iconRight={isLast ? undefined : ArrowRight}
             icon={isLast ? Check : undefined}
             onPress={handleNext}
-            loading={createEvent.isPending}
+            loading={createEvent.isPending || payingFee}
             className={step > 0 ? 'flex-[1.4]' : 'flex-1'}
             accessibilityHint={
               isLast

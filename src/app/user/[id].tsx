@@ -26,6 +26,7 @@ import { Screen } from '@/components/ui/screen';
 import { ScreenLoader } from '@/components/ui/spinner';
 import { Text } from '@/components/ui/text';
 import { FriendButton } from '@/features/social/friend-button';
+import { HoldingsList } from '@/features/wallet/holdings-list';
 import { useEventsByAttendee, useEventsByHost } from '@/hooks/use-events';
 import { useUser } from '@/hooks/use-users';
 import { gradients } from '@/theme/colors';
@@ -98,7 +99,12 @@ export default function UserProfileScreen() {
             style={{ borderRadius: 42, borderWidth: 3, borderColor: '#050816' }}
             className="self-start"
           >
-            <Avatar name={user.name} seed={user.id} size={76} />
+            <Avatar
+              name={user.name}
+              seed={user.id}
+              size={76}
+              uri={user.avatarUrl}
+            />
           </View>
 
           {/*
@@ -160,6 +166,25 @@ export default function UserProfileScreen() {
               </Text>
             </View>
           )}
+
+          {/*
+            Their holdings, visible to anyone who can see the profile.
+
+            Nothing is disclosed here that is not already public: a wallet
+            address is on-chain, and its balances are readable by any block
+            explorer. The app's privacy boundary is the *address* - who gets to
+            see which wallet belongs to whom - and that boundary is unchanged.
+            Once an address is on screen, hiding its balance would be theatre.
+          */}
+          {user.walletAddress ? (
+            <View className="mt-4">
+              <HoldingsList
+                address={user.walletAddress}
+                title={`${user.name.split(' ')[0]}'s holdings`}
+                max={5}
+              />
+            </View>
+          ) : null}
 
           {user.interests.length > 0 && (
             <View className="mt-4 flex-row flex-wrap gap-2">

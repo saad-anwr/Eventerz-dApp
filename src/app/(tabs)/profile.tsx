@@ -46,6 +46,7 @@ import {
   GoogleMark,
   useConnectWallet,
 } from '@/features/wallet';
+import { HoldingsList } from '@/features/wallet/holdings-list';
 import { queryKeys } from '@/hooks/query-keys';
 import { useMyCommunities } from '@/hooks/use-communities';
 import { useEventsByAttendee, useEventsByHost } from '@/hooks/use-events';
@@ -231,7 +232,12 @@ export default function ProfileScreen() {
                 borderColor: '#050816',
               }}
             >
-              <Avatar name={user.name} seed={user.id} size={84} />
+              <Avatar
+                name={user.name}
+                seed={user.id}
+                size={84}
+                uri={user.avatarUrl}
+              />
             </View>
             <Button
               label="Edit"
@@ -328,6 +334,17 @@ export default function ProfileScreen() {
             )}
             <Copy size={14} color="#94a2b8" strokeWidth={2.2} />
           </PressableScale>
+        </View>
+
+        {/*
+          Token holdings.
+
+          The row above shows SOL only, which made a wallet holding several SPL
+          tokens look empty - `getWalletAssets` was a stub that never asked for
+          them.
+        */}
+        <View className="mt-3" style={{ paddingHorizontal: screenPadding }}>
+          <HoldingsList address={account.address} />
         </View>
 
         {/* Reputation */}
