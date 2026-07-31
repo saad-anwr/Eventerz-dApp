@@ -47,6 +47,14 @@ export const queryKeys = {
     payments: (channelId: string, ids: string[]) =>
       ['messages', 'payments', channelId, [...ids].sort().join(',')] as const,
   },
+  friends: {
+    all: ['friends'] as const,
+    list: (profileId: string) => ['friends', 'list', profileId] as const,
+    pending: (profileId: string) => ['friends', 'pending', profileId] as const,
+    /** The row linking two people, needed before a friendship can be removed. */
+    relationship: (profileId: string, otherId: string) =>
+      ['friends', 'relationship', profileId, otherId] as const,
+  },
   users: {
     all: ['users'] as const,
     detail: (id: string) => ['users', 'detail', id] as const,

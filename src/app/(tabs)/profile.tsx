@@ -32,6 +32,7 @@ import {
   Settings,
   Ticket,
   Trophy,
+  Users,
   DynamicIcon,
 } from '@/components/ui/icon';
 import { PressableScale } from '@/components/ui/pressable-scale';
@@ -197,6 +198,14 @@ export default function ProfileScreen() {
               icon={LayoutDashboard}
               label="Organizer dashboard"
               onPress={() => router.push('/dashboard')}
+              variant="glass"
+              size={40}
+              iconSize={18}
+            />
+            <IconButton
+              icon={Users}
+              label="Friends"
+              onPress={() => router.push('/friends')}
               variant="glass"
               size={40}
               iconSize={18}

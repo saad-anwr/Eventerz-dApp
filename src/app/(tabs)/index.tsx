@@ -116,24 +116,42 @@ export default function HomeScreen() {
           <QuickActions onAction={handleQuickAction} />
         </View>
 
-        {/* Featured */}
-        <View className="mt-8">
-          <SectionHeader
-            title="Featured"
-            subtitle="Hand-picked by the Eventerz team"
-            icon={Sparkles}
-            onAction={() => router.push('/(tabs)/discover')}
-          />
-          <View className="mt-4">
-            <FeaturedCarousel
-              events={featured.data ?? []}
-              loading={featured.isLoading}
-              onSelect={openEvent}
+        {/*
+          Featured, Trending and Recommended are hidden entirely when they have
+          nothing to show.
+
+          Each header made a promise - "Hand-picked by the Eventerz team",
+          "Where builders are showing up this month" - and then rendered nothing
+          underneath, because `FeaturedCarousel` returns null on an empty list
+          and the other two mapped over an empty array inside a ScrollView. On a
+          new install that left three titles stacked against blank space, which
+          reads as a broken screen rather than an empty one.
+
+          Upcoming keeps its empty state instead of disappearing: it is the rail
+          people come to the tab for, so its absence needs explaining. A curated
+          rail with nothing in it does not - it just goes away until there is
+          something worth curating.
+        */}
+        {(featured.isLoading || (featured.data ?? []).length > 0) && (
+          <View className="mt-8">
+            <SectionHeader
+              title="Featured"
+              subtitle="Hand-picked by the Eventerz team"
+              icon={Sparkles}
+              onAction={() => router.push('/(tabs)/discover')}
             />
+            <View className="mt-4">
+              <FeaturedCarousel
+                events={featured.data ?? []}
+                loading={featured.isLoading}
+                onSelect={openEvent}
+              />
+            </View>
           </View>
-        </View>
+        )}
 
         {/* Trending communities */}
+        {(communities.isLoading || (communities.data ?? []).length > 0) && (
         <View className="mt-9">
           <SectionHeader
             title="Trending communities"
@@ -172,6 +190,7 @@ export default function HomeScreen() {
             </ScrollView>
           )}
         </View>
+        )}
 
         {/* Upcoming */}
         <View className="mt-9">
@@ -210,6 +229,7 @@ export default function HomeScreen() {
         </View>
 
         {/* Recommended */}
+        {(recommended.isLoading || (recommended.data ?? []).length > 0) && (
         <View className="mt-9">
           <SectionHeader
             title="Recommended for you"
@@ -246,6 +266,7 @@ export default function HomeScreen() {
             </ScrollView>
           )}
         </View>
+        )}
       </ScrollView>
 
       <ConnectWalletSheet

@@ -25,6 +25,7 @@ import {
 import { Screen } from '@/components/ui/screen';
 import { ScreenLoader } from '@/components/ui/spinner';
 import { Text } from '@/components/ui/text';
+import { FriendButton } from '@/features/social/friend-button';
 import { useEventsByAttendee, useEventsByHost } from '@/hooks/use-events';
 import { useUser } from '@/hooks/use-users';
 import { gradients } from '@/theme/colors';
@@ -100,12 +101,25 @@ export default function UserProfileScreen() {
             <Avatar name={user.name} seed={user.id} size={76} />
           </View>
 
-          <Text variant="h2" className="mt-3.5" numberOfLines={1}>
-            {user.name}
-          </Text>
-          <Text variant="bodySm" className="mt-0.5 text-muted-foreground">
-            @{user.handle}
-          </Text>
+          {/*
+            Name and the relationship action share a row. The action belongs
+            next to the identity it applies to - putting it further down means
+            someone reads the whole profile before finding out they can do
+            anything about it.
+          */}
+          <View className="mt-3.5 flex-row items-start justify-between gap-3">
+            <View className="flex-1">
+              <Text variant="h2" numberOfLines={1}>
+                {user.name}
+              </Text>
+              <Text variant="bodySm" className="mt-0.5 text-muted-foreground">
+                @{user.handle}
+              </Text>
+            </View>
+            <View className="mt-1">
+              <FriendButton userId={user.id} name={user.name} />
+            </View>
+          </View>
 
           {user.bio && (
             <Text variant="bodySm" className="mt-2.5">

@@ -138,6 +138,7 @@ export default function RootLayout() {
                 <Stack.Screen name="messages/[id]" />
                 <Stack.Screen name="event/edit/[id]" />
                 <Stack.Screen name="settings" />
+                <Stack.Screen name="friends" />
                 <Stack.Screen name="profile/edit" />
 
                 {/* Modal-style routes */}
