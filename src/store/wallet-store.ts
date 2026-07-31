@@ -30,6 +30,15 @@ interface WalletState {
   disconnect: () => Promise<void>;
   restore: () => Promise<void>;
   refreshBalance: () => Promise<void>;
+  /**
+   * Re-resolve the identity behind the connected wallet.
+   *
+   * Needed after Google sign-in: until then a wallet with no linked account
+   * holds a provisional identity, and signing in is the moment it becomes a
+   * real profile row. Without this the app keeps showing the provisional one -
+   * a real account on the server and a placeholder on screen.
+   */
+  refreshUser: () => Promise<void>;
   updateProfile: (patch: Partial<User>) => Promise<void>;
   clearError: () => void;
 }
@@ -100,6 +109,17 @@ export const useWalletStore = create<WalletState>()((set, get) => ({
       set({ balanceSol });
     } catch {
       set({ balanceSol: null });
+    }
+  },
+
+  refreshUser: async () => {
+    const { account } = get();
+    if (!account) return;
+    try {
+      set({ user: await userRepository.ensureWalletUser(account.address) });
+    } catch {
+      // Keep whatever identity is on screen. A failed re-resolve is not worth
+      // blanking the profile the user is looking at.
     }
   },
 
