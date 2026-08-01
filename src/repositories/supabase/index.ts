@@ -24,6 +24,7 @@ import type {
 
 import type { CreateEventInput, UpdateEventInput } from '../event-repository';
 import { PROFILE_COLUMNS } from '@/services/auth/types';
+import { postgrestLikePattern } from '@/utils/postgrest';
 import {
   parseQrPayload,
   toCommunity,
@@ -202,7 +203,9 @@ export const supabaseEventRepository = {
       .gte('starts_at', new Date().toISOString());
 
     if (filters.query.trim()) {
-      const q = `%${filters.query.trim()}%`;
+      // Quoted into a single literal - see `postgrestLikePattern`. Raw
+      // interpolation here lets `,` and `.` add conditions to the filter.
+      const q = postgrestLikePattern(filters.query);
       query = query.or(
         `title.ilike.${q},description.ilike.${q},location.ilike.${q}`,
       );
@@ -599,7 +602,17 @@ export const supabaseUserRepository = {
   async search(query: string): Promise<User[]> {
     const q = query.trim();
     let request = client().from('profiles').select(PROFILE_COLUMNS).limit(40);
-    if (q) request = request.or(`name.ilike.%${q}%,handle.ilike.%${q}%`);
+    /*
+     * `.or()` takes PostgREST's filter grammar, not a parameter, so raw input
+     * interpolated into it stops being a value the moment it contains `,` `.`
+     * or `(` - a search for `x,id.eq.<uuid>` appends a whole extra condition.
+     * `postgrestLikePattern` quotes it into a single literal. See the helper
+     * for why the wildcards go inside the quotes.
+     */
+    if (q) {
+      const pattern = postgrestLikePattern(q);
+      request = request.or(`name.ilike.${pattern},handle.ilike.${pattern}`);
+    }
     const { data } = await request;
     return (data ?? []).map(toUser);
   },

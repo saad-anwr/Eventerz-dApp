@@ -52,6 +52,12 @@ export const queryKeys = {
     all: ['holdings'] as const,
     byAddress: (address: string) => ['holdings', address] as const,
   },
+  /** Seeker Genesis Token ownership, keyed by wallet - it is a fact about the
+      wallet, not about the profile that happens to be signed in. */
+  seeker: {
+    all: ['seeker'] as const,
+    byAddress: (address: string) => ['seeker', address] as const,
+  },
   friends: {
     all: ['friends'] as const,
     list: (profileId: string) => ['friends', 'list', profileId] as const,

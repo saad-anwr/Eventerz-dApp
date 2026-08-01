@@ -10,10 +10,15 @@
 /**
  * The columns of `profiles` a client may read, as a PostgREST select list.
  *
- * Mirrors `PROFILE_COLUMNS` in the web app - both talk to the same database, so
- * both have to agree. Use it instead of `select('*')`: `*` means "whatever
- * columns exist when the query runs", so a column added later is published to
- * every caller by default.
+ * The counterpart to `PROFILE_COLUMNS` in the web app. The two need **not** be
+ * identical - each is an allow-list of what that client reads, so the web list
+ * carries `twitter_verified` for the verified tick and this one does not,
+ * because the mobile app has no such UI. What they must share is the ceiling:
+ * neither may name a column the database refuses (`email`, dropped in 0021).
+ *
+ * Use it instead of `select('*')`: `*` means "whatever columns exist when the
+ * query runs", so a column added later is published to every caller by default,
+ * and the mistake surfaces as a privacy incident rather than a build failure.
  *
  * `email` is absent on purpose. Migration 0015 revokes SELECT on it from `anon`
  * and `authenticated`, because `profiles` is world-readable and RLS cannot

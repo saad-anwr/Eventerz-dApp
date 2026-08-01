@@ -46,6 +46,7 @@ import {
   GoogleMark,
   useConnectWallet,
 } from '@/features/wallet';
+import { useSeekerStatus } from '@/hooks/use-seeker';
 import { HoldingsList } from '@/features/wallet/holdings-list';
 import { queryKeys } from '@/hooks/query-keys';
 import { useMyCommunities } from '@/hooks/use-communities';
@@ -89,6 +90,13 @@ export default function ProfileScreen() {
   const account = useWalletStore((s) => s.account);
   const balanceSol = useWalletStore((s) => s.balanceSol);
   const googleEmail = useAuthStore(selectGoogleEmail);
+
+  /*
+   * Seeker ownership, from the Genesis Token the device minted into its Seed
+   * Vault. Keyed on the wallet rather than the profile, since it is a fact
+   * about the wallet.
+   */
+  const seeker = useSeekerStatus(account?.address);
 
   const badges = useMyBadges();
   const communities = useMyCommunities();
@@ -334,6 +342,29 @@ export default function ProfileScreen() {
             )}
             <Copy size={14} color="#94a2b8" strokeWidth={2.2} />
           </PressableScale>
+
+          {/*
+            Seeker ownership.
+
+            Only rendered once it resolves to something. A row that says
+            "checking..." on every profile open, and "not a Seeker" for the
+            majority of users on other Android phones, is noise on a screen that
+            is about them rather than their hardware.
+          */}
+          {seeker.verified && (
+            <View
+              className="mt-2.5 flex-row items-center gap-2 self-start border border-white/10 px-3 py-2"
+              style={{
+                borderRadius: radius.full,
+                backgroundColor: `${brand.green}14`,
+              }}
+            >
+              <BadgeCheck size={13} color={brand.green} strokeWidth={2.4} />
+              <Text variant="caption" style={{ color: brand.green }}>
+                Seeker verified
+              </Text>
+            </View>
+          )}
         </View>
 
         {/*
