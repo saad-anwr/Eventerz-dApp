@@ -182,7 +182,7 @@ export default function DirectMessageScreen() {
           accessibilityLabel={`Open ${other.name}'s profile`}
           className="flex-1 flex-row items-center gap-3"
         >
-          <Avatar name={other.name} seed={other.id} size="sm" ring />
+          <Avatar name={other.name} seed={other.id} size="sm" ring uri={other.avatarUrl} />
           <View className="flex-1">
             <Text variant="title" numberOfLines={1}>
               {other.name}

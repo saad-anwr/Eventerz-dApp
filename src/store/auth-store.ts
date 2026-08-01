@@ -10,6 +10,7 @@
 import { create } from 'zustand';
 
 import {
+  deleteAccount as deleteAccountRemote,
   getMyProfile,
   getSession,
   isSupabaseConfigured,
@@ -23,7 +24,12 @@ import {
 import { AnalyticsEvent, analytics } from '@/services/analytics-service';
 import { walletService } from '@/services/wallet';
 
-export type GoogleLinkStatus = 'idle' | 'linking' | 'linked' | 'error';
+export type GoogleLinkStatus =
+  | 'idle'
+  | 'linking'
+  | 'linked'
+  | 'deleting'
+  | 'error';
 
 interface AuthState {
   /** True when a Supabase project is configured. */
@@ -50,6 +56,8 @@ interface AuthState {
   /** Bind a wallet address to the signed-in Google account. */
   linkWallet: (address: string) => Promise<boolean>;
   updateProfile: (patch: ProfileUpdate) => Promise<void>;
+  /** Permanently delete the account. Resolves to an error message, or null. */
+  deleteAccount: () => Promise<string | null>;
   clearError: () => void;
 }
 
@@ -122,6 +130,29 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
   signOut: async () => {
     await signOutRemote();
     set({ profile: null, sessionEmail: null, status: 'idle', error: null });
+  },
+
+  /**
+   * Delete the account, then clear local state.
+   *
+   * Returns the failure message rather than throwing so the confirmation dialog
+   * can keep the user where they are and show why - a half-finished deletion is
+   * exactly the moment not to navigate someone away from the screen that
+   * explains what happened.
+   */
+  deleteAccount: async () => {
+    if (!isSupabaseConfigured) return 'Accounts are not configured.';
+
+    set({ status: 'deleting', error: null });
+    const result = await deleteAccountRemote();
+
+    if (!result.ok) {
+      set({ status: 'error', error: result.error });
+      return result.error;
+    }
+
+    set({ profile: null, sessionEmail: null, status: 'idle', error: null });
+    return null;
   },
 
   linkWallet: async (address) => {

@@ -158,7 +158,7 @@ export const FeaturedEventCard = memo(function FeaturedEventCard({
           </Text>
 
           <View className="mt-3.5 flex-row items-center gap-2.5">
-            <Avatar name={host?.name ?? 'Host'} seed={event.hostId} size="sm" />
+            <Avatar name={host?.name ?? 'Host'} seed={event.hostId} size="sm" uri={host?.avatarUrl} />
             <View className="flex-1">
               <Text variant="bodySm" numberOfLines={1}>
                 {host?.name ?? 'Unknown host'}

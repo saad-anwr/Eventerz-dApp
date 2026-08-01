@@ -118,6 +118,63 @@ export async function signOut(): Promise<AuthResult> {
   return { ok: true, data: undefined };
 }
 
+/**
+ * Delete the signed-in account.
+ *
+ * # Why the app needs this at all
+ *
+ * The website has offered account deletion since 0015; the app did not, and
+ * that is not merely a parity gap. Google Play requires any app that lets
+ * people create an account to offer deletion **from inside the app** - a link
+ * to a website does not satisfy it - so shipping without this is a review
+ * rejection waiting to happen, on top of being the wrong answer to someone who
+ * asks to leave.
+ *
+ * Calls the same `delete-account` Edge Function as the web client, which erases
+ * the private rows and anonymises the profile (`delete_my_account()`, migration
+ * 0015) and then removes the `auth.users` row with the service-role key. Both
+ * halves need privileges a client does not have, which is why this is one call
+ * to a function rather than a sequence of queries.
+ *
+ * What survives is deliberate and worth being able to explain to the person
+ * tapping the button: events they hosted, other people's tickets to those
+ * events, and payment receipts. Those are other people's records, and deleting
+ * them would erase a guest's ticket to punish nobody. Everything that
+ * identifies the user - name, avatar, bio, email, wallet link - is cleared.
+ */
+export async function deleteAccount(): Promise<AuthResult> {
+  const supabase = getSupabaseClient();
+  if (!supabase) return { ok: false, error: NOT_CONFIGURED };
+
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (!session) return { ok: false, error: 'You are not signed in.' };
+
+  const { data, error } = await supabase.functions.invoke('delete-account', {
+    method: 'POST',
+  });
+
+  /*
+   * A non-2xx arrives as a generic FunctionsHttpError, so the body carries the
+   * useful part. The `partial` case is the one that matters: the data is gone
+   * but the sign-in is not, and telling someone "deleted" when they can still
+   * log in is the single wrong answer here.
+   */
+  if (error) {
+    const detail =
+      data && typeof data === 'object' && 'error' in data
+        ? String((data as { error: unknown }).error)
+        : 'Could not delete your account. Please try again.';
+    return { ok: false, error: detail };
+  }
+
+  // The account is gone; clear the local session so nothing keeps using a token
+  // whose user no longer exists.
+  await supabase.auth.signOut();
+  return { ok: true, data: undefined };
+}
+
 /** Restore a persisted session on launch. Null when signed out. */
 export async function getSession() {
   const supabase = getSupabaseClient();

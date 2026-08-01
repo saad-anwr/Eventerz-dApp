@@ -50,7 +50,7 @@ function ConversationRow({
       className="flex-row items-center gap-3 py-3"
       style={{ paddingHorizontal: screenPadding }}
     >
-      <Avatar name={user.name} seed={user.id} size="md" ring />
+      <Avatar name={user.name} seed={user.id} size="md" ring uri={user.avatarUrl} />
 
       <View className="flex-1">
         <View className="flex-row items-center gap-2">

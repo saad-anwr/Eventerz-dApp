@@ -57,6 +57,53 @@ function fail(context: string, error: { message: string } | null): never {
   throw new Error(error?.message ?? `${context} failed.`);
 }
 
+/**
+ * The body of a non-2xx Edge Function response.
+ *
+ * supabase-js raises on non-2xx and flattens the payload into
+ * "Edge Function returned a non-2xx status code", which is exactly the sentence
+ * that tells a user nothing. The reason the gate refused - no linked wallet, or
+ * a holding that is short - is in the body or nowhere.
+ */
+async function readFunctionBody(
+  error: unknown,
+): Promise<Record<string, unknown> | null> {
+  const response = (error as { context?: Response })?.context;
+  if (!response || typeof response.json !== 'function') return null;
+  try {
+    return (await response.json()) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Join a token-gated event through the Edge Function.
+ *
+ * The balance is read server-side from the wallet on the caller's profile,
+ * which got there through the signed link flow (0011) - a wallet they proved
+ * they hold rather than one they named. A client-side balance check would be a
+ * suggestion, not a gate, which is why this does not read holdings locally even
+ * though the app now can.
+ */
+async function joinGatedEvent(eventId: string): Promise<void> {
+  const { error } = await client().functions.invoke('check-gate', {
+    body: { eventId },
+  });
+  if (!error) return;
+
+  const body = await readFunctionBody(error);
+
+  // A refusal carries `reason` and a human `detail`. Prefer that over the
+  // transport error, which only ever says a non-2xx came back.
+  if (typeof body?.detail === 'string') throw new Error(body.detail);
+  if (typeof body?.error === 'string') throw new Error(body.error);
+
+  throw new Error(
+    'This event is token-gated and the entry check could not be reached. Try again in a moment.',
+  );
+}
+
 /** The signed-in user's id, or null. Reads the cached session - no round trip. */
 async function currentUserId(): Promise<string | null> {
   const { data } = await client().auth.getSession();
@@ -429,6 +476,28 @@ export const supabaseEventRepository = {
     const { error } = await client().rpc('request_to_join', {
       p_event_id: eventId,
     });
+
+    /*
+     * `request_to_join` refuses token-gated events with P0001 (migration 0013):
+     * Postgres makes no outbound RPC calls, so it cannot read a token balance
+     * and fails closed rather than admitting anyone. The gated door is the
+     * `check-gate` Edge Function, which reads the holding from the cluster
+     * first.
+     *
+     * Without this branch a gated event is simply un-joinable on mobile - the
+     * website has routed on P0001 since 0013 landed, so the same event admitted
+     * people in a browser and showed a raw Postgres error on a phone.
+     *
+     * Routing on the *error* rather than on a `tokenGated` flag read earlier is
+     * deliberate, and matches the web client: the flag this screen holds may be
+     * stale by exactly the race that matters, a host enabling gating while
+     * someone is sitting on the page.
+     */
+    if (error?.code === 'P0001') {
+      await joinGatedEvent(eventId);
+      return reloadEvent(eventId);
+    }
+
     if (error) fail('Sending your request', error);
     return reloadEvent(eventId);
   },

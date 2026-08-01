@@ -68,7 +68,13 @@ function RequestRow({
         className="flex-row items-center gap-3"
         style={{ flex: 1 }}
       >
-        <Avatar name={request.user.name} seed={request.user.id} size="md" ring />
+        <Avatar
+          name={request.user.name}
+          seed={request.user.id}
+          size="md"
+          ring
+          uri={request.user.avatarUrl}
+        />
         <View className="flex-1">
           <Text variant="title" numberOfLines={1}>
             {request.user.name}
@@ -139,7 +145,7 @@ function FriendRow({
         className="flex-row items-center gap-3"
         style={{ flex: 1 }}
       >
-        <Avatar name={user.name} seed={user.id} size="md" ring />
+        <Avatar name={user.name} seed={user.id} size="md" ring uri={user.avatarUrl} />
         <View className="flex-1">
           <Text variant="title" numberOfLines={1}>
             {user.name}

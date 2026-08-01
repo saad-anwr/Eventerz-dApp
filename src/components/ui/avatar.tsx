@@ -118,7 +118,12 @@ export const AvatarStack = memo(function AvatarStack({
   size = 28,
   total,
 }: {
-  users: { id: string; name: string }[];
+  /*
+   * `avatarUrl` is optional so existing callers that pass a bare `{id, name}`
+   * still compile - they simply keep the gradient, which is the correct
+   * fallback rather than a missing picture.
+   */
+  users: { id: string; name: string; avatarUrl?: string }[];
   max?: number;
   size?: number;
   /** Full attendee count when `users` is only a preview slice. */
@@ -143,7 +148,7 @@ export const AvatarStack = memo(function AvatarStack({
             borderColor: '#050816',
           }}
         >
-          <Avatar name={user.name} seed={user.id} size={size} />
+          <Avatar name={user.name} seed={user.id} size={size} uri={user.avatarUrl} />
         </View>
       ))}
       {overflow > 0 && (

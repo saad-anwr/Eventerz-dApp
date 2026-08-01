@@ -200,7 +200,7 @@ export const EventCard = memo(function EventCard({
         </Text>
 
         <View className="mt-3 flex-row items-center gap-2">
-          <Avatar name={host?.name ?? 'Host'} seed={event.hostId} size="xs" />
+          <Avatar name={host?.name ?? 'Host'} seed={event.hostId} size="xs" uri={host?.avatarUrl} />
           <Text
             variant="caption"
             className="flex-1 text-muted-foreground"

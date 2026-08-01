@@ -60,7 +60,13 @@ export const HomeHeader = memo(function HomeHeader({
           accessibilityRole="button"
           accessibilityLabel="Open your profile"
         >
-          <Avatar name={user?.name ?? 'You'} seed={user?.id ?? 'guest'} size="md" ring />
+          <Avatar
+            name={user?.name ?? 'You'}
+            seed={user?.id ?? 'guest'}
+            size="md"
+            ring
+            uri={user?.avatarUrl}
+          />
         </PressableScale>
       ) : (
         <View

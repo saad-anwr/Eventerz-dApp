@@ -52,7 +52,7 @@ export const ProfileCard = memo(function ProfileCard({
       className={cn('flex-row items-center gap-3', className)}
       style={{ minHeight: TOUCH_TARGET, paddingVertical: 8 }}
     >
-      <Avatar name={user.name} seed={user.id} size="md" />
+      <Avatar name={user.name} seed={user.id} size="md" uri={user.avatarUrl} />
 
       <View className="flex-1">
         <Text variant="title" numberOfLines={1}>

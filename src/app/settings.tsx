@@ -54,6 +54,7 @@ import {
   usePreferencesStore,
   type LanguageCode,
 } from '@/store/preferences-store';
+import { useAuthStore } from '@/store/auth-store';
 import { useWalletStore } from '@/store/wallet-store';
 import { TOUCH_TARGET, radius, screenPadding } from '@/theme/layout';
 import { fontFamily } from '@/theme/typography';
@@ -188,10 +189,17 @@ export default function SettingsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [signOutVisible, setSignOutVisible] = useState(false);
+  const [deleteVisible, setDeleteVisible] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const user = useWalletStore((s) => s.user);
   const account = useWalletStore((s) => s.account);
   const disconnect = useWalletStore((s) => s.disconnect);
+
+  const isLive = useAuthStore((s) => s.isLive);
+  const profile = useAuthStore((s) => s.profile);
+  const deleteAccount = useAuthStore((s) => s.deleteAccount);
 
   const preferences = usePreferencesStore();
 
@@ -209,6 +217,37 @@ export default function SettingsScreen() {
     toast.info('Wallet disconnected', 'Your data stays on-chain.');
     router.replace('/(tabs)');
   }, [disconnect, router]);
+
+  /**
+   * Delete, then leave.
+   *
+   * The wallet is disconnected too. The account is gone, so a session still
+   * holding its address would show a signed-in shell for a user that no longer
+   * exists - which looks like the deletion silently failed.
+   *
+   * On failure the dialog stays open with the reason. Closing it would leave
+   * someone believing their account was deleted when it was not, and that is
+   * the one outcome here worth going out of the way to prevent.
+   */
+  const handleDeleteAccount = useCallback(async () => {
+    setDeleting(true);
+    setDeleteError(null);
+
+    const failure = await deleteAccount();
+
+    setDeleting(false);
+    if (failure) {
+      haptics.error();
+      setDeleteError(failure);
+      return;
+    }
+
+    setDeleteVisible(false);
+    await disconnect();
+    haptics.success();
+    toast.success('Account deleted', 'Your personal data has been erased.');
+    router.replace('/(tabs)');
+  }, [deleteAccount, disconnect, router]);
 
   const walletDescriptor = account
     ? getWalletDescriptor(account.walletId)
@@ -252,7 +291,7 @@ export default function SettingsScreen() {
         {user && account ? (
           <GlassCard className="mt-3 p-4" radius={radius['2xl']}>
             <View className="flex-row items-center gap-3">
-              <Avatar name={user.name} seed={user.id} size="md" ring />
+              <Avatar name={user.name} seed={user.id} size="md" ring uri={user.avatarUrl} />
               <View className="flex-1">
                 <Text variant="title" numberOfLines={1}>
                   {user.name}
@@ -574,6 +613,29 @@ export default function SettingsScreen() {
           />
         )}
 
+        {/*
+          Account deletion, for anyone signed in with Google.
+
+          Play requires an in-app deletion path for any app that creates
+          accounts - a link to the website does not satisfy it. Shown only when
+          there is an account to delete: a wallet-only session has no server-side
+          record to erase, and offering it there would promise something that
+          does not happen.
+        */}
+        {isLive && profile && (
+          <Button
+            label="Delete account"
+            icon={Trash2}
+            variant="danger"
+            onPress={() => {
+              haptics.warning();
+              setDeleteVisible(true);
+            }}
+            fullWidth
+            className="mt-3"
+          />
+        )}
+
         <Text
           variant="micro"
           className="mt-7 text-center text-muted-foreground"
@@ -601,6 +663,42 @@ export default function SettingsScreen() {
             label="Disconnect"
             variant="danger"
             onPress={handleSignOut}
+            className="flex-1"
+          />
+        </View>
+      </Modal>
+
+      {/*
+        Spelling out what survives is the point of this dialog, not decoration.
+        Hosted events and other people's tickets stay, because deleting them
+        would erase a guest's ticket to punish nobody - and someone agreeing to
+        "delete everything" deserves to know that before they agree, not after.
+      */}
+      <Modal
+        visible={deleteVisible}
+        onClose={() => (deleting ? undefined : setDeleteVisible(false))}
+        title="Delete your account?"
+        subtitle="Your name, picture, bio, email and wallet link are erased permanently. Events you hosted and other guests' tickets to them remain, along with payment receipts. This cannot be undone."
+        dismissOnBackdrop={false}
+      >
+        {deleteError ? (
+          <Text variant="bodySm" className="mb-3 text-red-400">
+            {deleteError}
+          </Text>
+        ) : null}
+        <View className="flex-row gap-3">
+          <Button
+            label="Keep my account"
+            variant="secondary"
+            onPress={() => setDeleteVisible(false)}
+            disabled={deleting}
+            className="flex-1"
+          />
+          <Button
+            label="Delete forever"
+            variant="danger"
+            loading={deleting}
+            onPress={handleDeleteAccount}
             className="flex-1"
           />
         </View>
