@@ -138,6 +138,23 @@ if (easUsesManagedEnv) {
   );
 }
 
+/*
+ * The Google consent screen shows the root domain of the OAuth callback, and
+ * the callback lives on whatever host `EXPO_PUBLIC_SUPABASE_URL` points at. On
+ * the default host that reads "Sign in to <project-ref>.supabase.co", which
+ * tells the user nothing about Eventerz and is exactly the shape a phishing
+ * page would have. Fixed by a Supabase custom domain, not by any code here.
+ */
+const supabaseUrl = env.EXPO_PUBLIC_SUPABASE_URL ?? '';
+const onDefaultAuthHost = /\.supabase\.co\/?$/i.test(supabaseUrl.trim());
+record(
+  'Auth domain is branded',
+  supabaseUrl && !onDefaultAuthHost ? 'PASS' : 'WARN',
+  onDefaultAuthHost
+    ? 'Google sign-in says "Sign in to <project-ref>.supabase.co" - needs a Supabase custom domain'
+    : supabaseUrl || 'no Supabase URL configured',
+);
+
 const mockWallet = (env.EXPO_PUBLIC_USE_MOCK_WALLET ?? 'false').toLowerCase() === 'true';
 const mockData = (env.EXPO_PUBLIC_USE_MOCK_DATA ?? 'false').toLowerCase() === 'true';
 record(
