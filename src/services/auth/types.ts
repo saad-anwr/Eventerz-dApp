@@ -7,6 +7,27 @@
  * type to `never`.
  */
 
+/**
+ * The columns of `profiles` a client may read, as a PostgREST select list.
+ *
+ * Mirrors `PROFILE_COLUMNS` in the web app - both talk to the same database, so
+ * both have to agree. Use it instead of `select('*')`: `*` means "whatever
+ * columns exist when the query runs", so a column added later is published to
+ * every caller by default.
+ *
+ * `email` is absent on purpose. Migration 0015 revokes SELECT on it from `anon`
+ * and `authenticated`, because `profiles` is world-readable and RLS cannot
+ * exclude a single column - so the row published every address held, and the
+ * email -> wallet_address join with it. The signed-in user's own address comes
+ * from the session instead.
+ *
+ * Single literal with `as const`, not a concatenation: supabase-js parses this
+ * string at the type level, and `'a' + 'b'` widens to `string`, which collapses
+ * every profile query to `GenericStringError`.
+ */
+export const PROFILE_COLUMNS =
+  'id, name, handle, avatar_url, bio, location, website, twitter, wallet_address, reputation, interests, created_at, updated_at' as const;
+
 export type ProfileRow = {
   id: string;
   name: string;
@@ -18,7 +39,11 @@ export type ProfileRow = {
   twitter: string | null;
   /** Primary identity. Null means wallet-pending. */
   wallet_address: string | null;
-  email: string | null;
+  /*
+   * `email` is deliberately absent - the column exists but clients cannot read
+   * it (0015). Leaving it off the type is what stops it creeping back: a query
+   * asking for it fails to compile rather than failing in production.
+   */
   reputation: number;
   interests: string[];
   created_at: string;

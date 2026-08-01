@@ -19,6 +19,7 @@ import {
   type PaymentRow,
 } from './rows';
 import type { ProfileRow } from '@/services/auth/types';
+import { PROFILE_COLUMNS } from '@/services/auth/types';
 
 function client() {
   const supabase = getSupabaseClient();
@@ -81,7 +82,7 @@ export const supabaseMessageRepository = {
     const channels = idList.map((id) => dmChannelId(profileId, id));
 
     const [{ data: profiles }, { data: messages }] = await Promise.all([
-      supabase.from('profiles').select('*').in('id', idList),
+      supabase.from('profiles').select(PROFILE_COLUMNS).in('id', idList),
       supabase
         .from('messages')
         .select('*')

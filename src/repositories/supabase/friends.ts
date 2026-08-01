@@ -21,6 +21,7 @@ import type { User } from '@/types';
 
 import { toUser, type FriendRequestRow } from './rows';
 import type { ProfileRow } from '@/services/auth/types';
+import { PROFILE_COLUMNS } from '@/services/auth/types';
 
 function client() {
   const supabase = getSupabaseClient();
@@ -64,7 +65,7 @@ export const friendsRepository = {
 
     const { data, error } = await client()
       .from('profiles')
-      .select('*')
+      .select(PROFILE_COLUMNS)
       .in('id', ids);
     if (error) throw new Error(error.message);
     return ((data ?? []) as ProfileRow[]).map(toUser);
@@ -89,7 +90,7 @@ export const friendsRepository = {
 
     const { data, error } = await client()
       .from('profiles')
-      .select('*')
+      .select(PROFILE_COLUMNS)
       .in('id', otherIds);
     if (error) throw new Error(error.message);
 

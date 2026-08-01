@@ -23,6 +23,7 @@ import type {
 } from '@/types';
 
 import type { CreateEventInput, UpdateEventInput } from '../event-repository';
+import { PROFILE_COLUMNS } from '@/services/auth/types';
 import {
   parseQrPayload,
   toCommunity,
@@ -514,7 +515,7 @@ export const supabaseUserRepository = {
   async getById(id: string): Promise<User | null> {
     const { data } = await client()
       .from('profiles')
-      .select('*')
+      .select(PROFILE_COLUMNS)
       .eq('id', id)
       .maybeSingle();
     return data ? toUser(data) : null;
@@ -522,13 +523,13 @@ export const supabaseUserRepository = {
 
   async getMany(ids: string[]): Promise<User[]> {
     if (ids.length === 0) return [];
-    const { data } = await client().from('profiles').select('*').in('id', ids);
+    const { data } = await client().from('profiles').select(PROFILE_COLUMNS).in('id', ids);
     return (data ?? []).map(toUser);
   },
 
   async search(query: string): Promise<User[]> {
     const q = query.trim();
-    let request = client().from('profiles').select('*').limit(40);
+    let request = client().from('profiles').select(PROFILE_COLUMNS).limit(40);
     if (q) request = request.or(`name.ilike.%${q}%,handle.ilike.%${q}%`);
     const { data } = await request;
     return (data ?? []).map(toUser);
@@ -546,7 +547,7 @@ export const supabaseUserRepository = {
   async ensureWalletUser(address: string): Promise<User> {
     const { data } = await client()
       .from('profiles')
-      .select('*')
+      .select(PROFILE_COLUMNS)
       .eq('wallet_address', address)
       .maybeSingle();
 

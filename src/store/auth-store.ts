@@ -30,6 +30,16 @@ interface AuthState {
   isLive: boolean;
   status: GoogleLinkStatus;
   profile: ProfileRow | null;
+  /**
+   * The signed-in user's own Google address, from the session.
+   *
+   * Not on `profile`: `profiles.email` is not readable by clients (0015),
+   * because the table is world-readable and publishing the row published every
+   * address held - and the email -> wallet join with it. The session is the one
+   * place an address is available, and it only ever contains your own, which is
+   * exactly the guarantee wanted here.
+   */
+  sessionEmail: string | null;
   error: string | null;
   /** True until the persisted session has been checked once. */
   isRestoring: boolean;
@@ -47,6 +57,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
   isLive: isSupabaseConfigured,
   status: 'idle',
   profile: null,
+  sessionEmail: null,
   error: null,
   isRestoring: isSupabaseConfigured,
 
@@ -62,7 +73,12 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
         return;
       }
       const profile = await getMyProfile();
-      set({ profile, status: 'linked', isRestoring: false });
+      set({
+        profile,
+        sessionEmail: session.user?.email ?? null,
+        status: 'linked',
+        isRestoring: false,
+      });
     } catch {
       // A failed restore just means signed-out; never surface it.
       set({ isRestoring: false });
@@ -91,7 +107,12 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
       return false;
     }
 
-    set({ profile: result.data, status: 'linked', error: null });
+    set({
+      profile: result.data,
+      sessionEmail: (await getSession())?.user?.email ?? null,
+      status: 'linked',
+      error: null,
+    });
     analytics.track(AnalyticsEvent.GoogleLinked, {
       hasWallet: Boolean(result.data?.wallet_address),
     });
@@ -100,7 +121,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
 
   signOut: async () => {
     await signOutRemote();
-    set({ profile: null, status: 'idle', error: null });
+    set({ profile: null, sessionEmail: null, status: 'idle', error: null });
   },
 
   linkWallet: async (address) => {
@@ -145,4 +166,4 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
 /* -------------------------------------------------------------------------- */
 
 export const selectGoogleLinked = (s: AuthState) => s.status === 'linked';
-export const selectGoogleEmail = (s: AuthState) => s.profile?.email ?? null;
+export const selectGoogleEmail = (s: AuthState) => s.sessionEmail;

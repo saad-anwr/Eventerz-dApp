@@ -362,7 +362,12 @@ export function toUser(row: ProfileRow): User {
     id: row.id,
     name: row.name,
     handle: row.handle ?? row.id.slice(0, 8),
-    email: row.email ?? undefined,
+    /*
+     * No `email`. `toUser` maps whatever profile was fetched - a host, an
+     * attendee, a search result - so anything set here is somebody else's. The
+     * column is not readable by clients at all (0015); the signed-in user's own
+     * address lives on `authStore.sessionEmail`.
+     */
     bio: row.bio ?? undefined,
     location: row.location ?? undefined,
     website: row.website ?? undefined,

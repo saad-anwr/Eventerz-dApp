@@ -53,6 +53,8 @@ export const GoogleAccountRow = memo(function GoogleAccountRow() {
   const isLive = useAuthStore((s) => s.isLive);
   const status = useAuthStore((s) => s.status);
   const profile = useAuthStore((s) => s.profile);
+  // Own address only, from the session - `profiles.email` is not client-readable (0015).
+  const sessionEmail = useAuthStore((s) => s.sessionEmail);
   const signInWithGoogle = useAuthStore((s) => s.signInWithGoogle);
   const signOutGoogle = useAuthStore((s) => s.signOut);
   const walletAddress = useWalletStore((s) => s.account?.address ?? null);
@@ -68,7 +70,7 @@ export const GoogleAccountRow = memo(function GoogleAccountRow() {
 
     if (ok) {
       haptics.success();
-      const email = useAuthStore.getState().profile?.email;
+      const email = useAuthStore.getState().sessionEmail;
       toast.success(
         'Google account linked',
         email ? `Signed in as ${email}` : 'Your account is now recoverable.',
@@ -102,7 +104,7 @@ export const GoogleAccountRow = memo(function GoogleAccountRow() {
         accessibilityRole="button"
         accessibilityLabel={
           linked
-            ? `Google account linked${profile?.email ? `, ${profile.email}` : ''}. Tap to unlink.`
+            ? `Google account linked${sessionEmail ? `, ${sessionEmail}` : ''}. Tap to unlink.`
             : 'Link a Google account'
         }
         accessibilityHint={
@@ -135,7 +137,7 @@ export const GoogleAccountRow = memo(function GoogleAccountRow() {
             {linking
               ? 'Waiting for Google...'
               : linked
-                ? (profile?.email ?? 'Signed in')
+                ? (sessionEmail ?? 'Signed in')
                 : isLive
                   ? 'Recover this account on another device'
                   : 'Not configured - see docs/AUTH_SETUP.md'}

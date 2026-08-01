@@ -23,6 +23,7 @@ import { APP_SCHEME } from '@/constants/config';
 
 import { getSupabaseClient, isSupabaseConfigured } from './supabase-client';
 import type { ProfileRow, ProfileUpdate } from './types';
+import { PROFILE_COLUMNS } from '@/services/auth/types';
 
 export type AuthResult<T = void> =
   | { ok: true; data: T }
@@ -138,7 +139,7 @@ export async function getMyProfile(): Promise<ProfileRow | null> {
 
   const { data } = await supabase
     .from('profiles')
-    .select('*')
+    .select(PROFILE_COLUMNS)
     .eq('id', user.id)
     .single();
 
@@ -160,7 +161,7 @@ export async function updateMyProfile(
     .from('profiles')
     .update(patch)
     .eq('id', user.id)
-    .select()
+    .select(PROFILE_COLUMNS)
     .single();
 
   if (error) return { ok: false, error: error.message };
@@ -270,7 +271,7 @@ export async function profileForWallet(
 
   const { data } = await supabase
     .from('profiles')
-    .select('*')
+    .select(PROFILE_COLUMNS)
     .eq('wallet_address', walletAddress)
     .maybeSingle();
 

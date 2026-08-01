@@ -50,7 +50,7 @@ export const ConnectWalletPrompt = memo(function ConnectWalletPrompt({
 
     if (ok) {
       haptics.success();
-      const email = useAuthStore.getState().profile?.email;
+      const email = useAuthStore.getState().sessionEmail;
       toast.success(
         'Signed in',
         email ? `Welcome, ${email}` : 'Connect a wallet to finish setting up.',
