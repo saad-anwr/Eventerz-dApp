@@ -88,18 +88,30 @@ export interface WalletAdapter {
  *     the program id would break sending crypto for a reason that has nothing to
  *     do with it.
  */
+/*
+ * The on-chain fields are **required**, deliberately.
+ *
+ * They were optional, and every caller omitted them. The instruction builder
+ * then substituted defaults - capacity 1, `startsAt = now` - which produced an
+ * on-chain event whose claim window had closed before anyone could reach it,
+ * and an RSVP intent with no host wallet that threw on construction. Both were
+ * invisible because no program was deployed to execute them; both would have
+ * broken every event and every RSVP on the day one was.
+ *
+ * Making them required moves that from a runtime surprise to a compile error.
+ */
 export type TransactionIntent =
-  | { type: 'rsvp'; eventId: string; hostWallet?: string }
+  | { type: 'rsvp'; eventId: string; hostWallet: string }
   | { type: 'mint-ticket'; eventId: string; owner: string }
-  | { type: 'check-in'; ticketId: string; eventId: string; attendeeWallet?: string }
+  | { type: 'check-in'; ticketId: string; eventId: string; attendeeWallet: string }
   | {
       type: 'create-event';
       eventId: string;
-      capacity?: number;
-      startsAt?: string;
+      capacity: number;
+      startsAt: string;
       endsAt?: string | null;
-      requiresApproval?: boolean;
-      priceLamports?: bigint;
+      requiresApproval: boolean;
+      priceLamports: bigint;
     }
   | { type: 'cancel-event'; eventId: string }
   | { type: 'release-seat'; eventId: string }

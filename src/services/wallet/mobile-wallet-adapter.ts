@@ -36,6 +36,10 @@ import {
 // One definition of "which RPC", shared with the holdings and fee paths. Three
 // copies of this rule had drifted on what to do when no endpoint is configured.
 import { rpcEndpoint } from '@/services/solana/rpc';
+import {
+  computeBudgetInstructions,
+  type ComputeKind,
+} from '@/services/solana/priority-fee';
 import { SecureKeys, StorageKeys } from '@/constants/storage-keys';
 import type {
   SignedTransactionResult,
@@ -190,6 +194,27 @@ function buildInstruction(
   }
 }
 
+/**
+ * How much compute to request for an intent.
+ *
+ * Requesting too little aborts the transaction mid-execution; requesting too
+ * much multiplies the priority fee, since the fee charged is `limit x price`.
+ * So this maps each intent to what it actually does rather than using one
+ * number for everything.
+ */
+function computeKindFor(intent: TransactionIntent): ComputeKind {
+  switch (intent.type) {
+    case 'transfer':
+      return 'transfer';
+    case 'create-event':
+      return 'createEvent';
+    case 'rsvp':
+      return 'claimSeat';
+    default:
+      return 'simple';
+  }
+}
+
 export class MobileWalletAdapter implements WalletAdapter {
   readonly id = 'mwa';
 
@@ -327,11 +352,33 @@ export class MobileWalletAdapter implements WalletAdapter {
       const payer = new PublicKey(toBase58(auth.accounts[0].address));
       const instruction = buildInstruction(intent, payer, programId);
 
+      /*
+       * Priority fee, or this may never land.
+       *
+       * Mainnet orders transactions by fee per compute unit. One that bids
+       * nothing is last in line and, whenever the network is busy, is simply
+       * not included before its blockhash expires - the wallet reports "sent",
+       * the app waits, and nothing ever happens. See `priority-fee` for why the
+       * price is measured rather than fixed.
+       *
+       * Priced against the accounts this transaction writes to, since
+       * prioritization is per-account contention rather than a global rate.
+       */
+      const writable = instruction.keys
+        .filter((k) => k.isWritable)
+        .map((k) => k.pubkey);
+      const budget = await computeBudgetInstructions(
+        computeKindFor(intent),
+        writable,
+      );
+
       const { blockhash } = await connection.getLatestBlockhash();
       const transaction = new Transaction({
         feePayer: payer,
         recentBlockhash: blockhash,
-      }).add(instruction);
+      })
+        .add(...budget)
+        .add(instruction);
 
       const [signature] = await wallet.signAndSendTransactions({
         transactions: [transaction],

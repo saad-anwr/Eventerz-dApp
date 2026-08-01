@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { ticketRepository } from '@/repositories';
+import { integrationsConfig } from '@/constants/config';
+import { ticketRepository, userRepository } from '@/repositories';
 import { AnalyticsEvent, analytics, solanaService } from '@/services';
 import { useWalletStore } from '@/store/wallet-store';
 
@@ -56,7 +57,25 @@ export function useRedeemTicket() {
   return useMutation({
     mutationFn: async (payload: string) => {
       const ticket = await ticketRepository.redeemQr(payload);
-      await solanaService.checkIn(ticket.id, ticket.eventId);
+
+      /*
+       * Attest attendance on-chain, against the guest's own wallet - `check_in`
+       * writes to their seat PDA, so it needs their address rather than the
+       * host's. A guest with no linked wallet has no seat account, which is a
+       * normal state and not a failed check-in: the ticket is already redeemed
+       * above, and that is the record the door relies on.
+       */
+      if (integrationsConfig.programId) {
+        const owner = await userRepository.getById(ticket.ownerId);
+        if (owner?.walletAddress) {
+          await solanaService.checkIn(
+            ticket.id,
+            ticket.eventId,
+            owner.walletAddress,
+          );
+        }
+      }
+
       analytics.track(AnalyticsEvent.TicketCheckedIn, { ticketId: ticket.id });
       return ticket;
     },

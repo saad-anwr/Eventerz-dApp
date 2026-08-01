@@ -6,6 +6,7 @@ import {
   fromBaseUnits,
   lamportsToSol,
   maxSendableLamports,
+  priceToLamports,
   solToLamports,
   toBaseUnits,
 } from './amount';
@@ -113,5 +114,35 @@ describe('maxSendableLamports', () => {
     expect(maxSendableLamports(0n)).toBe(0n);
     expect(maxSendableLamports(5_000n)).toBe(0n);
     expect(maxSendableLamports(FEE_HEADROOM_LAMPORTS)).toBe(0n);
+  });
+});
+
+describe('priceToLamports', () => {
+  it('reads the formats an event price actually takes', () => {
+    expect(priceToLamports('Free')).toBe(0n);
+    expect(priceToLamports('free')).toBe(0n);
+    expect(priceToLamports('0.5 SOL')).toBe(500_000_000n);
+    expect(priceToLamports('0.5SOL')).toBe(500_000_000n);
+    expect(priceToLamports('2 SOL')).toBe(2_000_000_000n);
+    expect(priceToLamports('0.5')).toBe(500_000_000n);
+  });
+
+  it('treats anything it cannot read as free', () => {
+    /*
+     * The direction matters. Zero costs the host a ticket price; a misread
+     * number charges a guest an amount nobody intended, and only one of those
+     * is recoverable. `price` is free text, so it will contain surprises.
+     */
+    expect(priceToLamports('')).toBe(0n);
+    expect(priceToLamports(null)).toBe(0n);
+    expect(priceToLamports(undefined)).toBe(0n);
+    expect(priceToLamports('pay what you want')).toBe(0n);
+    expect(priceToLamports('TBC')).toBe(0n);
+  });
+
+  it('does not lose precision on amounts a float would round', () => {
+    expect(priceToLamports('0.1')).toBe(100_000_000n);
+    expect(priceToLamports('0.07 SOL')).toBe(70_000_000n);
+    expect(priceToLamports('0.000000001 SOL')).toBe(1n);
   });
 });

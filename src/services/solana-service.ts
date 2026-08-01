@@ -35,19 +35,47 @@ async function submit(intent: TransactionIntent): Promise<OnChainResult> {
 }
 
 export const solanaService = {
-  /** Record an RSVP as a signed transaction. */
-  rsvp: (eventId: string) => submit({ type: 'rsvp', eventId }),
+  /**
+   * Take a seat on-chain.
+   *
+   * `hostWallet` is required, not optional-looking. A paid event settles the
+   * price to the host inside `claim_seat`, so the host account must be in the
+   * transaction - and the instruction builder refuses without it. Leaving it to
+   * the caller to remember is how this previously shipped as a call that threw
+   * on every RSVP the moment a program id was configured.
+   */
+  rsvp: (eventId: string, hostWallet: string) =>
+    submit({ type: 'rsvp', eventId, hostWallet }),
 
   /** Mint a compressed-NFT ticket to the attendee's wallet. */
   mintTicket: (eventId: string, owner: string) =>
     submit({ type: 'mint-ticket', eventId, owner }),
 
-  /** Write attendance on-chain at the door. */
-  checkIn: (ticketId: string, eventId: string) =>
-    submit({ type: 'check-in', ticketId, eventId }),
+  /** Write attendance on-chain at the door. Needs the guest's wallet. */
+  checkIn: (ticketId: string, eventId: string, attendeeWallet: string) =>
+    submit({ type: 'check-in', ticketId, eventId, attendeeWallet }),
 
-  /** Publish an event account. */
-  createEvent: (eventId: string) => submit({ type: 'create-event', eventId }),
+  /**
+   * Publish the event account.
+   *
+   * Every field is required because the on-chain account is not a marker, it is
+   * the event: `capacity` bounds seats and `startsAt`/`endsAt` bound the window
+   * in which a seat can be claimed at all.
+   *
+   * This used to take only an id and let the instruction builder fill the rest
+   * with defaults - capacity 1 and `startsAt = now`. On-chain that produced an
+   * event whose claim window had already closed at the instant it was created,
+   * so `claim_seat` failed with `EventOver` for every guest, for every event,
+   * forever. Nothing surfaced it because no program was deployed to run it.
+   */
+  createEvent: (args: {
+    eventId: string;
+    capacity: number;
+    startsAt: string;
+    endsAt?: string | null;
+    requiresApproval: boolean;
+    priceLamports: bigint;
+  }) => submit({ type: 'create-event', ...args }),
 
   /** Claim a Proof-of-Attendance badge. */
   claimBadge: (badgeId: string) => submit({ type: 'claim-badge', badgeId }),

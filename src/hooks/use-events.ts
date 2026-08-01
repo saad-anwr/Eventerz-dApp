@@ -15,10 +15,12 @@ import {
 import { integrationsConfig } from '@/constants/config';
 import {
   eventRepository,
+  userRepository,
   type CreateEventInput,
   type UpdateEventInput,
 } from '@/repositories';
 import { AnalyticsEvent, analytics, notificationService, solanaService } from '@/services';
+import { priceToLamports } from '@/utils/amount';
 import { useWalletStore } from '@/store/wallet-store';
 import type { EventFilters, EventItem } from '@/types';
 
@@ -146,7 +148,17 @@ export function useRequestToJoin() {
        * feature for no benefit.
        */
       if (integrationsConfig.programId) {
-        await solanaService.rsvp(event.id);
+        /*
+         * The host's wallet is part of the instruction: a paid event settles
+         * the price to them inside `claim_seat`. A host who has not linked one
+         * has no on-chain seats, which is correct rather than an error - the
+         * database RSVP below still happens, and that is the record that
+         * matters.
+         */
+        const host = await userRepository.getById(event.hostId);
+        if (host?.walletAddress) {
+          await solanaService.rsvp(event.id, host.walletAddress);
+        }
       }
 
       const updated = await eventRepository.requestToJoin(event.id, user.id);
@@ -273,7 +285,29 @@ export function useCreateEvent() {
     mutationFn: async (input: CreateEventInput) => {
       if (!user) throw new Error('Connect a wallet to publish an event.');
       const event = await eventRepository.create(input, user.id);
-      await solanaService.createEvent(event.id);
+
+      /*
+       * Publish the account with the event's real terms.
+       *
+       * These are not decoration: `capacity` bounds how many seats exist and
+       * `startsAt`/`endsAt` bound the window in which any seat can be claimed.
+       * Publishing with placeholders writes an event that is already over.
+       *
+       * Only attempted when a program is deployed - the database row is the
+       * record either way, and refusing to create an event because no program
+       * exists would break a working feature to protect a promise nobody made.
+       */
+      if (integrationsConfig.programId) {
+        await solanaService.createEvent({
+          eventId: event.id,
+          capacity: event.capacity,
+          startsAt: event.startsAt,
+          endsAt: event.endsAt ?? null,
+          requiresApproval: event.requiresApproval,
+          priceLamports: priceToLamports(event.price),
+        });
+      }
+
       analytics.track(AnalyticsEvent.EventCreated, { eventId: event.id });
       return event;
     },
