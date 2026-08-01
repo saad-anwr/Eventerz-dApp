@@ -31,6 +31,7 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
+import { useOverlayStore } from '@/store/overlay-store';
 import { motion, radius } from '@/theme/layout';
 import { cn } from '@/utils/cn';
 import { haptics } from '@/utils/haptics';
@@ -99,6 +100,20 @@ export const BottomSheet = memo(function BottomSheet({
       progress.value = withTiming(0, { duration: 180 });
     }
   }, [visible, translateY, progress, reduceMotion]);
+
+  /*
+   * Take the tab bar out while the sheet is up.
+   *
+   * The sheet cannot be drawn above it - see `overlay-store` for why - and a
+   * modal surface should not leave the navigation underneath it live anyway.
+   * Registered here rather than at each call site so every sheet gets it.
+   */
+  useEffect(() => {
+    if (!visible) return;
+    const { open, close: release } = useOverlayStore.getState();
+    open();
+    return release;
+  }, [visible]);
 
   // Android hardware back should close the sheet, not the screen behind it.
   useEffect(() => {

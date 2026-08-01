@@ -401,7 +401,7 @@ export default function EditEventScreen() {
           }}
         >
           <Text variant="title">Cancel this event</Text>
-          <Text variant="bodySm" className="text-muted">
+          <Text variant="bodySm" className="text-muted-foreground">
             Everyone holding a spot is notified and their RSVP is closed. The
             event page stays up so ticket holders keep the record - it cannot be
             un-cancelled.

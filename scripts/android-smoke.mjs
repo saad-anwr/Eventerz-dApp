@@ -330,8 +330,23 @@ const deepLinks = [
   '/settings',
   '/notifications',
   '/messages',
+  '/friends',
   '/scan',
   '/dashboard',
+  /*
+   * The OAuth landing route, and the reason this list is worth having.
+   *
+   * Google sign-in redirects to `eventerz://auth/callback?code=...`. Android
+   * hands that URL to the app as well as to the browser, so it has to resolve
+   * to something. For a while it did not: the app showed "Signed in" and the
+   * 404 screen at the same time, and because the session did land, the failure
+   * looked like a rendering glitch rather than a missing route.
+   *
+   * The fake code is deliberate. It cannot complete an exchange, so this checks
+   * the thing that actually broke - that the route exists and handles a bad
+   * code without crashing - rather than needing a real sign-in.
+   */
+  '/auth/callback?code=smoke-test-not-a-real-code',
 ];
 
 for (const path of deepLinks) {

@@ -182,7 +182,7 @@ export function LocationPicker({
       {searching && (
         <View className="flex-row items-center gap-2 px-1">
           <Spinner size={14} />
-          <Text variant="caption" className="text-muted">
+          <Text variant="caption" className="text-muted-foreground">
             Searching...
           </Text>
         </View>
@@ -224,7 +224,7 @@ export function LocationPicker({
                 <Text variant="label" numberOfLines={1}>
                   {suggestion.name}
                 </Text>
-                <Text variant="caption" className="text-muted" numberOfLines={1}>
+                <Text variant="caption" className="text-muted-foreground" numberOfLines={1}>
                   {suggestion.address}
                 </Text>
               </View>
@@ -255,7 +255,7 @@ export function LocationPicker({
             <Check size={15} color={accents.green} />
             <View className="flex-1">
               <Text variant="label">Pinned on the map</Text>
-              <Text variant="caption" className="text-muted" numberOfLines={2}>
+              <Text variant="caption" className="text-muted-foreground" numberOfLines={2}>
                 {value.address}
               </Text>
             </View>
@@ -266,14 +266,14 @@ export function LocationPicker({
               className="flex-row items-center gap-1 px-2 py-1"
             >
               <X size={13} color="rgba(255,255,255,0.55)" />
-              <Text variant="caption" className="text-muted">
+              <Text variant="caption" className="text-muted-foreground">
                 Remove
               </Text>
             </PressableFade>
           </View>
         </View>
       ) : (
-        <Text variant="caption" className="px-1 text-muted">
+        <Text variant="caption" className="px-1 text-muted-foreground">
           Optional - a pinned location gets a map and directions on the event
           screen. Searching uses{' '}
           {geocoderName() === 'google' ? 'Google Places' : 'OpenStreetMap'}.

@@ -137,12 +137,12 @@ export function EventMapCard({ place }: EventMapCardProps) {
               {label}
             </Text>
             {place.address && place.address !== label && (
-              <Text variant="caption" className="mt-0.5 text-muted" numberOfLines={2}>
+              <Text variant="caption" className="mt-0.5 text-muted-foreground" numberOfLines={2}>
                 {place.address}
               </Text>
             )}
             {!coords && (
-              <Text variant="caption" className="mt-0.5 text-muted">
+              <Text variant="caption" className="mt-0.5 text-muted-foreground">
                 {hasGoogleMapsKey()
                   ? 'Approximate - the host did not pin an exact spot.'
                   : 'Open in Maps to search for this address.'}

@@ -18,6 +18,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
+import { useOverlayStore } from '@/store/overlay-store';
 import { motion, radius } from '@/theme/layout';
 import { cn } from '@/utils/cn';
 
@@ -62,6 +63,18 @@ export const Modal = memo(function Modal({
     scale.value = withSpring(1, motion.spring.snappy);
     lift.value = withSpring(0, motion.spring.snappy);
   }, [visible, scale, lift, reduceMotion]);
+
+  /*
+   * Hide the tab bar for the duration. A dialog that leaves the tabs live
+   * underneath it is not a confirmation - you can simply walk away from the
+   * question. See `overlay-store`.
+   */
+  useEffect(() => {
+    if (!visible) return;
+    const { open, close } = useOverlayStore.getState();
+    open();
+    return close;
+  }, [visible]);
 
   useEffect(() => {
     if (!visible || Platform.OS !== 'android') return;

@@ -18,7 +18,7 @@ import { Avatar } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Text } from '@/components/ui/text';
 import { useWalletHoldings } from '@/hooks/use-holdings';
-import { accents, brand } from '@/theme/colors';
+import { accents } from '@/theme/colors';
 import { radius } from '@/theme/layout';
 import { fontFamily } from '@/theme/typography';
 import type { TokenHolding } from '@/services/solana/holdings';
@@ -58,7 +58,7 @@ const TokenRow = memo(function TokenRow({ token }: { token: TokenHolding }) {
           {label}
         </Text>
         {token.name && token.name !== label ? (
-          <Text variant="caption" className="text-muted" numberOfLines={1}>
+          <Text variant="caption" className="text-muted-foreground" numberOfLines={1}>
             {token.name}
           </Text>
         ) : null}
@@ -74,7 +74,7 @@ const TokenRow = memo(function TokenRow({ token }: { token: TokenHolding }) {
         {/* Only when the RPC actually priced it. An unknown value must not
             render as $0.00 - that is a number, and it would be wrong. */}
         {token.usdValue !== null && token.usdValue > 0 ? (
-          <Text variant="micro" className="text-muted">
+          <Text variant="micro" className="text-muted-foreground">
             ${token.usdValue.toFixed(2)}
           </Text>
         ) : null}
@@ -103,7 +103,7 @@ export function HoldingsList({
       style={{ borderRadius: radius.xl }}
     >
       <View className="flex-row items-center justify-between">
-        <Text variant="label" className="text-muted">
+        <Text variant="label" className="text-muted-foreground">
           {title}
         </Text>
         {data ? (
@@ -122,11 +122,11 @@ export function HoldingsList({
           <Skeleton height={38} radius={radius.md} />
         </View>
       ) : isError ? (
-        <Text variant="caption" className="mt-3 text-muted">
+        <Text variant="caption" className="mt-3 text-muted-foreground">
           Could not read this wallet right now.
         </Text>
       ) : (data?.tokens.length ?? 0) === 0 ? (
-        <Text variant="caption" className="mt-3 text-muted">
+        <Text variant="caption" className="mt-3 text-muted-foreground">
           No tokens yet - just SOL.
         </Text>
       ) : (
@@ -135,7 +135,7 @@ export function HoldingsList({
             <TokenRow key={token.mint} token={token} />
           ))}
           {data!.tokens.length > max ? (
-            <Text variant="micro" className="mt-1 text-muted">
+            <Text variant="micro" className="mt-1 text-muted-foreground">
               +{data!.tokens.length - max} more
             </Text>
           ) : null}

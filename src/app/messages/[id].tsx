@@ -102,7 +102,7 @@ function Bubble({
         </View>
       )}
 
-      <Text variant="micro" className="mt-0.5 px-1 text-muted">
+      <Text variant="micro" className="mt-0.5 px-1 text-muted-foreground">
         {clockTime(message.createdAt)}
       </Text>
     </View>
@@ -187,7 +187,7 @@ export default function DirectMessageScreen() {
             <Text variant="title" numberOfLines={1}>
               {other.name}
             </Text>
-            <Text variant="caption" className="text-muted" numberOfLines={1}>
+            <Text variant="caption" className="text-muted-foreground" numberOfLines={1}>
               @{other.handle}
               {other.walletAddress
                 ? ` · ${shortenAddress(other.walletAddress)}`
@@ -222,7 +222,7 @@ export default function DirectMessageScreen() {
                       className="bg-white/[0.05] px-3 py-1"
                       style={{ borderRadius: radius.full }}
                     >
-                      <Text variant="micro" className="text-muted">
+                      <Text variant="micro" className="text-muted-foreground">
                         {dayLabel(item.createdAt)}
                       </Text>
                     </View>
@@ -241,7 +241,7 @@ export default function DirectMessageScreen() {
           }}
           ListEmptyComponent={
             <View className="items-center px-8 py-16">
-              <Text variant="bodySm" className="text-center text-muted">
+              <Text variant="bodySm" className="text-center text-muted-foreground">
                 This is the start of your conversation with {other.name}.
               </Text>
             </View>

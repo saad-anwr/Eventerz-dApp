@@ -32,13 +32,13 @@ export default function NotFoundScreen() {
         className="flex-1 items-center justify-center gap-3"
         style={{ paddingHorizontal: screenPadding }}
       >
-        <Text variant="caption" className="text-muted">
+        <Text variant="caption" className="text-muted-foreground">
           404
         </Text>
         <Text variant="h2" className="text-center">
           This page has moved on
         </Text>
-        <Text variant="body" className="text-center text-muted">
+        <Text variant="body" className="text-center text-muted-foreground">
           The link may be out of date, or the event it pointed to was cancelled
           and removed by its host.
         </Text>

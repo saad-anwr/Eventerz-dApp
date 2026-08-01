@@ -12,7 +12,7 @@ import Animated, { SlideInUp, SlideOutUp } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { brand, status } from '@/theme/colors';
-import { radius } from '@/theme/layout';
+import { androidElevation, radius } from '@/theme/layout';
 import { useToastStore, type ToastVariant } from '@/store/toast-store';
 import { haptics } from '@/utils/haptics';
 
@@ -48,8 +48,12 @@ const ACCENT: Record<ToastVariant, string> = {
  *
  * Elevation is set on the container as well as the card - a child cannot lift
  * itself above a sibling of its parent.
+ *
+ * The value now comes from `androidElevation`, which orders every pinned
+ * surface in the app in one place. This exact bug has been fixed four times in
+ * four files; a shared table is what stops there being a fifth.
  */
-const TOAST_ANDROID_ELEVATION = 24;
+const TOAST_ANDROID_ELEVATION = androidElevation.toast;
 
 const TOAST_ELEVATION = Platform.select({
   ios: {

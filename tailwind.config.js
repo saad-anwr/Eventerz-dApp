@@ -25,6 +25,11 @@ module.exports = {
         'primary-foreground': '#ffffff',
         secondary: '#151d32',
         'secondary-foreground': '#f8fafc',
+        // Surface, not text. `text-muted` paints #191f2e on a #050816 page,
+        // which is very nearly invisible - it had silently hidden 37 captions,
+        // timestamps and hints across 9 screens before anyone noticed, because
+        // the text is *there* and technically rendering. Secondary text is
+        // `text-muted-foreground`; this token is for `bg-muted`.
         muted: '#191f2e',
         'muted-foreground': '#94a2b8',
         accent: '#3ebaf4',

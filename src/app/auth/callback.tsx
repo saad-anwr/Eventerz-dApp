@@ -39,6 +39,32 @@ import { useAuthStore } from '@/store/auth-store';
 import { toast } from '@/store/toast-store';
 import { useWalletStore } from '@/store/wallet-store';
 
+/**
+ * Turn a Supabase auth error into something a person can act on.
+ *
+ * Supabase's messages are written for whoever is integrating it, not for whoever
+ * is signing in. The commonest one reads "PKCE code verifier not found in
+ * storage. This can happen if the auth flow was initiated in a different
+ * browser or device" - accurate, and it tells the user nothing they can do.
+ *
+ * The raw text is dropped rather than appended. Someone who cannot sign in is
+ * not helped by a sentence about code verifiers, and showing it invites them to
+ * paste an internal detail into a support message instead of the one fact that
+ * matters, which is that starting again works.
+ */
+function explainAuthError(message: string): string {
+  if (/code verifier|code_verifier/i.test(message)) {
+    return 'This sign-in link belongs to a different attempt. Tap Continue with Google again to start a fresh one.';
+  }
+  if (/expired|invalid.*code|already.*used/i.test(message)) {
+    return 'That sign-in link has expired. Tap Continue with Google to get a new one.';
+  }
+  if (/network|fetch|timeout/i.test(message)) {
+    return 'Could not reach the sign-in service. Check your connection and try again.';
+  }
+  return 'Something went wrong finishing sign-in. Please try again.';
+}
+
 export default function AuthCallbackScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{
@@ -72,7 +98,7 @@ export default function AuthCallbackScreen() {
             String(params.code),
           );
           if (error) {
-            toast.error('Sign-in failed', error.message);
+            toast.error('Sign-in failed', explainAuthError(error.message));
           }
         }
 
@@ -94,7 +120,7 @@ export default function AuthCallbackScreen() {
       style={{ backgroundColor: '#050816' }}
     >
       <Spinner />
-      <Text variant="body" className="text-muted">
+      <Text variant="body" className="text-muted-foreground">
         Finishing sign-in...
       </Text>
     </View>

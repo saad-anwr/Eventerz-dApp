@@ -259,7 +259,7 @@ export function SendCryptoSheet({
           <Text variant="label" style={{ color: '#fcd34d' }}>
             {recipient.name} has not linked a wallet
           </Text>
-          <Text variant="caption" className="text-muted">
+          <Text variant="caption" className="text-muted-foreground">
             There is nowhere to send to yet. They can link one from their profile.
           </Text>
         </View>
@@ -267,7 +267,7 @@ export function SendCryptoSheet({
         <View className="items-center gap-3 py-4">
           <Coins size={26} color={brand.purple} />
           <Text variant="label">Connect a wallet to send</Text>
-          <Text variant="caption" className="text-center text-muted">
+          <Text variant="caption" className="text-center text-muted-foreground">
             Close this and connect from the Profile tab.
           </Text>
         </View>
@@ -285,7 +285,7 @@ export function SendCryptoSheet({
             <Check size={24} color={accents.green} />
           </View>
           <Text variant="h3">Sent {amount} SOL</Text>
-          <Text variant="caption" className="text-center text-muted">
+          <Text variant="caption" className="text-center text-muted-foreground">
             The receipt is in your conversation with{' '}
             {recipient.name.split(' ')[0]}.
           </Text>
@@ -368,7 +368,7 @@ export function SendCryptoSheet({
 
           <View className="flex-row items-start gap-2">
             <ShieldCheck size={13} color={accents.green} />
-            <Text variant="caption" className="flex-1 text-muted">
+            <Text variant="caption" className="flex-1 text-muted-foreground">
               Eventerz never holds your funds. The transfer goes straight from
               your wallet to theirs, and you approve it there.
             </Text>

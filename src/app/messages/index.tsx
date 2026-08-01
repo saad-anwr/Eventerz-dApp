@@ -64,13 +64,13 @@ function ConversationRow({
               className="border border-white/10 bg-white/[0.05] px-1.5"
               style={{ borderRadius: radius.full, paddingVertical: 1 }}
             >
-              <Text variant="micro" className="text-muted">
+              <Text variant="micro" className="text-muted-foreground">
                 Not a friend
               </Text>
             </View>
           )}
           {last && (
-            <Text variant="micro" className="ml-auto text-muted">
+            <Text variant="micro" className="ml-auto text-muted-foreground">
               {timeAgo(last.createdAt)}
             </Text>
           )}
@@ -84,7 +84,7 @@ function ConversationRow({
             <Text
               variant="bodySm"
               numberOfLines={1}
-              className="flex-1 text-muted"
+              className="flex-1 text-muted-foreground"
               style={last.kind === 'payment' ? { color: accents.green } : undefined}
             >
               {mine ? 'You: ' : ''}
@@ -92,7 +92,7 @@ function ConversationRow({
             </Text>
           </View>
         ) : (
-          <Text variant="bodySm" className="text-muted">
+          <Text variant="bodySm" className="text-muted-foreground">
             Say hi 👋
           </Text>
         )}

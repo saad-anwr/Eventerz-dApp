@@ -82,7 +82,7 @@ export function PaymentReceiptCard({ payment, mine }: PaymentReceiptCardProps) {
           <Coins size={14} color={tint} />
         </View>
         <View className="flex-1">
-          <Text variant="micro" className="uppercase tracking-wider text-muted">
+          <Text variant="micro" className="uppercase tracking-wider text-muted-foreground">
             {mine ? 'You sent' : 'You received'}
           </Text>
           <Text variant="title">{pretty}</Text>
@@ -103,14 +103,14 @@ export function PaymentReceiptCard({ payment, mine }: PaymentReceiptCardProps) {
         {payment.verified ? (
           <>
             <BadgeCheck size={11} color={accents.green} />
-            <Text variant="micro" className="text-muted">
+            <Text variant="micro" className="text-muted-foreground">
               Verified on-chain
             </Text>
           </>
         ) : (
           <>
             <Clock size={11} color="rgba(255,255,255,0.45)" />
-            <Text variant="micro" className="text-muted">
+            <Text variant="micro" className="text-muted-foreground">
               Confirming - tap to check on Explorer
             </Text>
           </>

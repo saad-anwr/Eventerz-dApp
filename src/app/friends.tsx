@@ -73,7 +73,7 @@ function RequestRow({
           <Text variant="title" numberOfLines={1}>
             {request.user.name}
           </Text>
-          <Text variant="caption" className="text-muted">
+          <Text variant="caption" className="text-muted-foreground">
             {request.outgoing ? 'Request sent' : 'Wants to be friends'}
           </Text>
         </View>
@@ -145,7 +145,7 @@ function FriendRow({
             {user.name}
           </Text>
           {user.handle ? (
-            <Text variant="caption" className="text-muted">
+            <Text variant="caption" className="text-muted-foreground">
               @{user.handle}
             </Text>
           ) : null}
@@ -251,7 +251,7 @@ export default function FriendsScreen() {
             className="ml-auto border border-white/10 bg-white/[0.05] px-2"
             style={{ borderRadius: radius.full, paddingVertical: 2 }}
           >
-            <Text variant="micro" className="text-muted">
+            <Text variant="micro" className="text-muted-foreground">
               {list.length}
             </Text>
           </View>
@@ -281,7 +281,7 @@ export default function FriendsScreen() {
               <View className="pb-2">
                 <Text
                   variant="label"
-                  className="text-muted"
+                  className="text-muted-foreground"
                   style={{
                     paddingHorizontal: screenPadding,
                     paddingTop: 4,
@@ -304,7 +304,7 @@ export default function FriendsScreen() {
                 {list.length > 0 && (
                   <Text
                     variant="label"
-                    className="text-muted"
+                    className="text-muted-foreground"
                     style={{
                       paddingHorizontal: screenPadding,
                       paddingTop: 14,

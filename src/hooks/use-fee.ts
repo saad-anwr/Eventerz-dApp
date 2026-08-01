@@ -22,6 +22,7 @@ import {
   quoteFee,
   type FeeKind,
 } from '@/services/solana/fees';
+import { awaitSettlement } from '@/services/solana/rpc';
 import { walletService } from '@/services/wallet';
 import { toast } from '@/store/toast-store';
 import { useWalletStore } from '@/store/wallet-store';
@@ -46,6 +47,7 @@ export function useFee(kind: FeeKind) {
     }
 
     setPaying(true);
+    let pendingId: string | null = null;
     try {
       const quote = await quoteFee(kind);
 
@@ -61,10 +63,43 @@ export function useFee(kind: FeeKind) {
         memo: `Eventerz ${FEE_LABEL[kind].toLowerCase()}`,
       });
 
+      /*
+       * A signature means the wallet submitted it, not that it succeeded.
+       *
+       * On mainnet a submitted transfer still fails for ordinary reasons - most
+       * often a balance that covers the fee but not the fee *plus* rent and the
+       * network charge. Treating "submitted" as "paid" hands over a paid-for
+       * event that nobody paid for.
+       *
+       * Only a confirmed failure stops the flow, and it is safe to stop on:
+       * a failed transaction moved no money, so retrying costs the user
+       * nothing. An undecided result deliberately proceeds - see below.
+       */
+      pendingId = toast.pending(
+        'Confirming payment',
+        'Waiting for the network to settle it.',
+      );
+      const settlement = await awaitSettlement(signature);
+      toast.dismiss(pendingId);
+      pendingId = null;
+
+      if (settlement.status === 'failed') {
+        throw new Error(`${settlement.error} You have not been charged.`);
+      }
+
+      /*
+       * `unknown` proceeds on purpose.
+       *
+       * The transaction is very likely on its way; the RPC just has not caught
+       * up. Reporting that as a failure would invite a retry, and a retry of a
+       * non-refundable charge is how someone gets billed twice for one event.
+       * Letting it through risks the far cheaper mistake instead.
+       */
       haptics.success();
       void refreshBalance();
       return signature;
     } catch (error) {
+      if (pendingId) toast.dismiss(pendingId);
       haptics.error();
       const message =
         error instanceof Error ? error.message : 'The fee could not be taken.';

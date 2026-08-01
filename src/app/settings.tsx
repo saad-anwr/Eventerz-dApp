@@ -33,6 +33,7 @@ import {
   RotateCcw,
   Shield,
   Smartphone,
+  Sparkles,
   Trash2,
   Users,
   Wallet,
@@ -366,6 +367,10 @@ export default function SettingsScreen() {
           <SwitchRow
             title="Reduce motion"
             description="Minimise decorative animation across the app"
+            // Every other row in Settings has a leading icon. Without one this
+            // row's text sits where the icons are, so the whole column steps
+            // left for a single line and reads as a rendering fault.
+            icon={Sparkles}
             value={preferences.reduceMotion}
             onValueChange={preferences.setReduceMotion}
           />

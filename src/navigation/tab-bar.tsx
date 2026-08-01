@@ -30,8 +30,9 @@ import {
   User,
   type LucideIcon,
 } from '@/navigation/tab-icons';
+import { useOverlayOpen } from '@/store/overlay-store';
 import { brand, gradients } from '@/theme/colors';
-import { TAB_BAR_HEIGHT, motion, shadow } from '@/theme/layout';
+import { TAB_BAR_HEIGHT, androidElevation, motion, shadow } from '@/theme/layout';
 import { fontFamily } from '@/theme/typography';
 import { haptics } from '@/utils/haptics';
 
@@ -168,6 +169,7 @@ export function EventerzTabBar({
   navigation,
 }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
+  const overlayOpen = useOverlayOpen();
 
   const handlePress = useCallback(
     (routeKey: string, routeName: string, isFocused: boolean) => {
@@ -184,6 +186,18 @@ export function EventerzTabBar({
     [navigation],
   );
 
+  /*
+   * Step aside for modal surfaces.
+   *
+   * A sheet cannot be drawn over this bar: elevation orders siblings, and the
+   * bar is a sibling of the whole screen container rather than of anything
+   * inside it. So the bar covered the bottom of every sheet - which is where
+   * the connect sheet keeps its "Don't have a wallet? Get one" link.
+   *
+   * It also should not be tappable while a dialog is asking a question.
+   */
+  if (overlayOpen) return null;
+
   return (
     <View
       className="absolute bottom-0 left-0 right-0"
@@ -193,9 +207,9 @@ export function EventerzTabBar({
          * Same reason as the event screen's RSVP bar: on Android `elevation`
          * decides draw order, and a bar with none sits below every card
          * (`shadow.card` is 8), so a long list scrolls straight through it.
-         * Above cards, below the toast at 24.
+         * Above cards, below the toast. See `androidElevation` for the order.
          */
-        elevation: 12,
+        elevation: androidElevation.tabBar,
       }}
     >
       {/* Backdrop */}

@@ -83,6 +83,55 @@ export const shadow = {
 export const makeShadow = elevation;
 
 /**
+ * Draw order for anything pinned over scrolling content, on Android.
+ *
+ * # Why this exists as a table
+ *
+ * On Android `elevation` decides what draws on top, and it **beats `zIndex`**.
+ * A pinned bar with `zIndex: 20` and no elevation still loses to an ordinary
+ * card, because `shadow.card` quietly carries `elevation: 8` - the shadow
+ * helper derives it from the blur radius, so every card has one whether or not
+ * anyone thought about stacking.
+ *
+ * That has now produced the same bug four separate times: the toast appeared
+ * behind cards, the RSVP bar appeared behind cards, the tab bar appeared behind
+ * cards, and the event header let the organizer row show straight through it.
+ * Each was found and fixed on its own, by a different number, which is why it
+ * kept coming back.
+ *
+ * So the numbers live here, in one ordered list, rather than as four literals
+ * in four files. The rule for adding one: it must sit above `card`, and where
+ * it sits relative to its neighbours is a decision about which surface may
+ * cover which - not a free choice.
+ *
+ * iOS and web ignore all of this and order by tree position, which is why these
+ * are only ever applied inside a `Platform.select` or alongside a `zIndex`.
+ */
+export const androidElevation = {
+  /** What `shadow.card` resolves to. Everything below must clear it. */
+  card: 8,
+  /** Tab bar: above content, below anything it can push on top of itself. */
+  tabBar: 12,
+  /** Sticky action bars and scroll-reactive headers. */
+  chrome: 16,
+  /** Toasts cover everything - they report on the thing that covered them. */
+  toast: 24,
+} as const;
+
+/*
+ * Note the limit of all of the above: elevation orders **siblings**. It can
+ * lift a bar over the list it sits on, because both live under the same screen.
+ * It cannot lift anything over the tab bar from *inside* a screen, because the
+ * tab bar is a sibling of the whole screen container rather than of the view
+ * being raised.
+ *
+ * That is why `BottomSheet` and `Modal` are real `Modal` windows and appear
+ * nowhere in this table: a modal surface has to escape the tree, not outrank
+ * its neighbours. Raising the number is the fix that looks right and does
+ * nothing - it was tried here first.
+ */
+
+/**
  * Motion tokens. `emphasized` is the web app's `[0.22, 1, 0.36, 1]` easing
  * curve - the one Framer Motion uses for modals and card reveals.
  */

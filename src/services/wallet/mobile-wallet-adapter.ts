@@ -33,6 +33,9 @@ import {
   eventerzProgramId,
   releaseSeatInstruction,
 } from '@/services/solana/program';
+// One definition of "which RPC", shared with the holdings and fee paths. Three
+// copies of this rule had drifted on what to do when no endpoint is configured.
+import { rpcEndpoint } from '@/services/solana/rpc';
 import { SecureKeys, StorageKeys } from '@/constants/storage-keys';
 import type {
   SignedTransactionResult,
@@ -61,41 +64,6 @@ const CHAIN_BY_CLUSTER = {
 } as const;
 
 type MwaChain = (typeof CHAIN_BY_CLUSTER)[keyof typeof CHAIN_BY_CLUSTER];
-
-/** Warned once per launch, not once per call - this runs on every connection. */
-let warnedAboutPublicRpc = false;
-
-/**
- * The RPC this build talks to.
- *
- * `EXPO_PUBLIC_HELIUS_RPC_URL` wins. The fallback is Solana's public endpoint,
- * which works and is **not intended for production traffic**: it is shared and
- * aggressively rate-limited, so under real load balance reads start failing and
- * a transfer sits at "confirming" while the user wonders whether their money
- * moved. That is the worst place in the product to be unreliable, so shipping
- * to mainnet without a dedicated RPC says so out loud rather than degrading
- * quietly.
- *
- * The cluster is validated in `constants/config`, so the template below can
- * only ever produce a host that exists.
- */
-function rpcEndpoint(): string {
-  const custom = integrationsConfig.heliusRpcUrl.trim();
-  if (custom && /^https?:\/\//i.test(custom)) return custom;
-
-  const cluster = integrationsConfig.solanaNetwork;
-
-  if (cluster === 'mainnet-beta' && !warnedAboutPublicRpc) {
-    warnedAboutPublicRpc = true;
-    console.warn(
-      '[solana] Using the public mainnet RPC. It is rate-limited and not ' +
-        'suitable for production traffic - set EXPO_PUBLIC_HELIUS_RPC_URL.',
-    );
-  }
-
-  if (cluster === 'mainnet-beta') return 'https://api.mainnet-beta.solana.com';
-  return `https://api.${cluster}.solana.com`;
-}
 
 /**
  * MWA returns addresses base64-encoded. Everything downstream - display,

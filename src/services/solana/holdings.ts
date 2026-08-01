@@ -24,7 +24,8 @@
  * follows.
  */
 
-import { integrationsConfig } from '@/constants/config';
+import { usdPerSolOrNull } from './fees';
+import { isHeliusRpc, rpcCall as rpc } from './rpc';
 
 export interface TokenHolding {
   mint: string;
@@ -48,31 +49,6 @@ export interface WalletHoldings {
 }
 
 const LAMPORTS_PER_SOL = 1_000_000_000;
-
-function rpcUrl(): string {
-  const custom = integrationsConfig.heliusRpcUrl.trim();
-  if (custom && /^https?:\/\//i.test(custom)) return custom;
-  const cluster = integrationsConfig.solanaNetwork;
-  return cluster === 'mainnet-beta'
-    ? 'https://api.mainnet-beta.solana.com'
-    : `https://api.${cluster}.solana.com`;
-}
-
-const isHelius = () => /helius/i.test(integrationsConfig.heliusRpcUrl);
-
-async function rpc<T>(method: string, params: unknown): Promise<T> {
-  const response = await fetch(rpcUrl(), {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ jsonrpc: '2.0', id: 'eventerz', method, params }),
-  });
-  if (!response.ok) {
-    throw new Error(`RPC ${method} failed (${response.status})`);
-  }
-  const body = (await response.json()) as { result?: T; error?: { message: string } };
-  if (body.error) throw new Error(body.error.message);
-  return body.result as T;
-}
 
 /* ------------------------------------------------------------------ helius -- */
 
@@ -106,7 +82,7 @@ async function heliusHoldings(owner: string): Promise<TokenHolding[]> {
   return (result.items ?? [])
     .map((asset): TokenHolding | null => {
       const info = asset.token_info;
-      if (!info?.balance || !info.balance) return null;
+      if (!info?.balance) return null;
 
       const decimals = info.decimals ?? 0;
       return {
@@ -190,11 +166,20 @@ async function standardHoldings(owner: string): Promise<TokenHolding[]> {
  * would.
  */
 export async function getWalletHoldings(owner: string): Promise<WalletHoldings> {
-  const [lamports, tokens] = await Promise.all([
+  const [lamports, tokens, usdPerSol] = await Promise.all([
     rpc<number>('getBalance', [owner]).catch(() => 0),
-    (isHelius() ? heliusHoldings(owner) : standardHoldings(owner)).catch(
+    (isHeliusRpc() ? heliusHoldings(owner) : standardHoldings(owner)).catch(
       () => [] as TokenHolding[],
     ),
+    /*
+     * Priced from the same source the fees use.
+     *
+     * DAS prices SPL tokens but not native SOL, so the largest holding on most
+     * profiles was the one line with no dollar value next to it. The price is
+     * already fetched and cached for the fee quote, so this costs nothing and
+     * removes the odd gap.
+     */
+    usdPerSolOrNull(),
   ]);
 
   const solBalance = (typeof lamports === 'object' && lamports !== null
@@ -203,9 +188,8 @@ export async function getWalletHoldings(owner: string): Promise<WalletHoldings> 
 
   return {
     solBalance,
-    // Only DAS prices assets. Null means "unknown", which the UI must not
-    // render as $0.
-    solUsdValue: null,
+    // Null means "unknown", which the UI must not render as $0.
+    solUsdValue: usdPerSol === null ? null : solBalance * usdPerSol,
     tokens: tokens.sort((a, b) => (b.usdValue ?? 0) - (a.usdValue ?? 0)),
   };
 }

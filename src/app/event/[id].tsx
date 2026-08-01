@@ -63,7 +63,7 @@ import { useUser, useUsers } from '@/hooks/use-users';
 import { toast } from '@/store/toast-store';
 import { useWalletStore } from '@/store/wallet-store';
 import { accents, brand, resolveCoverGradient } from '@/theme/colors';
-import { radius, screenPadding } from '@/theme/layout';
+import { androidElevation, radius, screenPadding } from '@/theme/layout';
 import { fontFamily } from '@/theme/typography';
 import { siteConfig } from '@/constants/config';
 import type { EventItem, User } from '@/types';
@@ -1105,7 +1105,7 @@ export default function EventDetailScreen() {
           paddingHorizontal: screenPadding,
           paddingTop: 14,
           paddingBottom: insets.bottom + 14,
-          elevation: 16,
+          elevation: androidElevation.chrome,
         }}
       >
         <View className="flex-row items-center gap-3">

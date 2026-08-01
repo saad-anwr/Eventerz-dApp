@@ -100,6 +100,21 @@ async function fetchUsdPerSol(): Promise<number> {
   );
 }
 
+/**
+ * The SOL price, or null when it could not be established.
+ *
+ * The non-throwing twin of `fetchUsdPerSol`, for callers that are *displaying*
+ * a value rather than charging one. The distinction matters: a missing price
+ * must stop a payment, but it must not stop a balance from rendering.
+ */
+export async function usdPerSolOrNull(): Promise<number | null> {
+  try {
+    return await fetchUsdPerSol();
+  } catch {
+    return null;
+  }
+}
+
 export interface FeeQuote {
   kind: FeeKind;
   usd: number;

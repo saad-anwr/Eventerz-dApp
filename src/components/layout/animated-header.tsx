@@ -17,7 +17,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { screenPadding } from '@/theme/layout';
+import { androidElevation, screenPadding } from '@/theme/layout';
 import { cn } from '@/utils/cn';
 
 import { IconButton } from '../ui/button';
@@ -77,6 +77,13 @@ export const AnimatedHeader = memo(function AnimatedHeader({
       className={cn('absolute left-0 right-0 top-0', className)}
       style={{
         zIndex: 20,
+        /*
+         * `zIndex` alone is not enough on Android, where elevation decides the
+         * draw order and wins. Without this the header sat below every card in
+         * the list it was meant to cover, so scrolling an event page showed the
+         * organizer row straight through the bar and colliding with its title.
+         */
+        ...Platform.select({ android: { elevation: androidElevation.chrome } }),
         paddingTop: insets.top,
         pointerEvents: 'box-none',
       }}
@@ -101,10 +108,16 @@ export const AnimatedHeader = memo(function AnimatedHeader({
             style={{ position: 'absolute', inset: 0 }}
           />
         ) : (
-          <View
-            className="absolute inset-0"
-            style={{ backgroundColor: 'rgba(5,8,22,0.94)' }}
-          />
+          /*
+            Fully opaque, for the same reason `BottomSheet` is. iOS gets a real
+            BlurView, which genuinely obscures what is behind it; a flat 94%
+            fill does not, it just dims it. At that alpha the section headings
+            passing underneath stayed legible through the bar and collided with
+            the title - which reads as a rendering fault rather than as
+            deliberate translucency. The whole layer still fades in on scroll,
+            so nothing is lost.
+          */
+          <View className="absolute inset-0" style={{ backgroundColor: '#050816' }} />
         )}
         <View className="absolute bottom-0 left-0 right-0 h-px bg-white/10" />
       </Animated.View>
