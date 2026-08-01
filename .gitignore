@@ -48,3 +48,9 @@ example
 
 # build output
 dist/
+
+# Compiled apps. Never commit these: `EXPO_PUBLIC_*` values are inlined into the
+# bundle at build time, so a committed .apk/.aab hands the Helius RPC key and
+# every other build-time value to anyone who can `grep` the binary.
+*.apk
+*.aab

@@ -158,6 +158,13 @@ clone still starts - see `.env.example`.
 
 ## Building an APK
 
+> **⚠ Rotate the Helius API key before launch.** A billable key was previously
+> committed here - in `eas.json` and in the tracked `eventerz-arm64-release.apk`.
+> Both are cleaned up, but git history still holds the old value, so it has to be
+> revoked in the Helius dashboard rather than merely deleted. Steps: root
+> `README.md`; rationale: `../Eventerz/docs/SECURITY.md`.
+
+
 Two ways. **EAS** builds in the cloud and needs no Android SDK; **`npm run apk`**
 builds locally and needs the SDK and a JDK. The artifact is the same shape - a
 release APK with the JS bundled in, so it runs without Metro.
@@ -175,7 +182,7 @@ npx eas-cli login
 npx eas-cli init                # writes extra.eas.projectId into app.json
 ```
 
-That is the whole setup. **The environment is already in `eas.json`.**
+Then populate the build environment, once per account - see below.
 
 ### Where the environment comes from
 
@@ -184,53 +191,70 @@ they come from `.env` - which is gitignored, so EAS never sees it. Left alone,
 that produces an APK that installs, opens, and cannot reach its backend: a green
 build and a dead artifact.
 
-So the build environment lives in a `base` profile that every other profile
-extends:
+Two mechanisms fill the gap, split by whether the value is a credential.
+
+**Non-secret build behaviour** lives in a `base` profile that every other
+profile extends:
 
 ```jsonc
 "build": {
   "base": {
     "env": {
-      "EXPO_PUBLIC_SUPABASE_URL": "https://<ref>.supabase.co",
-      "EXPO_PUBLIC_SUPABASE_ANON_KEY": "<anon key>",
       "EXPO_PUBLIC_SOLANA_NETWORK": "mainnet-beta",
       "EXPO_PUBLIC_USE_MOCK_WALLET": "false",
       "EXPO_PUBLIC_USE_MOCK_DATA": "false"
     }
   },
-  "preview": { "extends": "base", ... }
+  "preview":    { "extends": "base", "environment": "preview",    ... },
+  "production": { "extends": "base", "environment": "production", ... }
 }
 ```
 
-Committing those two Supabase values is safe, and specifically so: they are
-public by design. They ship inside the APK either way, anyone can extract them
-from the artifact, and **row-level security is what protects the data** - not the
-secrecy of the key. `docs/SECURITY.md` in the website project spells this out.
-
-The two mock flags are **pinned to `false` rather than copied from `.env`**. They
-are opt-in in code, but a shipped build that read `EXPO_PUBLIC_USE_MOCK_WALLET=true`
+The two mock flags are **pinned here rather than copied from `.env`**. They are
+opt-in in code, but a shipped build that read `EXPO_PUBLIC_USE_MOCK_WALLET=true`
 from somebody's local file would sign with a fake wallet. Pinning removes the
 possibility rather than relying on nobody having set it.
 
-`scripts/check-build-env.mjs` still runs as `eas-build-pre-install` and fails the
-build if the backend values are missing - now mostly as a guard against a
-mistyped key in that block.
+**Everything that carries a key** comes from EAS environment variables instead,
+resolved by the `environment` field on each profile. Set them once:
+
+```bash
+npx eas-cli env:create --name EXPO_PUBLIC_SUPABASE_URL      --value "https://<ref>.supabase.co" \
+  --environment preview --environment production --visibility plaintext
+npx eas-cli env:create --name EXPO_PUBLIC_SUPABASE_ANON_KEY --value "<anon key>" \
+  --environment preview --environment production --visibility plaintext
+npx eas-cli env:create --name EXPO_PUBLIC_HELIUS_RPC_URL    --value "https://mainnet.helius-rpc.com/?api-key=..." \
+  --environment preview --environment production --visibility sensitive
+```
+
+`npx eas-cli env:list --environment production` shows what a build will see.
+
+The Supabase pair is public by design - it ships inside the APK either way,
+anyone can extract it from the artifact, and **row-level security is what
+protects the data**, not the secrecy of the key (`docs/SECURITY.md` in the
+website project spells this out). They live in EAS rather than `eas.json` only
+so there is one place to change them, not because they need hiding.
+
+The Helius URL is different in kind: it embeds a **billable** API key.
+
+`scripts/check-build-env.mjs` runs as `eas-build-pre-install` and fails the build
+if the backend values are missing - which is now the guard that catches an
+environment you forgot to populate, before it becomes a dead artifact.
 
 ### What must NOT go in eas.json
 
+`eas.json` is committed, so treat it as public. Anything below belongs in an EAS
+environment variable or an Edge Function secret:
+
 - **`SUPABASE_SERVICE_ROLE_KEY`** - bypasses RLS entirely. It is an Edge Function
   secret and has no business in a mobile build at all.
-- **`EXPO_PUBLIC_HELIUS_RPC_URL`** - the URL embeds a billable API key. It is
-  extractable from the APK, but that is not a reason to put it in git history
-  too. Use an EAS-managed variable:
+- **`EXPO_PUBLIC_HELIUS_RPC_URL`** - the URL embeds a billable API key.
 
-  ```bash
-  npx eas-cli env:create --name EXPO_PUBLIC_HELIUS_RPC_URL \
-    --value "https://mainnet.helius-rpc.com/?api-key=..." --visibility sensitive
-  ```
-
-  Strongly recommended before a real launch - see `HANDOFF.md`. Without it the
-  app falls back to the public mainnet RPC, which is rate-limited.
+> `--visibility sensitive` keeps a value out of build logs and the dashboard
+> list. It does **not** keep it out of the app. Any `EXPO_PUBLIC_` variable is
+> compiled into the JS bundle, so `unzip -p app.apk | grep api-key` recovers it
+> from any published build. The protection for a client-side RPC key is a spend
+> cap and a domain/bundle restriction in the Helius dashboard, not secrecy.
 
 ### Commit first - EAS builds from git
 

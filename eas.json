@@ -6,16 +6,14 @@
   "build": {
     "base": {
       "env": {
-        "EXPO_PUBLIC_SUPABASE_URL": "https://zfijqnvzvnrchaemjfst.supabase.co",
-        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpmaWpxbnZ6dm5yY2hhZW1qZnN0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUyNTEyNDgsImV4cCI6MjEwMDgyNzI0OH0.vOhPunh-taIpsuwN8H0MXjKLHXxyt3McK9RhRpqWdVc",
         "EXPO_PUBLIC_SOLANA_NETWORK": "mainnet-beta",
         "EXPO_PUBLIC_USE_MOCK_WALLET": "false",
-        "EXPO_PUBLIC_USE_MOCK_DATA": "false",
-        "EXPO_PUBLIC_HELIUS_RPC_URL":"https://mainnet.helius-rpc.com/?api-key=d6d51d9f-a561-4b20-b73e-3906b86c543d"
+        "EXPO_PUBLIC_USE_MOCK_DATA": "false"
       }
     },
     "preview": {
       "extends": "base",
+      "environment": "preview",
       "distribution": "internal",
       "android": {
         "buildType": "apk",
@@ -24,6 +22,7 @@
     },
     "production": {
       "extends": "base",
+      "environment": "production",
       "distribution": "internal",
       "android": {
         "buildType": "apk",
@@ -32,6 +31,7 @@
     },
     "play": {
       "extends": "base",
+      "environment": "production",
       "distribution": "store",
       "android": {
         "buildType": "app-bundle",
