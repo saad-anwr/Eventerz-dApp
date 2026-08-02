@@ -43,6 +43,7 @@ import { haptics } from '@/utils/haptics';
 import { useThemeColors } from '@/theme/theme-provider';
 
 export default function CommunityDetailScreen() {
+  const themeColors = useThemeColors();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -76,7 +77,6 @@ export default function CommunityDetailScreen() {
           );
         },
         onError: () => {
-  const themeColors = useThemeColors();
           haptics.error();
           toast.error('Could not update membership');
         },

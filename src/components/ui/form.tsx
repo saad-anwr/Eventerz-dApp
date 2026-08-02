@@ -323,6 +323,7 @@ function SegmentedControlImpl<T extends string>({
   onChange: (next: T) => void;
   className?: string;
 }) {
+  const themeColors = useThemeColors();
   const [width, setWidth] = useState(0);
   const index = Math.max(
     0,

@@ -260,7 +260,7 @@ function MetaRow({
   icon: Icon,
   label,
   value,
-  accent = themeColors.mutedForeground,
+  accent,
 }: {
   icon: typeof Calendar;
   label: string;
@@ -268,13 +268,17 @@ function MetaRow({
   accent?: string;
 }) {
   const themeColors = useThemeColors();
+  // Resolved here, not as a default parameter: a default cannot call a hook,
+  // and the fallback is a surface colour that moves with the theme.
+  const tint = accent ?? themeColors.mutedForeground;
+
   return (
     <View className="flex-row items-center gap-3 py-2.5">
       <View
         className="items-center justify-center bg-white/[0.06]"
         style={{ width: 38, height: 38, borderRadius: radius.md }}
       >
-        <Icon size={17} color={accent} strokeWidth={2} />
+        <Icon size={17} color={tint} strokeWidth={2} />
       </View>
       <View className="flex-1">
         <Text variant="caption" className="text-muted-foreground">

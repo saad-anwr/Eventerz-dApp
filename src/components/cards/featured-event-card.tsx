@@ -57,6 +57,7 @@ export const FeaturedEventCard = memo(function FeaturedEventCard({
   index = 0,
   snapInterval = width,
 }: FeaturedEventCardProps) {
+  const themeColors = useThemeColors();
   const { data: host } = useUser(event.hostId);
   const colors = resolveCoverGradient(event.coverGradient);
   const countdown = countdownLabel(event.startsAt, event.endsAt);
@@ -65,7 +66,6 @@ export const FeaturedEventCard = memo(function FeaturedEventCard({
   const handlePress = useCallback(() => onPress(event), [event, onPress]);
 
   const parallaxStyle = useAnimatedStyle(() => {
-  const themeColors = useThemeColors();
     if (!scrollX) return {};
     const inputRange = [
       (index - 1) * snapInterval,
