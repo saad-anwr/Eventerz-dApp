@@ -1,4 +1,5 @@
 export * from './text';
+export * from './text-input';
 export * from './icon';
 export * from './pressable-scale';
 export * from './button';

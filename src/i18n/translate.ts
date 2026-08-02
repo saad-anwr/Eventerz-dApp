@@ -29,8 +29,11 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import { SOURCE_LANGUAGE } from './languages';
-import { quotaExhausted, requestTranslations } from './providers';
+import { LANGUAGE_NAMES, SOURCE_LANGUAGE } from './languages';
+import {
+  quotaExhausted as isQuotaExhausted,
+  requestTranslations,
+} from './providers';
 
 /**
  * Always on.
@@ -59,6 +62,23 @@ export function subscribe(listener: Listener): () => void {
 }
 
 const notify = () => listeners.forEach((l) => l());
+
+let notifyTimer: ReturnType<typeof setTimeout> | null = null;
+
+/**
+ * Coalesced repaint.
+ *
+ * Strings land one at a time, and re-rendering every subscriber sixty times in
+ * a row would cost more than the translation did. Batching them into one frame
+ * every quarter second still reads as copy filling in.
+ */
+function scheduleNotify() {
+  if (notifyTimer) return;
+  notifyTimer = setTimeout(() => {
+    notifyTimer = null;
+    notify();
+  }, 250);
+}
 
 function bucket(language: string): Map<string, string> {
   let found = memory.get(language);
@@ -110,6 +130,7 @@ function schedulePersist(language: string) {
 let pending = new Set<string>();
 let flushTimer: ReturnType<typeof setTimeout> | null = null;
 let activeLanguage = SOURCE_LANGUAGE;
+let quotaAnnounced = false;
 
 /** Bounded so one screen cannot post a megabyte of strings in a single call. */
 const MAX_BATCH = 60;
@@ -129,15 +150,40 @@ async function flush() {
    * copy is noise - and retrying a failing provider on every render is how a
    * rate limit becomes permanent. Nothing is cached for a string that failed,
    * so a later navigation asks again naturally.
+   *
+   * Results are cached and repainted as each string arrives rather than once
+   * at the end: the provider answers one string per request and a screen asks
+   * for sixty, which measured at half a minute on device. Holding them all
+   * back until the last one landed meant tapping a language did nothing at all
+   * for that whole time.
    */
-  const translated = await requestTranslations(batch, language);
+  const target = bucket(language);
+
+  const translated = await requestTranslations(
+    batch,
+    language,
+    (source, value) => {
+      target.set(source, value);
+      scheduleNotify();
+    },
+  );
+
+  /*
+   * Running out of quota is the one state change nothing else announces.
+   *
+   * Every other repaint is triggered by a translation arriving, and once the
+   * allowance is gone none ever will - so the picker would sit on "translated
+   * automatically" while translating nothing. Announced once; the flag never
+   * goes back.
+   */
+  if (isQuotaExhausted() && !quotaAnnounced) {
+    quotaAnnounced = true;
+    notify();
+  }
+
   if (translated.size === 0) return;
 
-  const target = bucket(language);
-  for (const [source, value] of translated) target.set(source, value);
-
   schedulePersist(language);
-  notify();
 
   if (pending.size > 0) flushTimer = setTimeout(flush, 50);
 }
@@ -158,15 +204,26 @@ export function setActiveLanguage(language: string) {
  * The translation of `text`, or `text` itself while one is being fetched.
  *
  * Synchronous on purpose - it is called from render.
+ *
+ * `version` is never read. It is the cache generation from `useTranslate`, and
+ * passing it makes this call visibly depend on state that changes when new
+ * translations arrive - without it, React Compiler is free to memoise the
+ * result forever, which is exactly what it did. See `use-translation.ts`.
  */
-export function translate(text: string, language: string): string {
+export function translate(
+  text: string,
+  language: string,
+  version?: number,
+): string {
   if (
     language === SOURCE_LANGUAGE ||
     !translationEnabled() ||
     !text ||
     // Numbers, addresses, symbols: nothing a translator would change, and
     // sending them wastes quota and risks mangling a wallet address.
-    !/[a-zA-Z]{2}/.test(text)
+    !/[a-zA-Z]{2}/.test(text) ||
+    // A language's own name, which must survive into every other language.
+    LANGUAGE_NAMES.has(text)
   ) {
     return text;
   }

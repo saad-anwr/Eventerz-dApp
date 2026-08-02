@@ -9,7 +9,7 @@
 import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Linking, ScrollView, TextInput, View } from 'react-native';
+import { Linking, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Avatar } from '@/components/ui/avatar';
@@ -42,6 +42,7 @@ import { Modal } from '@/components/ui/modal';
 import { PressableFade } from '@/components/ui/pressable-scale';
 import { Screen } from '@/components/ui/screen';
 import { Text } from '@/components/ui/text';
+import { TextInput } from '@/components/ui/text-input';
 import { GoogleAccountRow } from '@/features/wallet';
 import { integrationsConfig, siteConfig } from '@/constants/config';
 import { resetMockDatabase } from '@/mock';
@@ -50,7 +51,7 @@ import { getWalletDescriptor, walletAdapterReason } from '@/services/wallet';
 import { toast } from '@/store/toast-store';
 import { usePreferencesStore } from '@/store/preferences-store';
 import { languageFor, searchLanguages } from '@/i18n/languages';
-import { quotaExhausted } from '@/i18n/translate';
+import { useQuotaExhausted } from '@/i18n/use-translation';
 
 import { useAuthStore } from '@/store/auth-store';
 import { useWalletStore } from '@/store/wallet-store';
@@ -203,6 +204,7 @@ export default function SettingsScreen() {
 
   const [languageQuery, setLanguageQuery] = useState('');
   const activeLanguage = languageFor(preferences.language);
+  const outOfTranslationQuota = useQuotaExhausted();
   /* Capped: the full list is long and a settings screen should not become a
      scrolling wall of chips before anyone has typed anything. */
   const languageResults = searchLanguages(languageQuery).slice(0, 24);
@@ -349,7 +351,11 @@ export default function SettingsScreen() {
               </View>
               <View className="flex-1">
                 <Text variant="title">Language</Text>
-                <Text variant="caption" className="mt-0.5 text-muted-foreground">
+                <Text
+                  variant="caption"
+                  className="mt-0.5 text-muted-foreground"
+                  noTranslate
+                >
                   {activeLanguage
                     ? `${activeLanguage.nativeName} · ${activeLanguage.name}`
                     : 'English'}
@@ -405,7 +411,7 @@ export default function SettingsScreen() {
             */}
             {preferences.language !== 'en' && (
               <Text variant="micro" className="mt-2.5 text-muted-foreground">
-                {quotaExhausted()
+                {outOfTranslationQuota
                   ? 'The free translation quota for today is used up, so text stays in English.'
                   : 'Translated automatically. Wording may be imperfect.'}
               </Text>

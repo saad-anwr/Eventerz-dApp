@@ -19,7 +19,6 @@ import {
   FlatList,
   KeyboardAvoidingView,
   Platform,
-  TextInput,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -28,6 +27,7 @@ import { Avatar } from '@/components/ui/avatar';
 import { IconButton } from '@/components/ui/button';
 import { PaymentReceiptCard } from '@/components/cards/payment-receipt-card';
 import { ErrorState } from '@/components/ui/empty-state';
+import { TextInput } from '@/components/ui/text-input';
 import { ArrowLeft, Coins, Send } from '@/components/ui/icon';
 import { PressableScale } from '@/components/ui/pressable-scale';
 import { Screen } from '@/components/ui/screen';

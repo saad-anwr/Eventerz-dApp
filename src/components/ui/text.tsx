@@ -20,14 +20,27 @@ import { cn } from '@/utils/cn';
 export interface TextProps extends RNTextProps {
   variant?: TypeToken;
   className?: string;
+  /**
+   * Leave this string exactly as written.
+   *
+   * For text a machine translator would damage rather than help: wallet
+   * addresses, handles, and strings built out of language names - the settings
+   * subtitle is `"Español · Spanish"`, which came back from the provider as
+   * "Español/Spanish" with the separator rewritten.
+   *
+   * Bare language names are already exempt in `translate()`; this is for the
+   * cases that only look like ordinary copy.
+   */
+  noTranslate?: boolean;
 }
 
 export const Text = forwardRef<RNText, TextProps>(function Text(
-  { variant = 'body', className, style, children, ...props },
+  { variant = 'body', className, style, children, noTranslate, ...props },
   ref,
 ) {
   const token = type[variant];
-  const t = useTranslate();
+  const translateText = useTranslate();
+  const t = noTranslate ? (value: string) => value : translateText;
 
   /*
    * Translation happens here, once, for the whole app.

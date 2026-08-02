@@ -4,7 +4,7 @@
  */
 
 import { memo, useCallback, useState } from 'react';
-import { TextInput, View } from 'react-native';
+import { View } from 'react-native';
 import Animated, {
   interpolateColor,
   useAnimatedStyle,
@@ -20,6 +20,7 @@ import { haptics } from '@/utils/haptics';
 
 import { Search, X, type LucideIcon } from './icon';
 import { PressableScale } from './pressable-scale';
+import { TextInput } from './text-input';
 
 export interface SearchBarProps {
   value: string;

@@ -12,7 +12,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { TextInput, View, type TextInputProps } from 'react-native';
+import { View, type TextInputProps } from 'react-native';
 import Animated, {
   interpolateColor,
   useAnimatedStyle,
@@ -30,6 +30,7 @@ import { haptics } from '@/utils/haptics';
 import { CircleAlert, type LucideIcon } from './icon';
 import { PressableScale } from './pressable-scale';
 import { Text } from './text';
+import { TextInput } from './text-input';
 
 /* -------------------------------------------------------------------------- */
 /*  Text field                                                                 */
