@@ -30,7 +30,11 @@ import { queryClient } from '@/services/query-client';
 import { useAuthStore } from '@/store/auth-store';
 import { usePreferencesStore } from '@/store/preferences-store';
 import { useWalletStore } from '@/store/wallet-store';
-import { eventerzNavigationTheme } from '@/theme/navigation-theme';
+import { navigationThemeFor } from '@/theme/navigation-theme';
+import {
+  ThemeProvider as AppThemeProvider,
+  useTheme,
+} from '@/theme/theme-provider';
 import { motion } from '@/theme/layout';
 
 const STARTUP_STORAGE_TIMEOUT_MS = 2500;
@@ -127,6 +131,31 @@ function RealtimeBridge() {
   return null;
 }
 
+/**
+ * Navigation chrome that follows the theme.
+ *
+ * Separate from `AppThemeProvider` because it has to *consume* the scheme, and
+ * a component cannot read a context it is itself providing. The two things here
+ * are the ones outside the NativeWind tree, so CSS variables cannot reach them:
+ * React Navigation's own theme (which paints the flash between screens) and the
+ * OS status bar.
+ *
+ * At module scope, not nested in `RootLayout` - a component declared during
+ * render is a new type on every render, which remounts the entire navigation
+ * tree each time any state above it changes.
+ */
+function ThemedNavigation({ children }: { children: React.ReactNode }) {
+  const { scheme, colors } = useTheme();
+  return (
+    <ThemeProvider value={navigationThemeFor(scheme)}>
+      {/* Dark icons on a light page, light icons on a dark one. Left as
+          `light` this reads as an invisible clock in light mode. */}
+      <StatusBar style={colors.statusBarStyle} />
+      {children}
+    </ThemeProvider>
+  );
+}
+
 export default function RootLayout() {
   const fontsReady = useAppFonts();
   const preferencesReady = usePreferencesStore((s) => s.hasHydrated);
@@ -178,8 +207,8 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <QueryClientProvider client={queryClient}>
           <RealtimeBridge />
-          <ThemeProvider value={eventerzNavigationTheme}>
-            <StatusBar style="light" />
+          <AppThemeProvider>
+            <ThemedNavigation>
 
             <WebFrame>
               <Stack
@@ -230,7 +259,8 @@ export default function RootLayout() {
 
               <ToastHost />
             </WebFrame>
-          </ThemeProvider>
+            </ThemedNavigation>
+          </AppThemeProvider>
         </QueryClientProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

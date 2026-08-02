@@ -14,6 +14,7 @@ import { forwardRef } from 'react';
 import { Text as RNText, type TextProps as RNTextProps } from 'react-native';
 
 import { type TypeToken, type } from '@/theme/typography';
+import { useTranslate } from '@/i18n/use-translation';
 import { cn } from '@/utils/cn';
 
 export interface TextProps extends RNTextProps {
@@ -22,10 +23,33 @@ export interface TextProps extends RNTextProps {
 }
 
 export const Text = forwardRef<RNText, TextProps>(function Text(
-  { variant = 'body', className, style, ...props },
+  { variant = 'body', className, style, children, ...props },
   ref,
 ) {
   const token = type[variant];
+  const t = useTranslate();
+
+  /*
+   * Translation happens here, once, for the whole app.
+   *
+   * Every string on screen passes through this component - the codebase has
+   * exactly one other `react-native` Text import, in the root error boundary.
+   * So intercepting children is what makes "change the language" work without
+   * touching ~580 call sites or shipping a locale file per language.
+   *
+   * Only plain strings are touched. An array of children may hold elements, and
+   * a number is a count or an amount that a translator would only damage.
+   * Untranslated text is returned unchanged, so this is a no-op in English and
+   * whenever no translation endpoint is configured.
+   */
+  const content =
+    typeof children === 'string'
+      ? t(children)
+      : Array.isArray(children)
+        ? children.map((child) =>
+            typeof child === 'string' ? t(child) : child,
+          )
+        : children;
 
   return (
     <RNText
@@ -43,6 +67,8 @@ export const Text = forwardRef<RNText, TextProps>(function Text(
         style,
       ]}
       {...props}
-    />
+    >
+      {content}
+    </RNText>
   );
 });

@@ -9,7 +9,7 @@
 import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Linking, ScrollView, View } from 'react-native';
+import { Linking, ScrollView, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Avatar } from '@/components/ui/avatar';
@@ -54,6 +54,9 @@ import {
   usePreferencesStore,
   type LanguageCode,
 } from '@/store/preferences-store';
+import { languageFor, searchLanguages } from '@/i18n/languages';
+import { translationEnabled } from '@/i18n/translate';
+import { useThemeColors } from '@/theme/theme-provider';
 import { useAuthStore } from '@/store/auth-store';
 import { useWalletStore } from '@/store/wallet-store';
 import { TOUCH_TARGET, radius, screenPadding } from '@/theme/layout';
@@ -202,6 +205,13 @@ export default function SettingsScreen() {
   const deleteAccount = useAuthStore((s) => s.deleteAccount);
 
   const preferences = usePreferencesStore();
+  const colors = useThemeColors();
+
+  const [languageQuery, setLanguageQuery] = useState('');
+  const activeLanguage = languageFor(preferences.language);
+  /* Capped: the full list is long and a settings screen should not become a
+     scrolling wall of chips before anyone has typed anything. */
+  const languageResults = searchLanguages(languageQuery).slice(0, 24);
 
   const openLink = useCallback((url: string) => {
     haptics.light();
@@ -339,7 +349,7 @@ export default function SettingsScreen() {
               <View className="flex-1">
                 <Text variant="title">Theme</Text>
                 <Text variant="caption" className="mt-0.5 text-muted-foreground">
-                  Eventerz is dark-first - light mode is on the roadmap
+                  System follows your device setting
                 </Text>
               </View>
             </View>
@@ -349,14 +359,15 @@ export default function SettingsScreen() {
                   key={option}
                   label={option[0].toUpperCase() + option.slice(1)}
                   selected={preferences.theme === option}
+                  /*
+                    Just sets it. This used to also fire a toast admitting that
+                    light mode did not exist - the preference was stored and
+                    nothing read it. It reads it now, so the apology is gone
+                    along with the reason for it.
+                  */
                   onPress={() => {
+                    haptics.selection();
                     preferences.setTheme(option);
-                    if (option !== 'dark') {
-                      toast.info(
-                        'Dark mode only for now',
-                        'Your choice is saved and applies when light lands.',
-                      );
-                    }
                   }}
                 />
               ))}
@@ -375,20 +386,67 @@ export default function SettingsScreen() {
               </View>
               <View className="flex-1">
                 <Text variant="title">Language</Text>
+                <Text variant="caption" className="mt-0.5 text-muted-foreground">
+                  {activeLanguage
+                    ? `${activeLanguage.nativeName} · ${activeLanguage.name}`
+                    : 'English'}
+                </Text>
               </View>
             </View>
-            <View className="mt-3 flex-row flex-wrap gap-2">
-              {LANGUAGES.map((language) => (
+
+            {/*
+              A search box rather than a row of chips. Five fitted; forty-six
+              would be a wall, and the whole point of the change is that the
+              list is no longer short enough to show all of.
+            */}
+            <TextInput
+              value={languageQuery}
+              onChangeText={setLanguageQuery}
+              placeholder="Search languages"
+              placeholderTextColor={colors.mutedForeground}
+              autoCorrect={false}
+              autoCapitalize="none"
+              className="mt-3 border border-white/10 bg-white/[0.04] px-3.5"
+              style={{
+                borderRadius: radius.xl,
+                height: 44,
+                color: colors.foreground,
+                fontFamily: fontFamily.regular,
+                fontSize: 14,
+              }}
+            />
+
+            <View className="mt-2.5 flex-row flex-wrap gap-2">
+              {languageResults.map((language) => (
                 <Chip
                   key={language.code}
-                  label={language.label}
+                  label={language.nativeName}
                   selected={preferences.language === language.code}
-                  onPress={() =>
-                    preferences.setLanguage(language.code as LanguageCode)
-                  }
+                  onPress={() => {
+                    haptics.selection();
+                    preferences.setLanguage(language.code);
+                  }}
                 />
               ))}
+              {languageResults.length === 0 && (
+                <Text variant="caption" className="text-muted-foreground">
+                  No language matches &ldquo;{languageQuery}&rdquo;.
+                </Text>
+              )}
             </View>
+
+            {/*
+              Said plainly. These are machine translations, and someone reading
+              an awkward sentence deserves to know why rather than concluding
+              the app is badly written in their language.
+            */}
+            {preferences.language !== 'en' && (
+              <Text variant="micro" className="mt-2.5 text-muted-foreground">
+                {translationEnabled()
+                  ? 'Translated automatically. Wording may be imperfect.'
+                  : 'Translation is not configured on this build, so text stays in English.'}
+              </Text>
+            )}
           </View>
 
           <Divider />

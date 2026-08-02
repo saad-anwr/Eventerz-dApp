@@ -1,10 +1,10 @@
 /**
  * User preferences - persisted to AsyncStorage.
  *
- * The app is dark-first by design; `theme: 'light'` is accepted and stored but
- * the palette currently renders dark either way. Keeping the field means the
- * Settings screen is honest about what is coming without faking a toggle that
- * does nothing structural.
+ * `theme` and `language` were stored and never read - the Settings screen was
+ * the only consumer, highlighting whichever chip you had picked while nothing
+ * on screen changed. Both are live now: `theme` drives `ThemeProvider`, and
+ * `language` drives the runtime translation in `i18n/`.
  */
 
 import { create } from 'zustand';
@@ -15,21 +15,17 @@ import { setHapticsEnabled, zustandStorage } from '@/utils';
 
 export type ThemePreference = 'dark' | 'light' | 'system';
 
-export const LANGUAGES = [
-  { code: 'en', label: 'English' },
-  { code: 'es', label: 'Español' },
-  { code: 'pt', label: 'Português' },
-  { code: 'ja', label: '日本語' },
-  { code: 'hi', label: 'हिन्दी' },
-] as const;
-
-export type LanguageCode = (typeof LANGUAGES)[number]['code'];
+/*
+ * The catalogue moved to `i18n/languages`, which carries ~46 languages rather
+ * than 5 and is searchable. Re-exported so existing imports keep working.
+ */
+export { LANGUAGES, type LanguageCode } from '@/i18n/languages';
 
 interface PreferencesState {
   hasHydrated: boolean;
   onboardingComplete: boolean;
   theme: ThemePreference;
-  language: LanguageCode;
+  language: string;
   hapticsEnabled: boolean;
   reduceMotion: boolean;
   notifications: {
@@ -48,7 +44,7 @@ interface PreferencesState {
   completeOnboarding: () => void;
   resetOnboarding: () => void;
   setTheme: (theme: ThemePreference) => void;
-  setLanguage: (language: LanguageCode) => void;
+  setLanguage: (language: string) => void;
   setHaptics: (enabled: boolean) => void;
   setReduceMotion: (enabled: boolean) => void;
   toggleNotification: (key: keyof PreferencesState['notifications']) => void;
