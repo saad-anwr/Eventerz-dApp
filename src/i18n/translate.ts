@@ -21,26 +21,28 @@
  *
  * # Provider
  *
- * LibreTranslate's request shape, because it is open, self-hostable, and needs
- * no key for a private instance - so nothing here forces a billing relationship
- * to run the app. `EXPO_PUBLIC_TRANSLATE_URL` points it at your own instance;
- * `EXPO_PUBLIC_TRANSLATE_API_KEY` is sent when set, for hosted plans.
- *
- * If neither is configured, translation is **off** and everything stays
- * English. That is the honest default: silently shipping every user's interface
- * copy to a third-party endpoint nobody configured is not a reasonable thing to
- * do by accident.
+ * Chosen in `providers.ts`. MyMemory by default - free, keyless, and therefore
+ * working with no setup at all - and LibreTranslate whenever
+ * `EXPO_PUBLIC_TRANSLATE_URL` names one, which is what a launch should use. The
+ * quota trade-off between the two is documented there.
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { SOURCE_LANGUAGE } from './languages';
+import { quotaExhausted, requestTranslations } from './providers';
 
-const ENDPOINT = (process.env.EXPO_PUBLIC_TRANSLATE_URL ?? '').trim();
-const API_KEY = (process.env.EXPO_PUBLIC_TRANSLATE_API_KEY ?? '').trim();
+/**
+ * Always on.
+ *
+ * The default provider needs no key, so there is always something to translate
+ * with - a language picker that silently did nothing was the bug this feature
+ * exists to fix. `providers.ts` decides which one is in play and documents what
+ * it costs.
+ */
+export const translationEnabled = (): boolean => true;
 
-/** Translation is only attempted when an endpoint is configured. */
-export const translationEnabled = (): boolean => /^https?:\/\//i.test(ENDPOINT);
+export { quotaExhausted } from './providers';
 
 const CACHE_PREFIX = 'eventerz.i18n.';
 
@@ -120,46 +122,22 @@ async function flush() {
 
   if (batch.length === 0 || language === SOURCE_LANGUAGE) return;
 
-  try {
-    const response = await fetch(`${ENDPOINT.replace(/\/$/, '')}/translate`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        q: batch,
-        source: SOURCE_LANGUAGE,
-        target: language,
-        format: 'text',
-        ...(API_KEY ? { api_key: API_KEY } : {}),
-      }),
-    });
-    if (!response.ok) throw new Error(`translate ${response.status}`);
+  /*
+   * Failures are deliberately silent and not retried in place.
+   *
+   * The screen already reads correctly in English, so an error over working
+   * copy is noise - and retrying a failing provider on every render is how a
+   * rate limit becomes permanent. Nothing is cached for a string that failed,
+   * so a later navigation asks again naturally.
+   */
+  const translated = await requestTranslations(batch, language);
+  if (translated.size === 0) return;
 
-    const body = (await response.json()) as { translatedText?: string | string[] };
-    // The API returns an array for an array `q`, a string for a string.
-    const out = Array.isArray(body.translatedText)
-      ? body.translatedText
-      : [body.translatedText ?? ''];
+  const target = bucket(language);
+  for (const [source, value] of translated) target.set(source, value);
 
-    const target = bucket(language);
-    batch.forEach((source, i) => {
-      const translated = out[i];
-      if (typeof translated === 'string' && translated.length > 0) {
-        target.set(source, translated);
-      }
-    });
-
-    schedulePersist(language);
-    notify();
-  } catch {
-    /*
-     * Deliberately silent, and deliberately not retried.
-     *
-     * The screen is already showing readable English. Surfacing "translation
-     * failed" over working copy would be noise, and retrying a failing endpoint
-     * on every render is how a rate limit becomes permanent. The strings stay
-     * un-cached, so a later navigation naturally tries again.
-     */
-  }
+  schedulePersist(language);
+  notify();
 
   if (pending.size > 0) flushTimer = setTimeout(flush, 50);
 }

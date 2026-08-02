@@ -50,7 +50,7 @@ import { getWalletDescriptor, walletAdapterReason } from '@/services/wallet';
 import { toast } from '@/store/toast-store';
 import { usePreferencesStore } from '@/store/preferences-store';
 import { languageFor, searchLanguages } from '@/i18n/languages';
-import { translationEnabled } from '@/i18n/translate';
+import { quotaExhausted } from '@/i18n/translate';
 
 import { useAuthStore } from '@/store/auth-store';
 import { useWalletStore } from '@/store/wallet-store';
@@ -405,9 +405,9 @@ export default function SettingsScreen() {
             */}
             {preferences.language !== 'en' && (
               <Text variant="micro" className="mt-2.5 text-muted-foreground">
-                {translationEnabled()
-                  ? 'Translated automatically. Wording may be imperfect.'
-                  : 'Translation is not configured on this build, so text stays in English.'}
+                {quotaExhausted()
+                  ? 'The free translation quota for today is used up, so text stays in English.'
+                  : 'Translated automatically. Wording may be imperfect.'}
               </Text>
             )}
           </View>
