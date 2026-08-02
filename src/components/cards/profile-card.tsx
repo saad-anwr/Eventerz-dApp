@@ -16,6 +16,7 @@ import { Avatar } from '../ui/avatar';
 import { ChevronRight, Trophy } from '../ui/icon';
 import { PressableFade } from '../ui/pressable-scale';
 import { Text } from '../ui/text';
+import { useThemeColors } from '@/theme/theme-provider';
 
 export interface ProfileCardProps {
   user: User;
@@ -37,6 +38,7 @@ export const ProfileCard = memo(function ProfileCard({
   subtitle,
   className,
 }: ProfileCardProps) {
+  const themeColors = useThemeColors();
   const handlePress = useCallback(() => onPress?.(user), [onPress, user]);
 
   const secondary =
@@ -94,7 +96,7 @@ export const ProfileCard = memo(function ProfileCard({
             className="items-center justify-center bg-white/[0.06]"
             style={{ width: 28, height: 28, borderRadius: radius.full }}
           >
-            <ChevronRight size={14} color="#94a2b8" strokeWidth={2.4} />
+            <ChevronRight size={14} color={themeColors.mutedForeground} strokeWidth={2.4} />
           </View>
         ))}
     </PressableFade>

@@ -30,6 +30,7 @@ import { haptics } from '@/utils/haptics';
 import { CircleAlert, type LucideIcon } from './icon';
 import { PressableScale } from './pressable-scale';
 import { Text } from './text';
+import { useThemeColors } from '@/theme/theme-provider';
 
 /* -------------------------------------------------------------------------- */
 /*  Text field                                                                 */
@@ -60,6 +61,7 @@ export const TextField = memo(function TextField({
   onBlur,
   ...props
 }: TextFieldProps) {
+  const themeColors = useThemeColors();
   const [focused, setFocused] = useState(false);
   const focus = useSharedValue(0);
 
@@ -120,7 +122,7 @@ export const TextField = memo(function TextField({
         {Icon && (
           <Icon
             size={17}
-            color={focused ? brand.purple : '#94a2b8'}
+            color={focused ? brand.purple : themeColors.mutedForeground}
             strokeWidth={2.1}
             style={{ marginTop: multiline ? 2 : 0 }}
           />
@@ -131,7 +133,7 @@ export const TextField = memo(function TextField({
           onBlur={handleBlur}
           multiline={multiline}
           maxLength={maxLength}
-          placeholderTextColor="#64748b"
+          placeholderTextColor={themeColors.mutedForeground}
           accessibilityLabel={label}
           maxFontSizeMultiplier={1.3}
           className="flex-1 text-foreground"
@@ -192,6 +194,7 @@ export const Switch = memo(function Switch({
   label?: string;
   disabled?: boolean;
 }) {
+  const themeColors = useThemeColors();
   const progress = useSharedValue(value ? 1 : 0);
 
   // The thumb follows the `value` prop, so a controlled parent that rejects the
@@ -267,6 +270,7 @@ export const SwitchRow = memo(function SwitchRow({
   icon?: LucideIcon;
   disabled?: boolean;
 }) {
+  const themeColors = useThemeColors();
   return (
     <View
       className="flex-row items-center gap-3 py-3.5"
@@ -277,7 +281,7 @@ export const SwitchRow = memo(function SwitchRow({
           className="items-center justify-center bg-white/[0.06]"
           style={{ width: 36, height: 36, borderRadius: radius.md }}
         >
-          <Icon size={17} color="#94a2b8" strokeWidth={2} />
+          <Icon size={17} color={themeColors.mutedForeground} strokeWidth={2} />
         </View>
       )}
       <View className="flex-1">
@@ -380,7 +384,7 @@ function SegmentedControlImpl<T extends string>({
               style={{
                 fontFamily: active ? fontFamily.semibold : fontFamily.medium,
                 fontSize: 13,
-                color: active ? '#ffffff' : '#94a2b8',
+                color: active ? '#ffffff' : themeColors.mutedForeground,
               }}
             >
               {option.label}
@@ -390,7 +394,7 @@ function SegmentedControlImpl<T extends string>({
                 style={{
                   fontFamily: fontFamily.semibold,
                   fontSize: 11,
-                  color: active ? brand.cyan : '#64748b',
+                  color: active ? brand.cyan : themeColors.mutedForeground,
                 }}
               >
                 {option.count}

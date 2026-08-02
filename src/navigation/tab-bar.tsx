@@ -35,6 +35,7 @@ import { brand, gradients } from '@/theme/colors';
 import { TAB_BAR_HEIGHT, androidElevation, motion, shadow } from '@/theme/layout';
 import { fontFamily } from '@/theme/typography';
 import { haptics } from '@/utils/haptics';
+import { useThemeColors } from '@/theme/theme-provider';
 
 interface TabDescriptor {
   name: string;
@@ -62,6 +63,7 @@ const TabItem = memo(function TabItem({
   focused: boolean;
   onPress: () => void;
 }) {
+  const themeColors = useThemeColors();
   const Icon = tab.icon;
   const lift = useSharedValue(focused ? 1 : 0);
 
@@ -117,6 +119,7 @@ const CreateButton = memo(function CreateButton({
   focused: boolean;
   onPress: () => void;
 }) {
+  const themeColors = useThemeColors();
   const rotate = useSharedValue(0);
 
   rotate.value = withTiming(focused ? 45 : 0, {
@@ -144,7 +147,7 @@ const CreateButton = memo(function CreateButton({
             borderRadius: 27,
             marginTop: -22,
             borderWidth: 3,
-            borderColor: '#050816',
+            borderColor: themeColors.background,
           },
           shadow.glow,
         ]}

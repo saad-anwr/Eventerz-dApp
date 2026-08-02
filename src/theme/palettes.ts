@@ -123,5 +123,8 @@ export function paletteVars(scheme: ColorScheme): Record<string, string> {
     '--color-muted-foreground': p.mutedForeground,
     '--color-border': p.border,
     '--color-input': p.input,
+    // The page itself. `Screen` uses `bg-brand-bg`.
+    '--color-brand-bg': p.background,
+    '--color-brand-bg-soft': p.card,
   };
 }

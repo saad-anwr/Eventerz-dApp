@@ -51,11 +51,13 @@ import { brand } from '@/theme/colors';
 import { radius, screenPadding } from '@/theme/layout';
 import { fontFamily } from '@/theme/typography';
 import { shortenAddress, timeAgo } from '@/utils/format';
+import { useThemeColors } from '@/theme/theme-provider';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CHART_WIDTH = SCREEN_WIDTH - screenPadding * 2 - 32;
 
 export default function DashboardScreen() {
+  const themeColors = useThemeColors();
   const router = useRouter();
   const scrollY = useSharedValue(0);
 
@@ -122,7 +124,7 @@ export default function DashboardScreen() {
             onRefresh={onRefresh}
             tintColor={brand.purple}
             colors={[brand.purple, brand.cyan]}
-            progressBackgroundColor="#0b1024"
+            progressBackgroundColor={themeColors.card}
           />
         }
       >
@@ -287,7 +289,7 @@ export default function DashboardScreen() {
                           style={{
                             fontFamily: fontFamily.mono,
                             fontSize: 11,
-                            color: '#64748b',
+                            color: themeColors.mutedForeground,
                             marginTop: 2,
                           }}
                         >

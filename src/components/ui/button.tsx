@@ -20,6 +20,7 @@ import { cn } from '@/utils/cn';
 import { type LucideIcon } from './icon';
 import { PressableScale } from './pressable-scale';
 import { Text } from './text';
+import { useThemeColors } from '@/theme/theme-provider';
 
 export type ButtonVariant =
   | 'primary'
@@ -62,9 +63,9 @@ const SIZES: Record<
 /** Foreground colour per variant - icons and label share it. */
 const FOREGROUND: Record<ButtonVariant, string> = {
   primary: '#ffffff',
-  secondary: '#f8fafc',
-  outline: '#f8fafc',
-  ghost: '#94a2b8',
+  secondary: themeColors.foreground,
+  outline: themeColors.foreground,
+  ghost: themeColors.mutedForeground,
   link: brand.cyan,
   danger: '#fecaca',
 };
@@ -93,6 +94,7 @@ export const Button = memo(function Button({
   accessibilityHint,
   children,
 }: ButtonProps) {
+  const themeColors = useThemeColors();
   const dims = SIZES[size];
   const isDisabled = disabled || loading;
   const foreground = FOREGROUND[variant];
@@ -194,6 +196,7 @@ export const IconButton = memo(function IconButton({
   className?: string;
   disabled?: boolean;
 }) {
+  const themeColors = useThemeColors();
   const surface =
     variant === 'ghost'
       ? 'bg-transparent'
@@ -211,7 +214,7 @@ export const IconButton = memo(function IconButton({
       className={cn('items-center justify-center', surface, className)}
       style={{ width: size, height: size, borderRadius: radius.full }}
     >
-      <Icon size={iconSize} color="#f8fafc" strokeWidth={2} />
+      <Icon size={iconSize} color={themeColors.foreground} strokeWidth={2} />
     </PressableScale>
   );
 });

@@ -33,6 +33,7 @@ import { useRefresh } from '@/hooks/use-refresh';
 import { brand } from '@/theme/colors';
 import { screenPadding } from '@/theme/layout';
 import type { Community, EventItem } from '@/types';
+import { useThemeColors } from '@/theme/theme-provider';
 
 const REFRESH_KEYS = [
   queryKeys.events.all,
@@ -41,6 +42,7 @@ const REFRESH_KEYS = [
 ] as const;
 
 export default function HomeScreen() {
+  const themeColors = useThemeColors();
   const router = useRouter();
   const bottomPadding = useListBottomPadding();
 
@@ -100,7 +102,7 @@ export default function HomeScreen() {
             onRefresh={onRefresh}
             tintColor={brand.purple}
             colors={[brand.purple, brand.cyan]}
-            progressBackgroundColor="#0b1024"
+            progressBackgroundColor={themeColors.card}
           />
         }
       >

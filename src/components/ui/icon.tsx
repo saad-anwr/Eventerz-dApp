@@ -32,6 +32,8 @@ import {
   type LucideIcon,
 } from 'lucide-react-native';
 
+import { useThemeColors } from '@/theme/theme-provider';
+
 export {
   ArrowLeft,
   ArrowRight,
@@ -152,9 +154,10 @@ export interface DynamicIconProps {
 export function DynamicIcon({
   name,
   size = 20,
-  color = '#94a2b8',
+  color = themeColors.mutedForeground,
   strokeWidth = 2,
 }: DynamicIconProps) {
+  const themeColors = useThemeColors();
   // `createElement` rather than `const Icon = getIcon(name); <Icon />`: the
   // latter reads to the compiler as defining a component inside render. This is
   // a lookup in a module-level map - every icon is a stable, hoisted component.

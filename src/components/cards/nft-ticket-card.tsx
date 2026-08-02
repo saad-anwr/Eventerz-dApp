@@ -159,9 +159,9 @@ export const NftTicketCard = memo(function NftTicketCard({
             </Text>
             <View className="mt-1.5 flex-row items-center gap-1">
               {event.isOnline ? (
-                <Globe size={12} color="#94a2b8" strokeWidth={2} />
+                <Globe size={12} color={themeColors.mutedForeground} strokeWidth={2} />
               ) : (
-                <MapPin size={12} color="#94a2b8" strokeWidth={2} />
+                <MapPin size={12} color={themeColors.mutedForeground} strokeWidth={2} />
               )}
               <Text
                 variant="caption"
@@ -177,7 +177,7 @@ export const NftTicketCard = memo(function NftTicketCard({
             className="items-center justify-center border border-white/10 bg-white/[0.06]"
             style={{ width: 46, height: 46, borderRadius: radius.md }}
           >
-            <QrCode size={22} color="#f8fafc" strokeWidth={1.8} />
+            <QrCode size={22} color={themeColors.foreground} strokeWidth={1.8} />
           </View>
         </View>
 
@@ -190,7 +190,7 @@ export const NftTicketCard = memo(function NftTicketCard({
               style={{
                 fontFamily: fontFamily.mono,
                 fontSize: 12,
-                color: '#f8fafc',
+                color: themeColors.foreground,
                 marginTop: 2,
               }}
             >
@@ -206,7 +206,7 @@ export const NftTicketCard = memo(function NftTicketCard({
               style={{
                 fontFamily: fontFamily.mono,
                 fontSize: 12,
-                color: '#94a2b8',
+                color: themeColors.mutedForeground,
                 marginTop: 2,
               }}
             >

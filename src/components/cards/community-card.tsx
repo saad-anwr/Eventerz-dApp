@@ -18,6 +18,7 @@ import { Badge } from '../ui/badge';
 import { BadgeCheck, DynamicIcon, Lock } from '../ui/icon';
 import { PressableScale } from '../ui/pressable-scale';
 import { Text } from '../ui/text';
+import { useThemeColors } from '@/theme/theme-provider';
 
 export interface CommunityCardProps {
   community: Community;
@@ -122,7 +123,7 @@ export const CommunityCard = memo(function CommunityCard({
             width: 54,
             height: 54,
             borderRadius: radius.xl,
-            backgroundColor: '#0b1024',
+            backgroundColor: themeColors.card,
             marginTop: -27,
           }}
         >

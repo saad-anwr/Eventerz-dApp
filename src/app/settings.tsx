@@ -49,11 +49,7 @@ import { resetMockDatabase } from '@/mock';
 import { useMockBackend } from '@/repositories';
 import { getWalletDescriptor, walletAdapterReason } from '@/services/wallet';
 import { toast } from '@/store/toast-store';
-import {
-  LANGUAGES,
-  usePreferencesStore,
-  type LanguageCode,
-} from '@/store/preferences-store';
+import { usePreferencesStore } from '@/store/preferences-store';
 import { languageFor, searchLanguages } from '@/i18n/languages';
 import { translationEnabled } from '@/i18n/translate';
 import { useThemeColors } from '@/theme/theme-provider';
@@ -115,7 +111,7 @@ function LinkRow({
   external?: boolean;
   destructive?: boolean;
 }) {
-  const tint = destructive ? '#f87171' : '#94a2b8';
+  const tint = destructive ? '#f87171' : themeColors.mutedForeground;
 
   // A chevron is a promise that something happens next; only interactive rows
   // may make it.
@@ -171,9 +167,9 @@ function LinkRow({
 
       {onPress &&
         (external ? (
-          <ExternalLink size={15} color="#64748b" strokeWidth={2} />
+          <ExternalLink size={15} color={themeColors.mutedForeground} strokeWidth={2} />
         ) : (
-          <ChevronRight size={16} color="#64748b" strokeWidth={2.2} />
+          <ChevronRight size={16} color={themeColors.mutedForeground} strokeWidth={2.2} />
         ))}
     </Container>
   );
@@ -205,7 +201,7 @@ export default function SettingsScreen() {
   const deleteAccount = useAuthStore((s) => s.deleteAccount);
 
   const preferences = usePreferencesStore();
-  const colors = useThemeColors();
+  const themeColors = useThemeColors();
 
   const [languageQuery, setLanguageQuery] = useState('');
   const activeLanguage = languageFor(preferences.language);
@@ -310,7 +306,7 @@ export default function SettingsScreen() {
                   style={{
                     fontFamily: fontFamily.mono,
                     fontSize: 11,
-                    color: '#94a2b8',
+                    color: themeColors.mutedForeground,
                     marginTop: 2,
                   }}
                 >
@@ -329,7 +325,7 @@ export default function SettingsScreen() {
             className="mt-3 flex-row items-center gap-3 border border-white/10 bg-white/[0.03] p-4"
             style={{ borderRadius: radius['2xl'] }}
           >
-            <Wallet size={18} color="#94a2b8" strokeWidth={2} />
+            <Wallet size={18} color={themeColors.mutedForeground} strokeWidth={2} />
             <Text variant="bodySm" className="flex-1 text-muted-foreground">
               No wallet connected
             </Text>
@@ -344,7 +340,7 @@ export default function SettingsScreen() {
                 className="items-center justify-center bg-white/[0.06]"
                 style={{ width: 36, height: 36, borderRadius: radius.md }}
               >
-                <Moon size={17} color="#94a2b8" strokeWidth={2} />
+                <Moon size={17} color={themeColors.mutedForeground} strokeWidth={2} />
               </View>
               <View className="flex-1">
                 <Text variant="title">Theme</Text>
@@ -382,7 +378,7 @@ export default function SettingsScreen() {
                 className="items-center justify-center bg-white/[0.06]"
                 style={{ width: 36, height: 36, borderRadius: radius.md }}
               >
-                <Globe size={17} color="#94a2b8" strokeWidth={2} />
+                <Globe size={17} color={themeColors.mutedForeground} strokeWidth={2} />
               </View>
               <View className="flex-1">
                 <Text variant="title">Language</Text>
@@ -403,14 +399,14 @@ export default function SettingsScreen() {
               value={languageQuery}
               onChangeText={setLanguageQuery}
               placeholder="Search languages"
-              placeholderTextColor={colors.mutedForeground}
+              placeholderTextColor={themeColors.mutedForeground}
               autoCorrect={false}
               autoCapitalize="none"
               className="mt-3 border border-white/10 bg-white/[0.04] px-3.5"
               style={{
                 borderRadius: radius.xl,
                 height: 44,
-                color: colors.foreground,
+                color: themeColors.foreground,
                 fontFamily: fontFamily.regular,
                 fontSize: 14,
               }}

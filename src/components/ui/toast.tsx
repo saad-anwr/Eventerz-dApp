@@ -21,6 +21,7 @@ import { Check, CircleAlert, Info, LoaderCircle, X } from './icon';
 import { PressableScale } from './pressable-scale';
 import { Spinner } from './spinner';
 import { Text } from './text';
+import { useThemeColors } from '@/theme/theme-provider';
 
 const ICONS = {
   success: Check,
@@ -67,6 +68,7 @@ const TOAST_ELEVATION = Platform.select({
 });
 
 export const ToastHost = memo(function ToastHost() {
+  const themeColors = useThemeColors();
   const toasts = useToastStore((s) => s.toasts);
   const dismiss = useToastStore((s) => s.dismiss);
   const insets = useSafeAreaInsets();
@@ -157,7 +159,7 @@ export const ToastHost = memo(function ToastHost() {
                   className="items-center justify-center rounded-full bg-white/10"
                   style={{ width: 24, height: 24 }}
                 >
-                  <X size={13} color="#94a2b8" strokeWidth={2.5} />
+                  <X size={13} color={themeColors.mutedForeground} strokeWidth={2.5} />
                 </PressableScale>
               )}
             </View>

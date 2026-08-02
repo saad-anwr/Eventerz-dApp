@@ -52,8 +52,11 @@ module.exports = {
 
         // Eventerz brand palette - identical values to the web app.
         brand: {
-          bg: '#050816',
-          'bg-soft': '#0a0f24',
+          // Variable-driven: `Screen` paints `bg-brand-bg`, so this is the one
+          // token that decides the page colour. Left static, every surface
+          // token could switch and the page would still be black.
+          bg: 'var(--color-brand-bg, #050816)',
+          'bg-soft': 'var(--color-brand-bg-soft, #0a0f24)',
           purple: '#9945ff',
           violet: '#7c3aed',
           blue: '#2f80ff',

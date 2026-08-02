@@ -36,7 +36,7 @@ const SURFACE: Record<BadgeVariant, string> = {
 };
 
 const FOREGROUND: Record<BadgeVariant, string> = {
-  default: '#94a2b8',
+  default: colors.mutedForeground,
   purple: brand.purple,
   blue: brand.blue,
   cyan: brand.cyan,

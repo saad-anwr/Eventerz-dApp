@@ -40,6 +40,7 @@ import type { User } from '@/types';
 import { haptics } from '@/utils/haptics';
 
 import type { PendingRequest } from '@/repositories/supabase/friends';
+import { useThemeColors } from '@/theme/theme-provider';
 
 function RequestRow({
   request,
@@ -56,6 +57,7 @@ function RequestRow({
   onOpen: () => void;
   busy: boolean;
 }) {
+  const themeColors = useThemeColors();
   return (
     <View
       className="flex-row items-center gap-3 py-3"
@@ -133,6 +135,7 @@ function FriendRow({
   onOpen: () => void;
   onMessage: () => void;
 }) {
+  const themeColors = useThemeColors();
   return (
     <View
       className="flex-row items-center gap-3 py-3"
@@ -171,6 +174,7 @@ function FriendRow({
 }
 
 export default function FriendsScreen() {
+  const themeColors = useThemeColors();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const meId = useWalletStore((s) => s.user?.id ?? null);
@@ -343,7 +347,7 @@ export default function FriendsScreen() {
               onRefresh={onRefresh}
               tintColor={brand.purple}
               colors={[brand.purple, accents.green]}
-              progressBackgroundColor="#0b1024"
+              progressBackgroundColor={themeColors.card}
             />
           }
         />

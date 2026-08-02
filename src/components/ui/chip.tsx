@@ -15,6 +15,7 @@ import { haptics } from '@/utils/haptics';
 import { type LucideIcon } from './icon';
 import { PressableScale } from './pressable-scale';
 import { Text } from './text';
+import { useThemeColors } from '@/theme/theme-provider';
 
 export interface ChipProps {
   label: string;
@@ -35,7 +36,8 @@ export const Chip = memo(function Chip({
   disabled,
   className,
 }: ChipProps) {
-  const color = selected ? '#ffffff' : '#94a2b8';
+  const themeColors = useThemeColors();
+  const color = selected ? '#ffffff' : themeColors.mutedForeground;
 
   return (
     <PressableScale

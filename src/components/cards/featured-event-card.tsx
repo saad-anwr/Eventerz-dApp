@@ -165,9 +165,9 @@ export const FeaturedEventCard = memo(function FeaturedEventCard({
               </Text>
               <View className="mt-0.5 flex-row items-center gap-1">
                 {event.isOnline ? (
-                  <Globe size={11} color="#94a2b8" strokeWidth={2} />
+                  <Globe size={11} color={themeColors.mutedForeground} strokeWidth={2} />
                 ) : (
-                  <MapPin size={11} color="#94a2b8" strokeWidth={2} />
+                  <MapPin size={11} color={themeColors.mutedForeground} strokeWidth={2} />
                 )}
                 <Text
                   variant="caption"
@@ -190,7 +190,7 @@ export const FeaturedEventCard = memo(function FeaturedEventCard({
                 {event.price}
               </Text>
               <View className="mt-0.5 flex-row items-center gap-1">
-                <Users size={11} color="#94a2b8" strokeWidth={2} />
+                <Users size={11} color={themeColors.mutedForeground} strokeWidth={2} />
                 <Text variant="caption" className="text-muted-foreground">
                   {compactNumber(goingCount(event))}
                 </Text>

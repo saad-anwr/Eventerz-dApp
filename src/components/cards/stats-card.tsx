@@ -14,6 +14,7 @@ import { cn } from '@/utils/cn';
 import { AnimatedCounter } from '../ui/animated-counter';
 import { TrendingUp, type LucideIcon } from '../ui/icon';
 import { Text } from '../ui/text';
+import { useThemeColors } from '@/theme/theme-provider';
 
 export interface StatsCardProps {
   label: string;
@@ -43,6 +44,7 @@ export const StatsCard = memo(function StatsCard({
   className,
   style,
 }: StatsCardProps) {
+  const themeColors = useThemeColors();
   const color = accents[accent];
   const positive = !delta || !delta.startsWith('-');
 
@@ -111,7 +113,7 @@ export const StatsCard = memo(function StatsCard({
         decimals={decimals}
         compact={compact}
         className="mt-3"
-        style={{ fontSize: 24, color: '#f8fafc' }}
+        style={{ fontSize: 24, color: themeColors.foreground }}
       />
 
       <Text variant="caption" className="mt-0.5 text-muted-foreground">

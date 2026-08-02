@@ -34,6 +34,7 @@ import { radius, screenPadding } from '@/theme/layout';
 import { fontFamily } from '@/theme/typography';
 import type { Badge as BadgeModel, Ticket } from '@/types';
 import { timeAgo } from '@/utils/format';
+import { useThemeColors } from '@/theme/theme-provider';
 
 type TabValue = 'upcoming' | 'past' | 'badges';
 
@@ -53,6 +54,7 @@ function useTicketPartition(tickets: Ticket[]) {
 }
 
 function BadgeTile({ badge }: { badge: BadgeModel }) {
+  const themeColors = useThemeColors();
   const color = accents[badge.accent];
 
   return (
@@ -98,6 +100,7 @@ function BadgeTile({ badge }: { badge: BadgeModel }) {
 }
 
 export default function TicketsScreen() {
+  const themeColors = useThemeColors();
   const router = useRouter();
   const bottomPadding = useListBottomPadding();
   const [tab, setTab] = useState<TabValue>('upcoming');
@@ -203,7 +206,7 @@ export default function TicketsScreen() {
               onRefresh={onRefresh}
               tintColor={brand.purple}
               colors={[brand.purple, brand.cyan]}
-              progressBackgroundColor="#0b1024"
+              progressBackgroundColor={themeColors.card}
             />
           }
         >
@@ -266,7 +269,7 @@ export default function TicketsScreen() {
             onRefresh={onRefresh}
             tintColor={brand.purple}
             colors={[brand.purple, brand.cyan]}
-            progressBackgroundColor="#0b1024"
+            progressBackgroundColor={themeColors.card}
           />
         }
         initialNumToRender={4}

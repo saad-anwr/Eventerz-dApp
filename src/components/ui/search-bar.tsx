@@ -20,6 +20,7 @@ import { haptics } from '@/utils/haptics';
 
 import { Search, X, type LucideIcon } from './icon';
 import { PressableScale } from './pressable-scale';
+import { useThemeColors } from '@/theme/theme-provider';
 
 export interface SearchBarProps {
   value: string;
@@ -43,6 +44,7 @@ export const SearchBar = memo(function SearchBar({
   className,
   trailing,
 }: SearchBarProps) {
+  const themeColors = useThemeColors();
   const [focused, setFocused] = useState(false);
   const focus = useSharedValue(0);
 
@@ -85,7 +87,7 @@ export const SearchBar = memo(function SearchBar({
       >
         <Icon
           size={17}
-          color={focused ? brand.purple : '#94a2b8'}
+          color={focused ? brand.purple : themeColors.mutedForeground}
           strokeWidth={2.2}
         />
         <TextInput
@@ -95,7 +97,7 @@ export const SearchBar = memo(function SearchBar({
           onBlur={handleBlur}
           onSubmitEditing={onSubmit}
           placeholder={placeholder}
-          placeholderTextColor="#64748b"
+          placeholderTextColor={themeColors.mutedForeground}
           autoFocus={autoFocus}
           returnKeyType="search"
           autoCorrect={false}
@@ -121,7 +123,7 @@ export const SearchBar = memo(function SearchBar({
             className="items-center justify-center rounded-full bg-white/10"
             style={{ width: 22, height: 22 }}
           >
-            <X size={13} color="#94a2b8" strokeWidth={2.5} />
+            <X size={13} color={themeColors.mutedForeground} strokeWidth={2.5} />
           </PressableScale>
         )}
       </Animated.View>

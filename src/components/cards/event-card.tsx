@@ -213,9 +213,9 @@ export const EventCard = memo(function EventCard({
         <View className="mt-3 flex-row items-center gap-3">
           <View className="flex-1 flex-row items-center gap-1">
             {event.isOnline ? (
-              <Globe size={13} color="#94a2b8" strokeWidth={2} />
+              <Globe size={13} color={themeColors.mutedForeground} strokeWidth={2} />
             ) : (
-              <MapPin size={13} color="#94a2b8" strokeWidth={2} />
+              <MapPin size={13} color={themeColors.mutedForeground} strokeWidth={2} />
             )}
             <Text
               variant="caption"
@@ -226,7 +226,7 @@ export const EventCard = memo(function EventCard({
             </Text>
           </View>
           <View className="flex-row items-center gap-1">
-            <Users size={13} color="#94a2b8" strokeWidth={2} />
+            <Users size={13} color={themeColors.mutedForeground} strokeWidth={2} />
             <Text variant="caption" className="text-muted-foreground">
               {goingCount(event)}
             </Text>

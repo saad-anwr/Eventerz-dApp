@@ -87,6 +87,7 @@ import {
 } from '@/utils/rsvp';
 import { locationOf } from '@/utils/maps';
 import { haptics } from '@/utils/haptics';
+import { useThemeColors } from '@/theme/theme-provider';
 
 const HERO_HEIGHT = 300;
 
@@ -100,6 +101,7 @@ function Section({
   children: React.ReactNode;
   delay?: number;
 }) {
+  const themeColors = useThemeColors();
   return (
     <Animated.View
       entering={FadeInDown.delay(delay).duration(420)}
@@ -125,6 +127,7 @@ function Section({
  * rendering this is not what authorises anything.
  */
 function GuestManagerSection({ event }: { event: EventItem }) {
+  const themeColors = useThemeColors();
   const { data: guests = [] } = useEventGuests(event.id);
   const approve = useApproveGuest();
   const decline = useDeclineGuest();
@@ -256,13 +259,14 @@ function MetaRow({
   icon: Icon,
   label,
   value,
-  accent = '#94a2b8',
+  accent = themeColors.mutedForeground,
 }: {
   icon: typeof Calendar;
   label: string;
   value: string;
   accent?: string;
 }) {
+  const themeColors = useThemeColors();
   return (
     <View className="flex-row items-center gap-3 py-2.5">
       <View
@@ -284,6 +288,7 @@ function MetaRow({
 }
 
 export default function EventDetailScreen() {
+  const themeColors = useThemeColors();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -570,7 +575,7 @@ export default function EventDetailScreen() {
 
           {/* Scrim so the title stays readable regardless of gradient */}
           <LinearGradient
-            colors={['transparent', 'rgba(5,8,22,0.6)', '#050816']}
+            colors={['transparent', 'rgba(5,8,22,0.6)', themeColors.background]}
             locations={[0.3, 0.72, 1]}
             style={{ position: 'absolute', inset: 0 }}
           />
@@ -659,14 +664,14 @@ export default function EventDetailScreen() {
           >
             <View className="flex-row items-center justify-between">
               <View className="flex-row items-center gap-2">
-                <Users size={15} color="#94a2b8" strokeWidth={2.2} />
+                <Users size={15} color={themeColors.mutedForeground} strokeWidth={2.2} />
                 <Text variant="bodySm" style={{ fontFamily: fontFamily.medium }}>
                   {plural(totalGoing, 'guest')} going
                 </Text>
               </View>
               <Text
                 variant="caption"
-                style={{ color: seatsLeft < 20 ? brand.cyan : '#94a2b8' }}
+                style={{ color: seatsLeft < 20 ? brand.cyan : themeColors.mutedForeground }}
               >
                 {seatsLeft === 0
                   ? 'Waitlist only'
@@ -821,7 +826,7 @@ export default function EventDetailScreen() {
           >
             <Lock
               size={17}
-              color={event.tokenGated ? brand.purple : '#94a2b8'}
+              color={event.tokenGated ? brand.purple : themeColors.mutedForeground}
               strokeWidth={2}
             />
             <View className="flex-1">
@@ -860,7 +865,7 @@ export default function EventDetailScreen() {
                 className="items-center justify-center border border-white/12 bg-black/30"
                 style={{ width: 56, height: 56, borderRadius: radius.lg }}
               >
-                <Ticket size={26} color="#f8fafc" strokeWidth={1.7} />
+                <Ticket size={26} color={themeColors.foreground} strokeWidth={1.7} />
               </View>
               {/*
                 Three states, and the copy has to match the one you are in.
@@ -996,7 +1001,7 @@ export default function EventDetailScreen() {
                         }`}
                   </Text>
                   <View className="mt-3 flex-row items-center gap-1.5">
-                    <Lock size={12} color="#94a2b8" strokeWidth={2.2} />
+                    <Lock size={12} color={themeColors.mutedForeground} strokeWidth={2.2} />
                     <Text variant="caption" className="text-muted-foreground">
                       The full guest list is visible to confirmed guests.
                     </Text>

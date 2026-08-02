@@ -45,6 +45,7 @@ import {
   shortenAddress,
 } from '@/utils/format';
 import { haptics } from '@/utils/haptics';
+import { useThemeColors } from '@/theme/theme-provider';
 
 const QR_SIZE = 230;
 
@@ -118,6 +119,7 @@ export default function TicketDetailScreen() {
     );
   }
 
+  const themeColors = useThemeColors();
   const colors = resolveCoverGradient(event.coverGradient);
   const used = ticket.status === 'used';
 
@@ -125,7 +127,7 @@ export default function TicketDetailScreen() {
     <Screen edgeTop={false} aurora={false}>
       {/* Gradient wash matching the event */}
       <LinearGradient
-        colors={[colors[0], colors[1], '#050816']}
+        colors={[colors[0], colors[1], themeColors.background]}
         locations={[0, 0.35, 0.85]}
         start={{ x: 0, y: 0 }}
         end={{ x: 0.6, y: 1 }}
@@ -197,7 +199,7 @@ export default function TicketDetailScreen() {
               value={ticket.qrPayload}
               size={QR_SIZE}
               backgroundColor="#ffffff"
-              color="#050816"
+              color={themeColors.background}
               ecl="M"
             />
           </View>
@@ -211,12 +213,12 @@ export default function TicketDetailScreen() {
                   backgroundColor: brand.green,
                 }}
               >
-                <BadgeCheck size={17} color="#050816" strokeWidth={2.6} />
+                <BadgeCheck size={17} color={themeColors.background} strokeWidth={2.6} />
                 <Text
                   style={{
                     fontFamily: fontFamily.bold,
                     fontSize: 14,
-                    color: '#050816',
+                    color: themeColors.background,
                   }}
                 >
                   CHECKED IN
@@ -229,7 +231,7 @@ export default function TicketDetailScreen() {
             style={{
               fontFamily: fontFamily.mono,
               fontSize: 13,
-              color: '#050816',
+              color: themeColors.background,
               marginTop: 18,
               letterSpacing: 1,
             }}
@@ -240,7 +242,7 @@ export default function TicketDetailScreen() {
             style={{
               fontFamily: fontFamily.medium,
               fontSize: 11,
-              color: '#64748b',
+              color: themeColors.mutedForeground,
               marginTop: 3,
             }}
           >

@@ -46,6 +46,7 @@ import { fontFamily } from '@/theme/typography';
 import type { AppNotification, NotificationKind } from '@/types';
 import { dayLabel, timeAgo } from '@/utils/format';
 import { haptics } from '@/utils/haptics';
+import { useThemeColors } from '@/theme/theme-provider';
 
 /**
  * Every `kind` the app can receive, mapped to a glyph.
@@ -88,6 +89,7 @@ function NotificationRow({
   isLast: boolean;
   onPress: (item: AppNotification) => void;
 }) {
+  const themeColors = useThemeColors();
   const meta = KIND_META[item.kind];
   const Icon = meta.icon;
   const color = accents[meta.accent];
@@ -161,6 +163,7 @@ function NotificationRow({
 }
 
 export default function NotificationsScreen() {
+  const themeColors = useThemeColors();
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
@@ -266,7 +269,7 @@ export default function NotificationsScreen() {
               onRefresh={onRefresh}
               tintColor={brand.purple}
               colors={[brand.purple, brand.cyan]}
-              progressBackgroundColor="#0b1024"
+              progressBackgroundColor={themeColors.card}
             />
           }
           renderSectionHeader={({ section }) => (

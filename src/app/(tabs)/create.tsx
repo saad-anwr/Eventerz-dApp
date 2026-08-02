@@ -38,6 +38,7 @@ import { toast } from '@/store/toast-store';
 import { CREATE_STEPS, useCreateEventStore } from '@/store/create-event-store';
 import { screenPadding } from '@/theme/layout';
 import { haptics } from '@/utils/haptics';
+import { useThemeColors } from '@/theme/theme-provider';
 
 const STEP_COMPONENTS = [
   BasicsStep,
@@ -49,6 +50,7 @@ const STEP_COMPONENTS = [
 ] as const;
 
 export default function CreateScreen() {
+  const themeColors = useThemeColors();
   const router = useRouter();
   const bottomPadding = useListBottomPadding(16);
 
@@ -182,7 +184,7 @@ export default function CreateScreen() {
               hitSlop={10}
               className="flex-row items-center gap-1.5 px-2 py-2"
             >
-              <RotateCcw size={13} color="#94a2b8" strokeWidth={2.2} />
+              <RotateCcw size={13} color={themeColors.mutedForeground} strokeWidth={2.2} />
               <Text variant="label" className="text-muted-foreground">
                 Reset
               </Text>
@@ -195,7 +197,7 @@ export default function CreateScreen() {
               <Text variant="label" className="text-muted-foreground">
                 Step {step + 1} of {CREATE_STEPS.length}
               </Text>
-              <Text variant="label" style={{ color: '#f8fafc' }}>
+              <Text variant="label" style={{ color: themeColors.foreground }}>
                 {CREATE_STEPS[step].label}
               </Text>
             </View>

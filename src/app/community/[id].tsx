@@ -40,6 +40,7 @@ import { radius, screenPadding } from '@/theme/layout';
 import type { EventItem } from '@/types';
 import { compactNumber } from '@/utils/format';
 import { haptics } from '@/utils/haptics';
+import { useThemeColors } from '@/theme/theme-provider';
 
 export default function CommunityDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -141,7 +142,7 @@ export default function CommunityDetailScreen() {
               width: 70,
               height: 70,
               borderRadius: radius['2xl'],
-              backgroundColor: '#0b1024',
+              backgroundColor: themeColors.card,
             }}
           >
             <DynamicIcon
