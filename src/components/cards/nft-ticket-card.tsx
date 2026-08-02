@@ -22,6 +22,7 @@ import { Badge } from '../ui/badge';
 import { BadgeCheck, Globe, Lock, MapPin, QrCode } from '../ui/icon';
 import { PressableScale } from '../ui/pressable-scale';
 import { Text } from '../ui/text';
+import { useThemeColors } from '@/theme/theme-provider';
 
 /** Punched-out semicircle sitting on the card edge at the perforation line. */
 function Notch({ side }: { side: 'left' | 'right' }) {
@@ -50,6 +51,7 @@ export const NftTicketCard = memo(function NftTicketCard({
   onPress,
   className,
 }: NftTicketCardProps) {
+  const themeColors = useThemeColors();
   const { data: event } = useEvent(ticket.eventId);
   const colors = resolveCoverGradient(event?.coverGradient ?? 'purple-blue');
   const used = ticket.status === 'used';

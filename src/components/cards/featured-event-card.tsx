@@ -33,6 +33,7 @@ import { Badge } from '../ui/badge';
 import { Globe, MapPin, Users } from '../ui/icon';
 import { PressableScale } from '../ui/pressable-scale';
 import { Text } from '../ui/text';
+import { useThemeColors } from '@/theme/theme-provider';
 
 export interface FeaturedEventCardProps {
   event: EventItem;
@@ -64,6 +65,7 @@ export const FeaturedEventCard = memo(function FeaturedEventCard({
   const handlePress = useCallback(() => onPress(event), [event, onPress]);
 
   const parallaxStyle = useAnimatedStyle(() => {
+  const themeColors = useThemeColors();
     if (!scrollX) return {};
     const inputRange = [
       (index - 1) * snapInterval,

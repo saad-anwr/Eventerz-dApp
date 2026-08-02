@@ -366,6 +366,7 @@ function SegmentedControlImpl<T extends string>({
           <PressableScale
             key={option.value}
             onPress={() => {
+  const themeColors = useThemeColors();
               haptics.selection();
               onChange(option.value);
             }}

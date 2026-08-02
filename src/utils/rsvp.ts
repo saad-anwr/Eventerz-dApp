@@ -116,7 +116,7 @@ export const RSVP_PRESENTATION: Record<RsvpState, RsvpPresentation> = {
   cancelled: {
     label: 'RSVP cancelled',
     detail: 'You cancelled your RSVP. You can ask to join again.',
-    accent: colors.mutedForeground,
+    accent: '#94a2b8',
   },
 };
 

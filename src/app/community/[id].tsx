@@ -76,6 +76,7 @@ export default function CommunityDetailScreen() {
           );
         },
         onError: () => {
+  const themeColors = useThemeColors();
           haptics.error();
           toast.error('Could not update membership');
         },

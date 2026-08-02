@@ -29,6 +29,7 @@ import { Avatar } from '../ui/avatar';
 import { Globe, Lock, MapPin, Users } from '../ui/icon';
 import { PressableScale } from '../ui/pressable-scale';
 import { Text } from '../ui/text';
+import { useThemeColors } from '@/theme/theme-provider';
 
 export interface EventCardProps {
   event: EventItem;
@@ -44,6 +45,7 @@ export const EventCard = memo(function EventCard({
   width,
   className,
 }: EventCardProps) {
+  const themeColors = useThemeColors();
   const { data: host } = useUser(event.hostId);
   const { month, day } = eventDateParts(event.startsAt);
   const upcoming = isUpcoming(event.startsAt);

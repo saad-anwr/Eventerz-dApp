@@ -111,6 +111,7 @@ function LinkRow({
   external?: boolean;
   destructive?: boolean;
 }) {
+  const themeColors = useThemeColors();
   const tint = destructive ? '#f87171' : themeColors.mutedForeground;
 
   // A chevron is a promise that something happens next; only interactive rows

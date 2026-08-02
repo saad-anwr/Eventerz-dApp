@@ -152,6 +152,7 @@ function GuestManagerSection({ event }: { event: EventItem }) {
             toast.success(`Guest ${verb}`);
           },
           onError: (error) => {
+  const themeColors = useThemeColors();
             haptics.error();
             toast.error(
               `Could not ${verb === 'approved' ? 'approve' : 'decline'}`,

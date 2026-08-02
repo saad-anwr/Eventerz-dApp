@@ -13,6 +13,8 @@ import { cn } from '@/utils/cn';
 
 import { type LucideIcon } from './icon';
 import { Text } from './text';
+import { useThemeColors } from '@/theme/theme-provider';
+import type { Palette } from '@/theme/palettes';
 
 export type BadgeVariant =
   | 'default'
@@ -35,16 +37,22 @@ const SURFACE: Record<BadgeVariant, string> = {
   danger: 'border-red-400/30 bg-red-400/10',
 };
 
-const FOREGROUND: Record<BadgeVariant, string> = {
-  default: colors.mutedForeground,
-  purple: brand.purple,
-  blue: brand.blue,
-  cyan: brand.cyan,
-  green: brand.green,
-  live: brand.green,
-  warning: '#fbbf24',
-  danger: '#f87171',
-};
+/*
+ * A function of the palette: `default` is secondary text on a surface and so
+ * moves with the theme. A module constant would have frozen it to the dark
+ * value at import time. The rest are brand hues and do not change.
+ */
+const foregroundFor = (variant: BadgeVariant, palette: Palette): string =>
+  ({
+    default: palette.mutedForeground,
+    purple: brand.purple,
+    blue: brand.blue,
+    cyan: brand.cyan,
+    green: brand.green,
+    live: brand.green,
+    warning: '#fbbf24',
+    danger: '#f87171',
+  })[variant];
 
 export interface BadgeProps {
   label: string;
@@ -67,7 +75,8 @@ export const Badge = memo(function Badge({
   className,
   style,
 }: BadgeProps) {
-  const color = FOREGROUND[variant];
+  const themeColors = useThemeColors();
+  const color = foregroundFor(variant, themeColors);
   const compact = size === 'sm';
 
   return (

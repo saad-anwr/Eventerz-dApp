@@ -35,6 +35,7 @@ export const CommunityCard = memo(function CommunityCard({
   width,
   className,
 }: CommunityCardProps) {
+  const themeColors = useThemeColors();
   const accent = accents[community.accent];
   const colors = resolveCoverGradient(community.coverGradient);
 

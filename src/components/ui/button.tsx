@@ -21,6 +21,7 @@ import { type LucideIcon } from './icon';
 import { PressableScale } from './pressable-scale';
 import { Text } from './text';
 import { useThemeColors } from '@/theme/theme-provider';
+import type { Palette } from '@/theme/palettes';
 
 export type ButtonVariant =
   | 'primary'
@@ -60,15 +61,27 @@ const SIZES: Record<
   lg: { height: 56, paddingX: 28, fontSize: 16, icon: 19, gap: 10 },
 };
 
-/** Foreground colour per variant - icons and label share it. */
-const FOREGROUND: Record<ButtonVariant, string> = {
-  primary: '#ffffff',
-  secondary: themeColors.foreground,
-  outline: themeColors.foreground,
-  ghost: themeColors.mutedForeground,
-  link: brand.cyan,
-  danger: '#fecaca',
-};
+/**
+ * Foreground colour per variant - icons and label share it.
+ *
+ * A function of the palette rather than a constant, because two of these
+ * describe text on a *surface* and therefore change with the theme. A module
+ * constant is evaluated once at import, which would have frozen them to the
+ * dark values for the life of the process. `primary` and `danger` sit on a
+ * coloured fill, so they stay fixed.
+ */
+const foregroundFor = (
+  variant: ButtonVariant,
+  palette: Palette,
+): string =>
+  ({
+    primary: '#ffffff',
+    secondary: palette.foreground,
+    outline: palette.foreground,
+    ghost: palette.mutedForeground,
+    link: brand.cyan,
+    danger: '#fecaca',
+  })[variant];
 
 const SURFACE_CLASS: Record<ButtonVariant, string> = {
   primary: '',
@@ -97,7 +110,7 @@ export const Button = memo(function Button({
   const themeColors = useThemeColors();
   const dims = SIZES[size];
   const isDisabled = disabled || loading;
-  const foreground = FOREGROUND[variant];
+  const foreground = foregroundFor(variant, themeColors);
   const isPill = variant !== 'link';
 
   const content = children ?? (
