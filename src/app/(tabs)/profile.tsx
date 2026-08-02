@@ -62,7 +62,6 @@ import { fontFamily } from '@/theme/typography';
 import type { Community, EventItem } from '@/types';
 import { compactNumber, formatSol, shortenAddress } from '@/utils/format';
 import { haptics } from '@/utils/haptics';
-import { useThemeColors } from '@/theme/theme-provider';
 
 /** Reputation tiers - mirrors the web app's community reputation copy. */
 const TIERS = [
@@ -80,7 +79,6 @@ function tierFor(reputation: number) {
 type TabValue = 'attending' | 'organized';
 
 export default function ProfileScreen() {
-  const themeColors = useThemeColors();
   const router = useRouter();
   const bottomPadding = useListBottomPadding();
   const [tab, setTab] = useState<TabValue>('attending');
@@ -188,7 +186,7 @@ export default function ProfileScreen() {
             onRefresh={onRefresh}
             tintColor={brand.purple}
             colors={[brand.purple, brand.cyan]}
-            progressBackgroundColor={themeColors.card}
+            progressBackgroundColor="#0b1024"
           />
         }
       >
@@ -239,7 +237,7 @@ export default function ProfileScreen() {
               style={{
                 borderRadius: 46,
                 borderWidth: 3,
-                borderColor: themeColors.background,
+                borderColor: '#050816',
               }}
             >
               <Avatar
@@ -279,7 +277,7 @@ export default function ProfileScreen() {
           <View className="mt-3 flex-row flex-wrap items-center gap-3">
             {user.location && (
               <View className="flex-row items-center gap-1">
-                <MapPin size={12} color={themeColors.mutedForeground} strokeWidth={2} />
+                <MapPin size={12} color="#94a2b8" strokeWidth={2} />
                 <Text variant="caption" className="text-muted-foreground">
                   {user.location}
                 </Text>
@@ -325,7 +323,7 @@ export default function ProfileScreen() {
               style={{
                 fontFamily: fontFamily.mono,
                 fontSize: 12,
-                color: themeColors.mutedForeground,
+                color: '#cbd5e1',
               }}
               numberOfLines={1}
             >
@@ -342,7 +340,7 @@ export default function ProfileScreen() {
                 {formatSol(balanceSol)}
               </Text>
             )}
-            <Copy size={14} color={themeColors.mutedForeground} strokeWidth={2.2} />
+            <Copy size={14} color="#94a2b8" strokeWidth={2.2} />
           </PressableScale>
 
           {/*

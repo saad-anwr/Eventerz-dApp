@@ -24,11 +24,9 @@ import { useWalletStore } from '@/store/wallet-store';
 import { brand } from '@/theme/colors';
 import { TOUCH_TARGET, radius } from '@/theme/layout';
 import { haptics } from '@/utils/haptics';
-import { useThemeColors } from '@/theme/theme-provider';
 
 /** Google's mark, inline so it needs no asset and stays crisp. */
 const GoogleMark = memo(function GoogleMark({ size = 18 }: { size?: number }) {
-  const themeColors = useThemeColors();
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24">
       <Path
@@ -52,7 +50,6 @@ const GoogleMark = memo(function GoogleMark({ size = 18 }: { size?: number }) {
 });
 
 export const GoogleAccountRow = memo(function GoogleAccountRow() {
-  const themeColors = useThemeColors();
   const isLive = useAuthStore((s) => s.isLive);
   const status = useAuthStore((s) => s.status);
   const profile = useAuthStore((s) => s.profile);
@@ -150,7 +147,7 @@ export const GoogleAccountRow = memo(function GoogleAccountRow() {
         {linking ? (
           <Spinner size={18} />
         ) : (
-          <ChevronRight size={16} color={themeColors.mutedForeground} strokeWidth={2.2} />
+          <ChevronRight size={16} color="#64748b" strokeWidth={2.2} />
         )}
       </PressableFade>
 

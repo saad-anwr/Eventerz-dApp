@@ -18,7 +18,6 @@ import { Badge } from '../ui/badge';
 import { BadgeCheck, DynamicIcon, Lock } from '../ui/icon';
 import { PressableScale } from '../ui/pressable-scale';
 import { Text } from '../ui/text';
-import { useThemeColors } from '@/theme/theme-provider';
 
 export interface CommunityCardProps {
   community: Community;
@@ -35,7 +34,6 @@ export const CommunityCard = memo(function CommunityCard({
   width,
   className,
 }: CommunityCardProps) {
-  const themeColors = useThemeColors();
   const accent = accents[community.accent];
   const colors = resolveCoverGradient(community.coverGradient);
 
@@ -124,7 +122,7 @@ export const CommunityCard = memo(function CommunityCard({
             width: 54,
             height: 54,
             borderRadius: radius.xl,
-            backgroundColor: themeColors.card,
+            backgroundColor: '#0b1024',
             marginTop: -27,
           }}
         >

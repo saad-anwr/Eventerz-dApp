@@ -40,10 +40,8 @@ import { radius, screenPadding } from '@/theme/layout';
 import type { EventItem } from '@/types';
 import { compactNumber } from '@/utils/format';
 import { haptics } from '@/utils/haptics';
-import { useThemeColors } from '@/theme/theme-provider';
 
 export default function CommunityDetailScreen() {
-  const themeColors = useThemeColors();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -143,7 +141,7 @@ export default function CommunityDetailScreen() {
               width: 70,
               height: 70,
               borderRadius: radius['2xl'],
-              backgroundColor: themeColors.card,
+              backgroundColor: '#0b1024',
             }}
           >
             <DynamicIcon

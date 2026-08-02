@@ -22,7 +22,6 @@ import { Badge } from '../ui/badge';
 import { BadgeCheck, Globe, Lock, MapPin, QrCode } from '../ui/icon';
 import { PressableScale } from '../ui/pressable-scale';
 import { Text } from '../ui/text';
-import { useThemeColors } from '@/theme/theme-provider';
 
 /** Punched-out semicircle sitting on the card edge at the perforation line. */
 function Notch({ side }: { side: 'left' | 'right' }) {
@@ -51,7 +50,6 @@ export const NftTicketCard = memo(function NftTicketCard({
   onPress,
   className,
 }: NftTicketCardProps) {
-  const themeColors = useThemeColors();
   const { data: event } = useEvent(ticket.eventId);
   const colors = resolveCoverGradient(event?.coverGradient ?? 'purple-blue');
   const used = ticket.status === 'used';
@@ -161,9 +159,9 @@ export const NftTicketCard = memo(function NftTicketCard({
             </Text>
             <View className="mt-1.5 flex-row items-center gap-1">
               {event.isOnline ? (
-                <Globe size={12} color={themeColors.mutedForeground} strokeWidth={2} />
+                <Globe size={12} color="#94a2b8" strokeWidth={2} />
               ) : (
-                <MapPin size={12} color={themeColors.mutedForeground} strokeWidth={2} />
+                <MapPin size={12} color="#94a2b8" strokeWidth={2} />
               )}
               <Text
                 variant="caption"
@@ -179,7 +177,7 @@ export const NftTicketCard = memo(function NftTicketCard({
             className="items-center justify-center border border-white/10 bg-white/[0.06]"
             style={{ width: 46, height: 46, borderRadius: radius.md }}
           >
-            <QrCode size={22} color={themeColors.foreground} strokeWidth={1.8} />
+            <QrCode size={22} color="#f8fafc" strokeWidth={1.8} />
           </View>
         </View>
 
@@ -192,7 +190,7 @@ export const NftTicketCard = memo(function NftTicketCard({
               style={{
                 fontFamily: fontFamily.mono,
                 fontSize: 12,
-                color: themeColors.foreground,
+                color: '#f8fafc',
                 marginTop: 2,
               }}
             >
@@ -208,7 +206,7 @@ export const NftTicketCard = memo(function NftTicketCard({
               style={{
                 fontFamily: fontFamily.mono,
                 fontSize: 12,
-                color: themeColors.mutedForeground,
+                color: '#94a2b8',
                 marginTop: 2,
               }}
             >

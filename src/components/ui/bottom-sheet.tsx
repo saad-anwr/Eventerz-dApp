@@ -39,7 +39,6 @@ import { haptics } from '@/utils/haptics';
 import { IconButton } from './button';
 import { X } from './icon';
 import { Text } from './text';
-import { useThemeColors } from '@/theme/theme-provider';
 
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 /** Drag distance past which release dismisses instead of springing back. */
@@ -73,7 +72,6 @@ export const BottomSheet = memo(function BottomSheet({
   className,
   contentStyle,
 }: BottomSheetProps) {
-  const themeColors = useThemeColors();
   const insets = useSafeAreaInsets();
   const reduceMotion = useReducedMotion();
 
@@ -205,7 +203,7 @@ export const BottomSheet = memo(function BottomSheet({
             className={cn('border-t border-white/10', className)}
             style={[
               {
-                backgroundColor: themeColors.card,
+                backgroundColor: '#0a0f24',
                 paddingBottom: insets.bottom + 16,
               },
               contentStyle,

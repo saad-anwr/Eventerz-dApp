@@ -35,7 +35,6 @@ import { Spinner } from '@/components/ui/spinner';
 import { Text } from '@/components/ui/text';
 
 import { GoogleMark } from './google-account-row';
-import { useThemeColors } from '@/theme/theme-provider';
 
 const WalletRow = memo(function WalletRow({
   wallet,
@@ -50,7 +49,6 @@ const WalletRow = memo(function WalletRow({
   onSelect: (id: WalletId) => void;
   index: number;
 }) {
-  const themeColors = useThemeColors();
   const handlePress = useCallback(
     () => onSelect(wallet.id),
     [onSelect, wallet.id],
@@ -115,7 +113,7 @@ const WalletRow = memo(function WalletRow({
         {pending ? (
           <Spinner size={18} />
         ) : (
-          <ChevronRight size={16} color={themeColors.mutedForeground} strokeWidth={2.2} />
+          <ChevronRight size={16} color="#94a2b8" strokeWidth={2.2} />
         )}
       </PressableScale>
     </Animated.View>

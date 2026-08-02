@@ -21,7 +21,6 @@ import { brand } from '@/theme/colors';
 import { TOUCH_TARGET, radius, screenPadding } from '@/theme/layout';
 import { fontFamily } from '@/theme/typography';
 import { formatSol, shortenAddress } from '@/utils/format';
-import { useThemeColors } from '@/theme/theme-provider';
 
 export const HomeHeader = memo(function HomeHeader({
   onConnect,
@@ -40,7 +39,6 @@ export const HomeHeader = memo(function HomeHeader({
   onOpenMessages: () => void;
   onOpenProfile: () => void;
 }) {
-  const themeColors = useThemeColors();
   const greeting = useGreeting();
   const user = useWalletStore((s) => s.user);
   const account = useWalletStore((s) => s.account);
@@ -75,7 +73,7 @@ export const HomeHeader = memo(function HomeHeader({
           className="items-center justify-center border border-white/10 bg-white/[0.06]"
           style={{ width: 44, height: 44, borderRadius: 22 }}
         >
-          <Wallet size={19} color={themeColors.mutedForeground} strokeWidth={2} />
+          <Wallet size={19} color="#94a2b8" strokeWidth={2} />
         </View>
       )}
 
@@ -118,7 +116,7 @@ export const HomeHeader = memo(function HomeHeader({
             borderRadius: radius.full,
           }}
         >
-          <MessageCircle size={18} color={themeColors.foreground} strokeWidth={2} />
+          <MessageCircle size={18} color="#f8fafc" strokeWidth={2} />
         </PressableScale>
       )}
 
@@ -135,7 +133,7 @@ export const HomeHeader = memo(function HomeHeader({
           className="items-center justify-center border border-white/10 bg-white/[0.06]"
           style={{ width: TOUCH_TARGET, height: TOUCH_TARGET, borderRadius: radius.full }}
         >
-          <Bell size={18} color={themeColors.foreground} strokeWidth={2} />
+          <Bell size={18} color="#f8fafc" strokeWidth={2} />
           {unread > 0 && (
             <View
               className="absolute items-center justify-center border-2 border-brand-bg"
@@ -188,7 +186,6 @@ export const HomeHeader = memo(function HomeHeader({
 
 /** Address strip shown under the greeting once a wallet is connected. */
 export const WalletStrip = memo(function WalletStrip() {
-  const themeColors = useThemeColors();
   const account = useWalletStore((s) => s.account);
   if (!account) return null;
 
@@ -215,7 +212,7 @@ export const WalletStrip = memo(function WalletStrip() {
         style={{
           fontFamily: fontFamily.mono,
           fontSize: 11,
-          color: themeColors.mutedForeground,
+          color: '#94a2b8',
         }}
       >
         {shortenAddress(account.address, 5)}

@@ -16,7 +16,6 @@ import { avatarGradient, initials } from '@/utils/avatar';
 import { cn } from '@/utils/cn';
 
 import { Text } from './text';
-import { useThemeColors } from '@/theme/theme-provider';
 
 export type AvatarSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 
@@ -56,7 +55,6 @@ export const Avatar = memo(function Avatar({
   className,
   style,
 }: AvatarProps) {
-  const themeColors = useThemeColors();
   const dimension = typeof size === 'number' ? size : SIZES[size];
   const colors = resolveCoverGradient(avatarGradient(seed ?? name));
 
@@ -131,7 +129,6 @@ export const AvatarStack = memo(function AvatarStack({
   /** Full attendee count when `users` is only a preview slice. */
   total?: number;
 }) {
-  const themeColors = useThemeColors();
   const visible = users.slice(0, max);
   const overflow = (total ?? users.length) - visible.length;
 
@@ -148,7 +145,7 @@ export const AvatarStack = memo(function AvatarStack({
             marginLeft: index === 0 ? 0 : -size * 0.32,
             borderRadius: size / 2,
             borderWidth: 2,
-            borderColor: themeColors.background,
+            borderColor: '#050816',
           }}
         >
           <Avatar name={user.name} seed={user.id} size={size} uri={user.avatarUrl} />
@@ -168,7 +165,7 @@ export const AvatarStack = memo(function AvatarStack({
             style={{
               fontFamily: fontFamily.semibold,
               fontSize: size * 0.32,
-              color: themeColors.mutedForeground,
+              color: '#94a2b8',
             }}
           >
             +{overflow}

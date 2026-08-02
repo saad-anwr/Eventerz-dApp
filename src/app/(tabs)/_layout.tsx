@@ -9,16 +9,14 @@
 import Tabs from 'expo-router/js-tabs';
 
 import { EventerzTabBar } from '@/navigation/tab-bar';
-import { useThemeColors } from '@/theme/theme-provider';
 
 export default function TabsLayout() {
-  const themeColors = useThemeColors();
   return (
     <Tabs
       tabBar={(props) => <EventerzTabBar {...props} />}
       screenOptions={{
         headerShown: false,
-        sceneStyle: { backgroundColor: themeColors.background },
+        sceneStyle: { backgroundColor: '#050816' },
       }}
     >
       <Tabs.Screen name="index" options={{ title: 'Home' }} />

@@ -35,7 +35,6 @@ import { radius, screenPadding } from '@/theme/layout';
 import { fontFamily } from '@/theme/typography';
 import { shortenAddress } from '@/utils/format';
 import { haptics } from '@/utils/haptics';
-import { useThemeColors } from '@/theme/theme-provider';
 
 const INTERESTS = [
   'DeFi',
@@ -53,7 +52,6 @@ const INTERESTS = [
 ];
 
 export default function EditProfileScreen() {
-  const themeColors = useThemeColors();
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
@@ -259,7 +257,7 @@ export default function EditProfileScreen() {
               className="mt-6 flex-row items-center gap-3 border border-white/10 bg-white/[0.03] p-3.5"
               style={{ borderRadius: radius.xl }}
             >
-              <Wallet size={17} color={themeColors.mutedForeground} strokeWidth={2} />
+              <Wallet size={17} color="#94a2b8" strokeWidth={2} />
               <View className="flex-1">
                 <Text variant="caption" className="text-muted-foreground">
                   Wallet - this is your identity
@@ -268,7 +266,7 @@ export default function EditProfileScreen() {
                   style={{
                     fontFamily: fontFamily.mono,
                     fontSize: 12,
-                    color: themeColors.mutedForeground,
+                    color: '#cbd5e1',
                     marginTop: 2,
                   }}
                 >

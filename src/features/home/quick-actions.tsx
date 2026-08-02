@@ -20,7 +20,6 @@ import { Text } from '@/components/ui/text';
 import { accents, type AccentKey } from '@/theme/colors';
 import { radius, screenPadding } from '@/theme/layout';
 import { fontFamily } from '@/theme/typography';
-import { useThemeColors } from '@/theme/theme-provider';
 
 interface QuickAction {
   id: string;
@@ -41,7 +40,6 @@ export const QuickActions = memo(function QuickActions({
 }: {
   onAction: (id: string) => void;
 }) {
-  const themeColors = useThemeColors();
   return (
     <Animated.View
       entering={FadeInDown.delay(80).duration(420)}
@@ -78,7 +76,7 @@ export const QuickActions = memo(function QuickActions({
                 fontFamily: fontFamily.medium,
                 fontSize: 11,
                 marginTop: 7,
-                color: themeColors.mutedForeground,
+                color: '#cbd5e1',
               }}
             >
               {action.label}

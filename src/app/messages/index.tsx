@@ -29,7 +29,6 @@ import { accents, brand } from '@/theme/colors';
 import { radius, screenPadding } from '@/theme/layout';
 import { timeAgo } from '@/utils/format';
 import type { Conversation } from '@/types';
-import { useThemeColors } from '@/theme/theme-provider';
 
 function ConversationRow({
   conversation,
@@ -40,7 +39,6 @@ function ConversationRow({
   meId: string | null;
   onPress: () => void;
 }) {
-  const themeColors = useThemeColors();
   const { user, last, isFriend } = conversation;
   const mine = last?.senderId === meId;
 
@@ -104,7 +102,6 @@ function ConversationRow({
 }
 
 export default function MessagesScreen() {
-  const themeColors = useThemeColors();
   const router = useRouter();
   const meId = useWalletStore((s) => s.user?.id ?? null);
 
@@ -186,7 +183,7 @@ export default function MessagesScreen() {
               onRefresh={onRefresh}
               tintColor={brand.purple}
               colors={[brand.purple, brand.cyan]}
-              progressBackgroundColor={themeColors.card}
+              progressBackgroundColor="#0b1024"
             />
           }
           // The rows are a fixed height, so this is cheap and stops the list

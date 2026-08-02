@@ -22,7 +22,6 @@ import { brand } from '@/theme/colors';
 import { radius } from '@/theme/layout';
 import { fontFamily } from '@/theme/typography';
 import type { AnalyticsPoint } from '@/types';
-import { useThemeColors } from '@/theme/theme-provider';
 
 /** Catmull-Rom -> cubic Bézier, so the trend line reads as a smooth curve. */
 function smoothPath(points: { x: number; y: number }[]): string {
@@ -51,7 +50,6 @@ export const AreaChart = memo(function AreaChart({
   height?: number;
   width: number;
 }) {
-  const themeColors = useThemeColors();
   const { line, area, points } = useMemo(() => {
     if (data.length === 0) return { line: '', area: '', points: [] };
 
@@ -125,7 +123,7 @@ export const AreaChart = memo(function AreaChart({
               style={{
                 fontFamily: fontFamily.medium,
                 fontSize: 10,
-                color: themeColors.mutedForeground,
+                color: '#64748b',
               }}
             >
               {point.label}
@@ -144,7 +142,6 @@ export const BarChart = memo(function BarChart({
 }: {
   data: AnalyticsPoint[];
 }) {
-  const themeColors = useThemeColors();
   const max = Math.max(...data.map((d) => d.value), 1);
 
   return (
@@ -162,7 +159,7 @@ export const BarChart = memo(function BarChart({
             style={{
               fontFamily: fontFamily.medium,
               fontSize: 12,
-              color: themeColors.mutedForeground,
+              color: '#94a2b8',
             }}
             numberOfLines={1}
           >
@@ -193,7 +190,7 @@ export const BarChart = memo(function BarChart({
             style={{
               fontFamily: fontFamily.semibold,
               fontSize: 12,
-              color: themeColors.foreground,
+              color: '#f8fafc',
             }}
           >
             {point.value}%

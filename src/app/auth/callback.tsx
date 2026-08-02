@@ -38,7 +38,6 @@ import { getSupabaseClient } from '@/services/auth/supabase-client';
 import { useAuthStore } from '@/store/auth-store';
 import { toast } from '@/store/toast-store';
 import { useWalletStore } from '@/store/wallet-store';
-import { useThemeColors } from '@/theme/theme-provider';
 
 /**
  * Turn a Supabase auth error into something a person can act on.
@@ -67,7 +66,6 @@ function explainAuthError(message: string): string {
 }
 
 export default function AuthCallbackScreen() {
-  const themeColors = useThemeColors();
   const router = useRouter();
   const params = useLocalSearchParams<{
     code?: string;
@@ -119,7 +117,7 @@ export default function AuthCallbackScreen() {
   return (
     <View
       className="flex-1 items-center justify-center gap-4"
-      style={{ backgroundColor: themeColors.background }}
+      style={{ backgroundColor: '#050816' }}
     >
       <Spinner />
       <Text variant="body" className="text-muted-foreground">

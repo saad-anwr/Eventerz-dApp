@@ -34,10 +34,8 @@ import { radius, screenPadding } from '@/theme/layout';
 import { fontFamily } from '@/theme/typography';
 import type { EventItem } from '@/types';
 import { shortenAddress } from '@/utils/format';
-import { useThemeColors } from '@/theme/theme-provider';
 
 export default function UserProfileScreen() {
-  const themeColors = useThemeColors();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -98,7 +96,7 @@ export default function UserProfileScreen() {
         {/* Identity */}
         <View style={{ paddingHorizontal: screenPadding, marginTop: -38 }}>
           <View
-            style={{ borderRadius: 42, borderWidth: 3, borderColor: themeColors.background }}
+            style={{ borderRadius: 42, borderWidth: 3, borderColor: '#050816' }}
             className="self-start"
           >
             <Avatar
@@ -138,7 +136,7 @@ export default function UserProfileScreen() {
           <View className="mt-3 flex-row flex-wrap items-center gap-3">
             {user.location && (
               <View className="flex-row items-center gap-1">
-                <MapPin size={12} color={themeColors.mutedForeground} strokeWidth={2} />
+                <MapPin size={12} color="#94a2b8" strokeWidth={2} />
                 <Text variant="caption" className="text-muted-foreground">
                   {user.location}
                 </Text>
@@ -161,7 +159,7 @@ export default function UserProfileScreen() {
                 style={{
                   fontFamily: fontFamily.mono,
                   fontSize: 11,
-                  color: themeColors.mutedForeground,
+                  color: '#94a2b8',
                 }}
               >
                 {shortenAddress(user.walletAddress, 6)}

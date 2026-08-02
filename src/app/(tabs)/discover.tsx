@@ -34,7 +34,6 @@ import { fontFamily } from '@/theme/typography';
 import { EVENT_CATEGORIES, type EventItem } from '@/types';
 import { plural } from '@/utils/format';
 import { haptics } from '@/utils/haptics';
-import { useThemeColors } from '@/theme/theme-provider';
 
 /** Categories surfaced as one-tap chips above the feed. */
 const QUICK_CATEGORIES = [
@@ -46,7 +45,6 @@ const QUICK_CATEGORIES = [
 ] as const;
 
 export default function DiscoverScreen() {
-  const themeColors = useThemeColors();
   const router = useRouter();
   const bottomPadding = useListBottomPadding();
 
@@ -139,7 +137,7 @@ export default function DiscoverScreen() {
                 borderRadius: radius.full,
               }}
             >
-              <Grid2x2 size={18} color={themeColors.foreground} strokeWidth={2} />
+              <Grid2x2 size={18} color="#f8fafc" strokeWidth={2} />
               {activeCount > 0 && (
                 <View
                   className="absolute items-center justify-center border-2 border-brand-bg"
@@ -247,7 +245,7 @@ export default function DiscoverScreen() {
             onRefresh={onRefresh}
             tintColor={brand.purple}
             colors={[brand.purple, brand.cyan]}
-            progressBackgroundColor={themeColors.card}
+            progressBackgroundColor="#0b1024"
           />
         }
         // Windowing tuned for ~230px rows: render a screen ahead, no more.

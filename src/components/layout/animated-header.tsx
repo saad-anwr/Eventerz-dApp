@@ -23,7 +23,6 @@ import { cn } from '@/utils/cn';
 import { IconButton } from '../ui/button';
 import { ArrowLeft } from '../ui/icon';
 import { Text } from '../ui/text';
-import { useThemeColors } from '@/theme/theme-provider';
 
 export const HEADER_HEIGHT = 56;
 
@@ -43,7 +42,6 @@ export const AnimatedHeader = memo(function AnimatedHeader({
   right?: ReactNode;
   className?: string;
 }) {
-  const themeColors = useThemeColors();
   const insets = useSafeAreaInsets();
 
   const backdropStyle = useAnimatedStyle(() => ({
@@ -119,7 +117,7 @@ export const AnimatedHeader = memo(function AnimatedHeader({
             deliberate translucency. The whole layer still fades in on scroll,
             so nothing is lost.
           */
-          <View className="absolute inset-0" style={{ backgroundColor: themeColors.background }} />
+          <View className="absolute inset-0" style={{ backgroundColor: '#050816' }} />
         )}
         <View className="absolute bottom-0 left-0 right-0 h-px bg-white/10" />
       </Animated.View>
