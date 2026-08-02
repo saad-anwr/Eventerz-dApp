@@ -28,6 +28,7 @@ import { useAppFonts } from '@/hooks/use-app-fonts';
 import { useRealtimeSync } from '@/hooks/use-realtime-sync';
 import { queryClient } from '@/services/query-client';
 import { useAuthStore } from '@/store/auth-store';
+import { setActiveLanguage } from '@/i18n/translate';
 import { usePreferencesStore } from '@/store/preferences-store';
 import { useWalletStore } from '@/store/wallet-store';
 import { eventerzNavigationTheme } from '@/theme/navigation-theme';
@@ -127,6 +128,23 @@ function RealtimeBridge() {
   return null;
 }
 
+/**
+ * Keeps the translation layer pointed at the chosen language.
+ *
+ * Renders nothing. It exists so the language is set - and its cached strings
+ * loaded from disk - before any screen asks for a translation, rather than each
+ * screen discovering the language for itself.
+ */
+function LanguageBridge() {
+  const language = usePreferencesStore((s) => s.language);
+
+  useEffect(() => {
+    setActiveLanguage(language || 'en');
+  }, [language]);
+
+  return null;
+}
+
 export default function RootLayout() {
   const fontsReady = useAppFonts();
   const preferencesReady = usePreferencesStore((s) => s.hasHydrated);
@@ -178,6 +196,7 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <QueryClientProvider client={queryClient}>
           <RealtimeBridge />
+          <LanguageBridge />
           <ThemeProvider value={eventerzNavigationTheme}>
             <StatusBar style="light" />
 

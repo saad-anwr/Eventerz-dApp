@@ -1,10 +1,14 @@
 /**
  * User preferences - persisted to AsyncStorage.
  *
- * `theme` and `language` were stored and never read - the Settings screen was
- * the only consumer, highlighting whichever chip you had picked while nothing
- * on screen changed. Both are live now: `theme` drives `ThemeProvider`, and
- * `language` drives the runtime translation in `i18n/`.
+ * `language` was stored and never read: the Settings screen was its only
+ * consumer, highlighting whichever chip you had picked while nothing on screen
+ * changed. It is live now, driving the runtime translation in `i18n/`.
+ *
+ * There is deliberately no `theme`. Eventerz is dark-only - the palette, the
+ * gradients and the glass surfaces are all designed against a near-black page -
+ * and a stored preference nothing honours is worse than no preference at all,
+ * which is exactly what the old `theme` field was.
  */
 
 import { create } from 'zustand';
@@ -12,8 +16,6 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 
 import { StorageKeys } from '@/constants/storage-keys';
 import { setHapticsEnabled, zustandStorage } from '@/utils';
-
-export type ThemePreference = 'dark' | 'light' | 'system';
 
 /*
  * The catalogue moved to `i18n/languages`, which carries ~46 languages rather
@@ -24,7 +26,6 @@ export { LANGUAGES, type LanguageCode } from '@/i18n/languages';
 interface PreferencesState {
   hasHydrated: boolean;
   onboardingComplete: boolean;
-  theme: ThemePreference;
   language: string;
   hapticsEnabled: boolean;
   reduceMotion: boolean;
@@ -43,7 +44,6 @@ interface PreferencesState {
   setHasHydrated: (v: boolean) => void;
   completeOnboarding: () => void;
   resetOnboarding: () => void;
-  setTheme: (theme: ThemePreference) => void;
   setLanguage: (language: string) => void;
   setHaptics: (enabled: boolean) => void;
   setReduceMotion: (enabled: boolean) => void;
@@ -56,7 +56,6 @@ export const usePreferencesStore = create<PreferencesState>()(
     (set, get) => ({
       hasHydrated: false,
       onboardingComplete: false,
-      theme: 'dark',
       language: 'en',
       hapticsEnabled: true,
       reduceMotion: false,
@@ -75,7 +74,6 @@ export const usePreferencesStore = create<PreferencesState>()(
       setHasHydrated: (v) => set({ hasHydrated: v }),
       completeOnboarding: () => set({ onboardingComplete: true }),
       resetOnboarding: () => set({ onboardingComplete: false }),
-      setTheme: (theme) => set({ theme }),
       setLanguage: (language) => set({ language }),
       setHaptics: (hapticsEnabled) => {
         setHapticsEnabled(hapticsEnabled);
