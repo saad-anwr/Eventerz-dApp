@@ -1,16 +1,38 @@
 /**
  * Analytics seam.
  *
- * Calls are no-ops unless `EXPO_PUBLIC_ENABLE_ANALYTICS=true`, and in dev they
- * log so you can see the funnel without a provider attached.
+ * No provider is installed. Events are logged in development so the funnel is
+ * visible without one, and dropped otherwise.
  *
- * TODO(firebase): forward to `@react-native-firebase/analytics`.
- * TODO(posthog):  or `posthog-react-native`, whichever ships first.
+ * # The flag does not turn anything on
+ *
+ * `EXPO_PUBLIC_ENABLE_ANALYTICS=true` used to take the "enabled" branch and
+ * fall through to an empty body - so switching it on stopped the dev logging
+ * *and* still sent nothing, which is a strictly worse state than off and looks
+ * from the outside exactly like working analytics. It now says so, once, rather
+ * than swallowing the difference.
+ *
+ * To finish this: install `@react-native-firebase/analytics` or
+ * `posthog-react-native`, forward from `capture`/`identifyUser` below, and
+ * delete `warnNoProvider`.
  */
 
 import { featureFlags } from '@/constants/config';
 
 type Props = Record<string, unknown>;
+
+let warned = false;
+
+/** Say it once per session - a warning per tracked event is just noise. */
+function warnNoProvider() {
+  if (warned) return;
+  warned = true;
+  console.warn(
+    '[analytics] EXPO_PUBLIC_ENABLE_ANALYTICS is true but no provider is ' +
+      'installed, so every event is being dropped. Wire one up in ' +
+      'services/analytics-service.ts, or unset the flag to get dev logging back.',
+  );
+}
 
 export const analytics = {
   track(event: string, props?: Props) {
@@ -18,7 +40,7 @@ export const analytics = {
       if (__DEV__) console.debug('[analytics]', event, props ?? {});
       return;
     }
-    // TODO: provider.capture(event, props)
+    warnNoProvider();
   },
 
   screen(name: string, props?: Props) {
@@ -30,7 +52,7 @@ export const analytics = {
       if (__DEV__) console.debug('[analytics:identify]', userId, traits ?? {});
       return;
     }
-    // TODO: provider.identify(userId, traits)
+    warnNoProvider();
   },
 };
 

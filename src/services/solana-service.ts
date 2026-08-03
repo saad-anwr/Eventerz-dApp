@@ -20,7 +20,22 @@
  *     `@coral-xyz/anchor` instruction building to fill in - `Eventerz Program/`
  *     is kept for reference only. See its `DEPLOY_MAINNET.md`.
  *
- * TODO(helius): read assets and transactions via the Helius DAS API
+ * Three seams that used to sit here are gone rather than pending, because each
+ * was a dead end that read like a starting point:
+ *
+ *   • `mintTicket` / `claimBadge` built `mint-ticket` and `claim-badge` intents
+ *     that `MobileWalletAdapter` refuses **permanently, by design** - a
+ *     Bubblegum mint is signed by the tree authority, so the call site is the
+ *     `mint-cnft` Edge Function and never a phone. Offering the methods here
+ *     invited someone to wire up a path that throws on every call.
+ *   • `getWalletAssets` answered `{ tickets: [], badges: [] }` for every wallet.
+ *     `services/solana/holdings.ts` is the real lookup and is what the profile
+ *     header and Tickets tab read.
+ *   • `checkTokenGate` returned `true` unconditionally - a gate that opens for
+ *     everyone, which is worse than no gate because it looks like one. Gating
+ *     is enforced in the `check-gate` Edge Function, which reads the balance
+ *     from the cluster with a service-role key; see
+ *     `repositories/supabase/index.ts`.
  */
 
 import type { TransactionIntent } from '@/types';
@@ -52,10 +67,6 @@ export const solanaService = {
   rsvp: (eventId: string, hostWallet: string) =>
     submit({ type: 'rsvp', eventId, hostWallet }),
 
-  /** Mint a compressed-NFT ticket to the attendee's wallet. */
-  mintTicket: (eventId: string, owner: string) =>
-    submit({ type: 'mint-ticket', eventId, owner }),
-
   /** Write attendance on-chain at the door. Needs the guest's wallet. */
   checkIn: (ticketId: string, eventId: string, attendeeWallet: string) =>
     submit({ type: 'check-in', ticketId, eventId, attendeeWallet }),
@@ -81,24 +92,4 @@ export const solanaService = {
     requiresApproval: boolean;
     priceLamports: bigint;
   }) => submit({ type: 'create-event', ...args }),
-
-  /** Claim a Proof-of-Attendance badge. */
-  claimBadge: (badgeId: string) => submit({ type: 'claim-badge', badgeId }),
-
-  /**
-   * Wallet holdings used by the Tickets tab and profile header.
-   * TODO(helius): replace with a DAS `getAssetsByOwner` call.
-   */
-  async getWalletAssets(owner: string) {
-    const balanceSol = await walletService.getBalanceSol(owner);
-    return { balanceSol, tickets: [], badges: [] };
-  },
-
-  /**
-   * Verify a token gate before allowing RSVP.
-   * TODO(helius): check balances / NFT ownership against `gateRequirement`.
-   */
-  async checkTokenGate(_owner: string, _requirement?: string): Promise<boolean> {
-    return true;
-  },
 };

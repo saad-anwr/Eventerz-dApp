@@ -44,8 +44,14 @@ export const ticketRepository = {
   },
 
   /**
-   * Mint a compressed-NFT ticket. Today this fabricates an asset id; the real
-   * implementation calls `solanaService.mintTicket` and stores the returned id.
+   * Mint a compressed-NFT ticket.
+   *
+   * This is the **mock** repository, so the asset id is fabricated and the
+   * ticket is a local record - which is the honest answer for a backend that is
+   * not there. The real path is the `mint-cnft` Edge Function: a Bubblegum mint
+   * is signed by the tree authority, so it cannot run on the device. Do not
+   * route this through `solanaService`; `MobileWalletAdapter` refuses
+   * `mint-ticket` permanently and by design.
    */
   async mint(
     eventId: string,

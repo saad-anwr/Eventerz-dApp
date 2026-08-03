@@ -424,23 +424,41 @@ Solflare, Backpack, Jupiter.
 
 ---
 
-## Future integration points
+## Where each integration lives
 
-Each is a stub with a documented TODO, already wired into the UI:
+Implemented, and where:
 
-| Area                | Where                                                |
-| ------------------- | ---------------------------------------------------- |
-| Anchor program      | `services/solana-service.ts`                         |
-| Metaplex / cNFTs    | `services/solana-service.ts` -> `mintTicket`          |
-| Helius DAS          | `services/solana-service.ts` -> `getWalletAssets`     |
-| Token gating        | `services/solana-service.ts` -> `checkTokenGate`      |
-| Supabase            | `constants/config.ts` env keys                       |
-| Push notifications  | `services/notification-service.ts`                   |
-| Analytics           | `services/analytics-service.ts`                      |
-| Biometric login     | `featureFlags.enableBiometricLogin`                  |
-| Deep linking        | `scheme: eventerz` in `app.json`                     |
-| QR scanner / camera | `app/scan.tsx` - live via expo-camera                |
-| Maps                | `features/create/step-components.tsx` (venue picker) |
+| Area                | Where                                                          |
+| ------------------- | -------------------------------------------------------------- |
+| Wallet              | `services/wallet/mobile-wallet-adapter.ts` (Mobile Wallet Adapter) |
+| On-chain actions    | `services/solana/program.ts` -> `services/solana-service.ts`     |
+| Token holdings      | `services/solana/holdings.ts` — Helius DAS, with a keyless fallback |
+| Supabase            | `services/auth/supabase-client.ts`; data in `repositories/supabase/` |
+| Maps                | `utils/maps.ts` + `features/create/location-picker.tsx`          |
+| Deep linking        | `scheme: eventerz` in `app.json`                                 |
+| QR scanner / camera | `app/scan.tsx` — live via expo-camera                            |
+
+Server-side, because the client is the wrong place for them:
+
+| Area          | Where                                                        |
+| ------------- | ------------------------------------------------------------ |
+| cNFT minting  | `mint-cnft` Edge Function — a Bubblegum mint is signed by the tree authority, so it cannot run on a device |
+| Token gating  | `check-gate` Edge Function — reads the balance from the cluster with a service-role key |
+
+Genuinely not built yet. Each is a no-op that returns nothing rather than a stub
+that returns success:
+
+| Area              | Where                                | State                                        |
+| ----------------- | ------------------------------------ | -------------------------------------------- |
+| Push notifications | `services/notification-service.ts`  | returns `false`/`null`; `expo-notifications` is not installed |
+| Analytics          | `services/analytics-service.ts`     | logs in dev, drops otherwise, warns if the flag is on with no provider |
+| Biometric login    | `featureFlags.enableBiometricLogin` | flag only                                    |
+
+> Three seams were **removed** rather than left here: `mintTicket`, `claimBadge`,
+> `getWalletAssets` and `checkTokenGate`. The first two build intents the wallet
+> adapter refuses permanently by design; the third was superseded by
+> `holdings.ts`; the fourth returned `true` for every caller, which is a gate
+> that opens for everyone while looking like one that does not.
 
 ---
 
