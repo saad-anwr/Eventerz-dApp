@@ -23,9 +23,20 @@
  * path this screen is the only thing holding a valid authorization code, so it
  * completes the exchange itself.
  *
- * `exchangeCodeForSession` is safe to reach twice: the second call fails
- * because the code is spent, and by then a session already exists, which is why
- * the session check comes first.
+ * # Why it no longer does its own exchange
+ *
+ * It used to check `getSession()` and exchange only if that came back empty.
+ * That reads like a guard and is not one: `signInWithGoogle` is doing the same
+ * check on the same code at the same moment, and both saw "no session" before
+ * either had written one. Both then exchanged, the loser was told
+ *
+ *     invalid flow state, no valid flow state found
+ *
+ * and the user was shown "Google sign-in failed" on a sign-in that had worked.
+ *
+ * The de-duplication now lives in `exchangeAuthCode`, keyed on the code itself,
+ * so this screen can simply ask for the exchange and get the same answer as
+ * whoever asked first. See that function for the full account.
  */
 
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -34,7 +45,7 @@ import { View } from 'react-native';
 
 import { Spinner } from '@/components/ui/spinner';
 import { Text } from '@/components/ui/text';
-import { getSupabaseClient } from '@/services/auth/supabase-client';
+import { exchangeAuthCode } from '@/services/auth';
 import { useAuthStore } from '@/store/auth-store';
 import { toast } from '@/store/toast-store';
 import { useWalletStore } from '@/store/wallet-store';
@@ -55,6 +66,16 @@ import { useWalletStore } from '@/store/wallet-store';
 function explainAuthError(message: string): string {
   if (/code verifier|code_verifier/i.test(message)) {
     return 'This sign-in link belongs to a different attempt. Tap Continue with Google again to start a fresh one.';
+  }
+  /*
+   * "invalid flow state, no valid flow state found" is GoTrue's words for a
+   * code whose server-side flow was already consumed. `exchangeAuthCode` now
+   * resolves the race that used to cause it and treats a spent code with a live
+   * session as success, so reaching here means it genuinely failed - but the
+   * raw sentence is still no use to the person reading it.
+   */
+  if (/flow state/i.test(message)) {
+    return 'That sign-in link was already used. Tap Continue with Google to start a fresh one.';
   }
   if (/expired|invalid.*code|already.*used/i.test(message)) {
     return 'That sign-in link has expired. Tap Continue with Google to get a new one.';
@@ -82,24 +103,14 @@ export default function AuthCallbackScreen() {
     handled.current = true;
 
     const finish = async () => {
-      const supabase = getSupabaseClient();
       const failure = params.error_description ?? params.error;
 
       if (failure) {
         toast.error('Sign-in failed', String(failure));
-      } else if (supabase && params.code) {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-
-        // Only exchange when the browser hand-off did not already do it.
-        if (!session) {
-          const { error } = await supabase.auth.exchangeCodeForSession(
-            String(params.code),
-          );
-          if (error) {
-            toast.error('Sign-in failed', explainAuthError(error.message));
-          }
+      } else if (params.code) {
+        const result = await exchangeAuthCode(String(params.code));
+        if (!result.ok) {
+          toast.error('Sign-in failed', explainAuthError(result.error));
         }
 
         await useAuthStore.getState().restore();

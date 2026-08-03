@@ -614,7 +614,7 @@ export default function ProfileScreen() {
                 actionLabel={tab === 'attending' ? 'Discover' : 'Create event'}
                 onAction={() =>
                   router.push(
-                    tab === 'attending' ? '/discover' : '/(tabs)/create',
+                    tab === 'attending' ? '/(tabs)/explore' : '/(tabs)/create',
                   )
                 }
               />

@@ -9,21 +9,38 @@
  * Requests come first, above the list. A pending request is the only thing on
  * this screen that is waiting on the viewer, and burying it under an
  * alphabetical list of people they already know is how requests go unanswered.
+ *
+ * # Finding people
+ *
+ * There was no way to. The screen listed the friends you already had and the
+ * requests you had already received, and the empty state pointed at Discover -
+ * which searches *events*. So the only route to a new friend was to open an
+ * event, find them in its attendee list, and tap through; if you knew someone's
+ * name and nothing else, the platform had no answer. The website has had a
+ * people search since the social features landed.
+ *
+ * Search is server-side (`userRepository.search`, an `ilike` over name and
+ * handle) rather than a filter over the loaded list, because the loaded list is
+ * the viewer's own friends - filtering it can only ever return people they have
+ * already added, which is the opposite of what searching for someone is for.
  */
 
 import { useRouter } from 'expo-router';
-import { useCallback } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { FlatList, RefreshControl, View } from 'react-native';
 
 import { Avatar } from '@/components/ui/avatar';
 import { Button, IconButton } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
-import { MessageCircle, Users, X } from '@/components/ui/icon';
+import { MessageCircle, Search, UserPlus, Users, X } from '@/components/ui/icon';
 import { PressableFade } from '@/components/ui/pressable-scale';
 import { Screen } from '@/components/ui/screen';
+import { SearchBar } from '@/components/ui/search-bar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Text } from '@/components/ui/text';
+import { FriendButton } from '@/features/social/friend-button';
 import { queryKeys } from '@/hooks/query-keys';
+import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import {
   useFriends,
   usePendingFriendRequests,
@@ -31,6 +48,7 @@ import {
   useRespondToFriendRequest,
 } from '@/hooks/use-friends';
 import { useRefresh } from '@/hooks/use-refresh';
+import { useUserSearch } from '@/hooks/use-users';
 import { toast } from '@/store/toast-store';
 import { useWalletStore } from '@/store/wallet-store';
 import { accents, brand } from '@/theme/colors';
@@ -169,6 +187,51 @@ function FriendRow({
   );
 }
 
+/**
+ * Somebody the viewer is not yet connected to - a search hit, or a suggestion.
+ *
+ * `FriendButton` rather than a bare "Add" so the row reports the real state of
+ * the pair: a request already sent reads "Requested", one waiting on the viewer
+ * offers Accept, and an existing friend offers Message. A plain Add button
+ * would let someone send a second request to a person who had already asked
+ * them.
+ */
+function DiscoverRow({
+  user,
+  onOpen,
+}: {
+  user: User;
+  onOpen: () => void;
+}) {
+  return (
+    <View
+      className="flex-row items-center gap-3 py-3"
+      style={{ paddingHorizontal: screenPadding }}
+    >
+      <PressableFade
+        onPress={onOpen}
+        accessibilityRole="button"
+        accessibilityLabel={`View ${user.name}`}
+        className="flex-row items-center gap-3"
+        style={{ flex: 1 }}
+      >
+        <Avatar name={user.name} seed={user.id} size="md" uri={user.avatarUrl} />
+        <View className="flex-1">
+          <Text variant="title" numberOfLines={1}>
+            {user.name}
+          </Text>
+          <Text variant="caption" className="text-muted-foreground" numberOfLines={1}>
+            {user.handle ? `@${user.handle}` : 'Eventerz member'}
+            {user.reputation > 0 ? ` · ${user.reputation} rep` : ''}
+          </Text>
+        </View>
+      </PressableFade>
+
+      <FriendButton userId={user.id} name={user.name} />
+    </View>
+  );
+}
+
 export default function FriendsScreen() {
   const router = useRouter();
   const meId = useWalletStore((s) => s.user?.id ?? null);
@@ -177,6 +240,20 @@ export default function FriendsScreen() {
   const pending = usePendingFriendRequests(meId ?? undefined);
   const respond = useRespondToFriendRequest();
   const remove = useRemoveFriend();
+
+  const [searchInput, setSearchInput] = useState('');
+  // Debounced so typing a name does not fire a query per keystroke, matching
+  // Discover's search.
+  const query = useDebouncedValue(searchInput.trim(), 300);
+  const searching = query.length > 0;
+
+  /*
+   * With no query this is the "people on Eventerz" list, which is what makes
+   * the tab useful to somebody who has no friends yet and nobody in mind to
+   * look for. `search('')` returns the first page of profiles rather than
+   * nothing, so one hook covers both.
+   */
+  const people = useUserSearch(query);
 
   const { refreshing, onRefresh } = useRefresh([queryKeys.friends.all]);
 
@@ -226,8 +303,32 @@ export default function FriendsScreen() {
   );
 
   const loading = friends.isLoading || pending.isLoading;
-  const requests = pending.data ?? [];
-  const list = friends.data ?? [];
+  /*
+   * `?? []` inside the render body allocates a fresh array whenever the query
+   * has no data, so using it directly as a `useMemo` dependency defeats the
+   * memo - the identity changes every render. Memoising the fallbacks keeps
+   * `known` and `discover` stable.
+   */
+  const requests = useMemo(() => pending.data ?? [], [pending.data]);
+  const list = useMemo(() => friends.data ?? [], [friends.data]);
+
+  /*
+   * Anyone already on this screen in another role is dropped from discovery.
+   * Showing an existing friend under "Discover people" invites the viewer to
+   * add someone they added months ago, and showing a pending requester there
+   * offers Add next to the Accept button two rows above it.
+   */
+  const known = useMemo(() => {
+    const ids = new Set<string>(list.map((u) => u.id));
+    requests.forEach((r) => ids.add(r.user.id));
+    if (meId) ids.add(meId);
+    return ids;
+  }, [list, requests, meId]);
+
+  const discover = useMemo(
+    () => (people.data ?? []).filter((u) => !known.has(u.id)),
+    [people.data, known],
+  );
 
   return (
     <Screen edgeTop aurora>
@@ -262,20 +363,60 @@ export default function FriendsScreen() {
         )}
       </View>
 
-      {loading ? (
+      <View style={{ paddingHorizontal: screenPadding, paddingBottom: 12 }}>
+        <SearchBar
+          value={searchInput}
+          onChangeText={setSearchInput}
+          placeholder="Search people by name or @handle"
+          icon={Search}
+        />
+      </View>
+
+      {searching ? (
+        /*
+         * Search replaces the whole list rather than filtering it in place. The
+         * viewer asked about a specific person, and interleaving them with
+         * "Requests" and "All friends" headers buries the one row they are
+         * looking for.
+         */
+        people.isLoading ? (
+          <View className="gap-3" style={{ paddingHorizontal: screenPadding }}>
+            {[0, 1, 2].map((i) => (
+              <Skeleton key={i} height={56} radius={radius.xl} />
+            ))}
+          </View>
+        ) : (people.data ?? []).length === 0 ? (
+          <EmptyState
+            icon={Search}
+            title={`No one matching "${query}"`}
+            description="Names and @handles only - try a shorter search, or ask them for their handle."
+          />
+        ) : (
+          <FlatList
+            data={(people.data ?? []).filter((u) => u.id !== meId)}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => (
+              <DiscoverRow
+                user={item}
+                onOpen={() => openProfile(item.id)}
+              />
+            )}
+            ItemSeparatorComponent={() => (
+              <View
+                className="bg-white/[0.06]"
+                style={{ height: 1, marginLeft: screenPadding + 56 }}
+              />
+            )}
+            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={{ paddingBottom: 32 }}
+          />
+        )
+      ) : loading ? (
         <View className="gap-3" style={{ paddingHorizontal: screenPadding }}>
           {[0, 1, 2, 3].map((i) => (
             <Skeleton key={i} height={56} radius={radius.xl} />
           ))}
         </View>
-      ) : list.length === 0 && requests.length === 0 ? (
-        <EmptyState
-          icon={Users}
-          title="No friends yet"
-          description="Find people at events you have been to, or from any profile."
-          actionLabel="Discover"
-          onAction={() => router.push('/discover')}
-        />
       ) : (
         <FlatList
           data={list}
@@ -334,6 +475,45 @@ export default function FriendsScreen() {
               style={{ height: 1, marginLeft: screenPadding + 56 }}
             />
           )}
+          ListFooterComponent={
+            /*
+             * Discovery lives under the friends list rather than behind a
+             * separate screen. This tab is the answer to "who else is here",
+             * and an account with no friends previously got an empty state
+             * pointing at the *event* search - which cannot find a person.
+             */
+            discover.length > 0 ? (
+              <View style={{ paddingTop: list.length > 0 ? 22 : 4 }}>
+                <View
+                  className="flex-row items-center gap-2"
+                  style={{
+                    paddingHorizontal: screenPadding,
+                    paddingBottom: 6,
+                  }}
+                >
+                  <UserPlus size={13} color="#94a2b8" strokeWidth={2.2} />
+                  <Text variant="label" className="text-muted-foreground">
+                    {list.length > 0 ? 'Discover people' : 'People on Eventerz'}
+                  </Text>
+                </View>
+                {discover.map((user) => (
+                  <DiscoverRow
+                    key={user.id}
+                    user={user}
+                    onOpen={() => openProfile(user.id)}
+                  />
+                ))}
+              </View>
+            ) : list.length === 0 && requests.length === 0 ? (
+              <EmptyState
+                icon={Users}
+                title="No one to show yet"
+                description="Search by name or @handle above, or meet people at an event."
+                actionLabel="Browse events"
+                onAction={() => router.push('/(tabs)/explore')}
+              />
+            ) : null
+          }
           contentContainerStyle={{ paddingBottom: 32 }}
           refreshControl={
             <RefreshControl

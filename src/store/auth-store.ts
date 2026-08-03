@@ -15,9 +15,13 @@ import {
   getSession,
   isSupabaseConfigured,
   linkWallet as linkWalletRemote,
+  myWallets,
+  setPrimaryWallet as setPrimaryWalletRemote,
   signInWithGoogle as startGoogleOAuth,
   signOut as signOutRemote,
+  unlinkWallet as unlinkWalletRemote,
   updateMyProfile,
+  type LinkedWallet,
   type ProfileRow,
   type ProfileUpdate,
 } from '@/services/auth';
@@ -46,6 +50,16 @@ interface AuthState {
    * exactly the guarantee wanted here.
    */
   sessionEmail: string | null;
+  /**
+   * Every wallet linked to this account, primary first.
+   *
+   * An account holds a set of wallets, not one (migration 0022), so "is this
+   * wallet mine?" is a membership test against this list. It used to be
+   * `profile.wallet_address === address`, which is only ever true for the
+   * primary - so a second linked wallet looked unlinked, and the app kept
+   * asking the user to sign a link challenge for a wallet already linked.
+   */
+  wallets: LinkedWallet[];
   error: string | null;
   /** True until the persisted session has been checked once. */
   isRestoring: boolean;
@@ -55,6 +69,12 @@ interface AuthState {
   signOut: () => Promise<void>;
   /** Bind a wallet address to the signed-in Google account. */
   linkWallet: (address: string) => Promise<boolean>;
+  /** Detach one wallet. Omit the address to detach the primary. */
+  unlinkWallet: (address?: string) => Promise<boolean>;
+  /** Promote one of the linked wallets to primary. */
+  setPrimaryWallet: (address: string) => Promise<boolean>;
+  /** Re-read the linked wallet set from the server. */
+  refreshWallets: () => Promise<void>;
   updateProfile: (patch: ProfileUpdate) => Promise<void>;
   /** Permanently delete the account. Resolves to an error message, or null. */
   deleteAccount: () => Promise<string | null>;
@@ -66,6 +86,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
   status: 'idle',
   profile: null,
   sessionEmail: null,
+  wallets: [],
   error: null,
   isRestoring: isSupabaseConfigured,
 
@@ -77,12 +98,16 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
     try {
       const session = await getSession();
       if (!session) {
-        set({ isRestoring: false, status: 'idle' });
+        set({ isRestoring: false, status: 'idle', wallets: [] });
         return;
       }
-      const profile = await getMyProfile();
+      const [profile, wallets] = await Promise.all([
+        getMyProfile(),
+        myWallets(),
+      ]);
       set({
         profile,
+        wallets,
         sessionEmail: session.user?.email ?? null,
         status: 'linked',
         isRestoring: false,
@@ -91,6 +116,11 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
       // A failed restore just means signed-out; never surface it.
       set({ isRestoring: false });
     }
+  },
+
+  refreshWallets: async () => {
+    if (!isSupabaseConfigured || !get().profile) return;
+    set({ wallets: await myWallets() });
   },
 
   signInWithGoogle: async () => {
@@ -117,6 +147,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
 
     set({
       profile: result.data,
+      wallets: await myWallets(),
       sessionEmail: (await getSession())?.user?.email ?? null,
       status: 'linked',
       error: null,
@@ -129,7 +160,13 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
 
   signOut: async () => {
     await signOutRemote();
-    set({ profile: null, sessionEmail: null, status: 'idle', error: null });
+    set({
+      profile: null,
+      sessionEmail: null,
+      wallets: [],
+      status: 'idle',
+      error: null,
+    });
   },
 
   /**
@@ -151,7 +188,13 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
       return result.error;
     }
 
-    set({ profile: null, sessionEmail: null, status: 'idle', error: null });
+    set({
+      profile: null,
+      sessionEmail: null,
+      wallets: [],
+      status: 'idle',
+      error: null,
+    });
     return null;
   },
 
@@ -173,7 +216,36 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
       set({ status: 'error', error: result.error });
       return false;
     }
-    set({ profile: result.data, status: 'linked', error: null });
+    set({
+      profile: result.data,
+      wallets: await myWallets(),
+      status: 'linked',
+      error: null,
+    });
+    return true;
+  },
+
+  unlinkWallet: async (address) => {
+    if (!isSupabaseConfigured || !get().profile) return false;
+
+    const result = await unlinkWalletRemote(address);
+    if (!result.ok) {
+      set({ error: result.error });
+      return false;
+    }
+    set({ profile: result.data, wallets: await myWallets(), error: null });
+    return true;
+  },
+
+  setPrimaryWallet: async (address) => {
+    if (!isSupabaseConfigured || !get().profile) return false;
+
+    const result = await setPrimaryWalletRemote(address);
+    if (!result.ok) {
+      set({ error: result.error });
+      return false;
+    }
+    set({ profile: result.data, wallets: await myWallets(), error: null });
     return true;
   },
 

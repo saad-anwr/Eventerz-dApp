@@ -157,7 +157,7 @@ export default function MessagesScreen() {
           title="No conversations yet"
           description="Add friends to start a conversation, or message a host from any event."
           actionLabel="Find people"
-          onAction={() => router.push('/discover')}
+          onAction={() => router.push('/(tabs)/explore')}
         />
       ) : (
         <FlatList

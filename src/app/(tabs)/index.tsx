@@ -20,6 +20,7 @@ import { Screen, useListBottomPadding } from '@/components/ui/screen';
 import { EventCardSkeleton, Skeleton } from '@/components/ui/skeleton';
 import { FeaturedCarousel } from '@/features/home/featured-carousel';
 import { HomeHeader, WalletStrip } from '@/features/home/home-header';
+import { HomeStats } from '@/features/home/home-stats';
 import { QuickActions } from '@/features/home/quick-actions';
 import { ConnectWalletSheet, useConnectWallet } from '@/features/wallet';
 import { useTrendingCommunities } from '@/hooks/use-communities';
@@ -108,12 +109,18 @@ export default function HomeScreen() {
           onConnect={openSheet}
           onOpenNotifications={() => router.push('/notifications')}
           onOpenMessages={() => router.push('/messages')}
+          onOpenFriends={() => router.push('/(tabs)/friends')}
           onOpenProfile={() => router.push('/(tabs)/profile')}
         />
         <WalletStrip />
 
         <View className="mt-5">
           <QuickActions onAction={handleQuickAction} />
+        </View>
+
+        {/* The website's four dashboard tiles, in the same order. */}
+        <View className="mt-4">
+          <HomeStats />
         </View>
 
         {/*
@@ -138,7 +145,7 @@ export default function HomeScreen() {
               title="Featured"
               subtitle="Hand-picked by the Eventerz team"
               icon={Sparkles}
-              onAction={() => router.push('/discover')}
+              onAction={() => router.push('/(tabs)/explore')}
             />
             <View className="mt-4">
               <FeaturedCarousel
@@ -198,7 +205,7 @@ export default function HomeScreen() {
             title="Upcoming"
             subtitle="Starting soon across every community"
             icon={CalendarCheck}
-            onAction={() => router.push('/discover')}
+            onAction={() => router.push('/(tabs)/explore')}
           />
           <View
             className="mt-4 gap-4"

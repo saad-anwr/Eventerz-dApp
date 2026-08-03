@@ -23,11 +23,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PressableScale } from '@/components/ui/pressable-scale';
 import { Text } from '@/components/ui/text';
 import {
+  Compass,
   Home,
   Plus,
   Ticket,
   User,
-  Users,
   type LucideIcon,
 } from '@/navigation/tab-icons';
 import { useOverlayOpen } from '@/store/overlay-store';
@@ -42,10 +42,27 @@ interface TabDescriptor {
   icon: LucideIcon;
 }
 
-/** Route order must match the file order in `app/(tabs)/`. */
+/**
+ * Route order must match the file order in `app/(tabs)/`.
+ *
+ * # Why Explore is here and Friends is not
+ *
+ * These five are the same five the website's mobile bar shows, in the same
+ * order, so the two products stop being differently shaped. Picking which five
+ * came down to one gap: the app had no Explore tab at all. Browsing events is
+ * the core loop of an events app - discover, get a ticket, turn up - and it was
+ * the one destination reachable only by tapping "Discover" inside an empty
+ * state. Friends, meanwhile, held a whole tab for a list most accounts have
+ * nothing in yet.
+ *
+ * So Friends moves to the home header alongside Messages and Notifications,
+ * where the rest of the social surface already lives, and Explore takes the
+ * slot. Nothing is lost - the header entry carries the pending-request badge,
+ * which is the only part of Friends that is ever time-sensitive.
+ */
 const TABS: TabDescriptor[] = [
   { name: 'index', label: 'Home', icon: Home },
-  { name: 'friends', label: 'Friends', icon: Users },
+  { name: 'explore', label: 'Explore', icon: Compass },
   { name: 'create', label: 'Create', icon: Plus },
   { name: 'tickets', label: 'Tickets', icon: Ticket },
   { name: 'profile', label: 'Profile', icon: User },

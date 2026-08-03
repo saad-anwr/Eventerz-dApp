@@ -36,12 +36,17 @@ export {
   ArrowLeft,
   ArrowRight,
   ArrowUpRight,
+  // `Award` and `CalendarPlus` are the website dashboard's Reputation and
+  // Attending glyphs. Added so the app's home stats use the same four icons as
+  // the same four tiles in the browser.
+  Award,
   BadgeCheck,
   Bell,
   Boxes,
   Building2,
   Calendar,
   CalendarCheck,
+  CalendarPlus,
   Camera,
   Check,
   CheckCheck,

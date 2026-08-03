@@ -8,6 +8,9 @@
 
 export {
   House as Home,
+  // `Compass` is the website's Explore glyph. Same icon, same slot, both
+  // platforms - the point of the shared tab set.
+  Compass,
   Users,
   Plus,
   Ticket,

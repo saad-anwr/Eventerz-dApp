@@ -103,10 +103,19 @@ export const ticketRepository = {
    */
   async redeemQr(payload: string): Promise<Ticket> {
     await mockDelay();
-    if (!payload.startsWith('eventerz:v1:checkin')) {
+    /*
+     * Same set of accepted shapes as the live path - the https link tickets
+     * carry now, the app's deep link, and the legacy custom scheme. Kept in
+     * step deliberately: a scanner that works against the mock and fails
+     * against Supabase is worse than one that fails in both.
+     */
+    const looksLikeOurs =
+      /^https?:\/\/[^\s]+\/checkin\?/i.test(payload.trim()) ||
+      /^eventerz:(\/\/)?(v1:)?checkin\?/i.test(payload.trim());
+    if (!looksLikeOurs) {
       throw new Error('That QR code is not an Eventerz ticket.');
     }
-    const match = /ticket=([^&]+)/.exec(payload);
+    const match = /[?&]ticket=([^&\s]+)/.exec(payload);
     const ticketId = match?.[1];
     if (!ticketId) throw new Error('This ticket code is malformed.');
     const ticket = db.tickets[ticketId];

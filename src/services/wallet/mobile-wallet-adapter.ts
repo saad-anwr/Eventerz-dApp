@@ -180,11 +180,17 @@ function buildInstruction(
     }
 
     /*
-     * `mint-ticket` and `claim-badge` have no instruction yet: tickets are
-     * Postgres rows plus a seat account, and compressed-NFT minting needs
-     * Bubblegum and a Merkle tree that is not provisioned. Refusing is the
-     * honest answer - the alternative is a signature for a mint that never
-     * happened.
+     * `mint-ticket` and `claim-badge` refuse here permanently, by design - not
+     * pending a Merkle tree.
+     *
+     * A Bubblegum mint is signed by the **tree authority**, not by the wallet
+     * receiving the asset. Implementing these cases would mean shipping that
+     * authority key to a phone, and an asset the recipient can mint for
+     * themselves proves nothing about who issued it. Minting therefore lives in
+     * the `mint-cnft` Edge Function, where the key is a server secret.
+     *
+     * So do not "finish" this once a tree is provisioned. The right call site is
+     * the function; this one stays a refusal.
      */
     case 'mint-ticket':
     case 'claim-badge':

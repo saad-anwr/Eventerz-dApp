@@ -510,6 +510,26 @@ export const LocationStep = memo(function LocationStep() {
 /*  4 - Design                                                                 */
 /* -------------------------------------------------------------------------- */
 
+/**
+ * The one shape a banner has.
+ *
+ * The cropper used to be handed `[16, 9]` while the preview underneath it was a
+ * fixed 150pt tall across the full step width - roughly 2.3:1. So the user
+ * cropped a 16:9 frame, and was then shown a *different*, tighter crop of the
+ * result, with the top and bottom of what they had just chosen missing. The
+ * complaint that the preview "is not to actual size cropped while uploading" is
+ * exactly that mismatch.
+ *
+ * One constant, used by both the cropper and the preview box, is what makes the
+ * step honest: what you frame is what you see.
+ *
+ * Cards elsewhere are shorter than this and still centre-crop it - that is
+ * unavoidable, since a card and a full-bleed hero cannot share one shape - but
+ * the *source* is now exactly what the host approved, and the review step says
+ * so rather than silently showing a third framing.
+ */
+const BANNER_ASPECT = 16 / 9;
+
 export const DesignStep = memo(function DesignStep() {
   const draft = useCreateEventStore((s) => s.draft);
   const setField = useCreateEventStore((s) => s.setField);
@@ -546,7 +566,7 @@ export const DesignStep = memo(function DesignStep() {
       >
         <View
           className="overflow-hidden"
-          style={{ height: 150, borderRadius: radius['3xl'] }}
+          style={{ aspectRatio: BANNER_ASPECT, borderRadius: radius['3xl'] }}
         >
           <LinearGradient
             colors={[colors[0], colors[1]]}
@@ -571,16 +591,23 @@ export const DesignStep = memo(function DesignStep() {
               transition={150}
             />
           )}
-          <LinearGradient
-            colors={['rgba(255,255,255,0.3)', 'transparent']}
-            start={{ x: 0.15, y: 0 }}
-            end={{ x: 0.8, y: 0.9 }}
-            style={{ position: 'absolute', inset: 0 }}
-          />
-          {/* Keeps the title legible over a photo of anything. */}
-          {draft.coverImage && (
+          {/*
+            The white lift is for the bare gradient. Over a photo it is the
+            thing that made the title and the category pill hard to read - a 30%
+            white wash on an already-bright banner leaves white text on
+            near-white. A photo gets a dark scrim instead.
+          */}
+          {draft.coverImage ? (
             <LinearGradient
-              colors={['transparent', 'rgba(0,0,0,0.55)']}
+              colors={['rgba(0,0,0,0.35)', 'rgba(0,0,0,0.05)', 'rgba(0,0,0,0.62)']}
+              locations={[0, 0.4, 1]}
+              style={{ position: 'absolute', inset: 0 }}
+            />
+          ) : (
+            <LinearGradient
+              colors={['rgba(255,255,255,0.3)', 'transparent']}
+              start={{ x: 0.15, y: 0 }}
+              end={{ x: 0.8, y: 0.9 }}
               style={{ position: 'absolute', inset: 0 }}
             />
           )}
@@ -825,6 +852,19 @@ export const ReviewStep = memo(function ReviewStep() {
                 style={{ position: 'absolute', inset: 0 }}
                 contentFit="cover"
                 transition={150}
+              />
+            )}
+            {/*
+              Scrim, matching `EventCard`. Without it the category badge - white
+              text on translucent black - sat unreadably on a bright banner,
+              which is the "text feels invisible" in the report. This preview is
+              meant to be the card, so it needs the card's scrim too.
+            */}
+            {draft.coverImage && (
+              <LinearGradient
+                colors={['rgba(0,0,0,0.45)', 'rgba(0,0,0,0.12)', 'rgba(0,0,0,0.5)']}
+                locations={[0, 0.45, 1]}
+                style={{ position: 'absolute', inset: 0 }}
               />
             )}
             <View className="absolute left-3 top-3 flex-row gap-1.5">

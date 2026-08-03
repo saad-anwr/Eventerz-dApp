@@ -285,6 +285,47 @@ export type Database = {
         Args: Record<string, never>;
         Returns: ProfileRow;
       };
+
+      /* ---- Multi-wallet accounts (migration 0022) --------------------------
+       * An account holds a set of wallets, one of them primary and mirrored
+       * into `profiles.wallet_address`. See the migration header for why the
+       * account is rooted in Google rather than in a keypair.
+       * -------------------------------------------------------------------- */
+
+      /** The caller's own wallets, primary first. RLS scopes it to them. */
+      my_wallets: {
+        Args: Record<string, never>;
+        Returns: {
+          address: string;
+          profile_id: string;
+          is_primary: boolean;
+          label: string | null;
+          linked_at: string;
+        }[];
+      };
+      /** Detach one wallet. `unlink_wallet` detaches the primary. */
+      unlink_wallet_address: {
+        Args: { p_wallet_address: string };
+        Returns: ProfileRow;
+      };
+      /** Promote one of the caller's wallets to primary. */
+      set_primary_wallet: {
+        Args: { p_wallet_address: string };
+        Returns: ProfileRow;
+      };
+      /**
+       * `unlinked` | `mine` | `taken`.
+       *
+       * A verdict rather than an owner id, so an anonymous caller cannot turn
+       * the address space into a directory of accounts.
+       */
+      wallet_link_status: {
+        Args: { p_wallet_address: string };
+        Returns: 'unlinked' | 'mine' | 'taken';
+      };
+      /* `profile_for_wallet` is declared further down - 0022 changed what it
+         resolves through (`wallet_links` rather than the column), not its
+         signature. */
       update_event: {
         Args: {
           p_event_id: string;

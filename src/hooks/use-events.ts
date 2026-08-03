@@ -20,7 +20,13 @@ import {
   type UpdateEventInput,
 } from '@/repositories';
 import { AnalyticsEvent, analytics, notificationService, solanaService } from '@/services';
+import {
+  isRemoteUri,
+  uploadEventBanner,
+} from '@/repositories/supabase/banners';
+import { toast } from '@/store/toast-store';
 import { priceToLamports } from '@/utils/amount';
+import { assertRealIdentity } from '@/utils/identity';
 import { useWalletStore } from '@/store/wallet-store';
 import type { EventFilters, EventItem } from '@/types';
 
@@ -248,10 +254,28 @@ export function useGuestPreview(eventId: string | undefined, limit = 3) {
  */
 export function useUpdateEvent(eventId: string | undefined) {
   const invalidate = useGuestStateInvalidation();
+  const user = useWalletStore((s) => s.user);
+
   return useMutation({
-    mutationFn: (patch: UpdateEventInput) => {
+    mutationFn: async (patch: UpdateEventInput) => {
       if (!eventId) throw new Error('No event to update.');
-      return eventRepository.updateEvent(eventId, patch);
+
+      /*
+       * Same upload step as publishing. The edit form re-submits whatever
+       * `coverImage` currently holds, so an untouched banner arrives as the
+       * public URL we stored last time - `isRemoteUri` is what stops that being
+       * re-uploaded on every save, copying the object and orphaning the old one.
+       */
+      let next = patch;
+      if (patch.coverImage && !isRemoteUri(patch.coverImage) && user) {
+        assertRealIdentity(user.id);
+        next = {
+          ...patch,
+          coverImage: await uploadEventBanner(user.id, patch.coverImage),
+        };
+      }
+
+      return eventRepository.updateEvent(eventId, next);
     },
     onSuccess: invalidate,
   });
@@ -284,7 +308,53 @@ export function useCreateEvent() {
   return useMutation({
     mutationFn: async (input: CreateEventInput) => {
       if (!user) throw new Error('Connect a wallet to publish an event.');
-      const event = await eventRepository.create(input, user.id);
+
+      /*
+       * A wallet nobody has linked yet holds a provisional `wallet:<address>`
+       * id. Sending that to `events.host_id` produced the raw Postgres error
+       * users actually saw:
+       *
+       *     Could not publish
+       *     invalid input syntax for type uuid: "wallet:CiM2ZRkc..."
+       *
+       * The store no longer *creates* that situation while signed in (see
+       * `resolveIdentity`), but the guard stays: it is the difference between a
+       * signed-out user being told what to do and being shown a type error from
+       * the database.
+       */
+      assertRealIdentity(user.id);
+
+      /*
+       * The picker hands back a device-local `file://` URI. Storing that is
+       * what made a banner visible in the wizard preview and nowhere else - see
+       * `uploadEventBanner`. Upload first, then write the public URL.
+       *
+       * A failed upload must not cost the user the event they just filled in
+       * six steps of, so it degrades to the gradient rather than aborting the
+       * publish. The gradient is the designed fallback, not a broken state.
+       */
+      let coverImage = input.coverImage;
+      if (coverImage && !isRemoteUri(coverImage)) {
+        try {
+          coverImage = await uploadEventBanner(user.id, coverImage);
+        } catch (error) {
+          coverImage = undefined;
+          // Say so. Publishing an event whose banner quietly vanished is how
+          // the original bug felt from the outside, and repeating that while
+          // technically succeeding would be no better.
+          toast.info(
+            'Banner could not be uploaded',
+            error instanceof Error
+              ? `${error.message} The event was published with its gradient cover - you can add a banner by editing it.`
+              : 'The event was published with its gradient cover instead.',
+          );
+        }
+      }
+
+      const event = await eventRepository.create(
+        { ...input, coverImage },
+        user.id,
+      );
 
       /*
        * Publish the account with the event's real terms.

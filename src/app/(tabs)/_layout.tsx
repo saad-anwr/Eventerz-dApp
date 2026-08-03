@@ -19,11 +19,17 @@ export default function TabsLayout() {
         sceneStyle: { backgroundColor: '#050816' },
       }}
     >
+      {/*
+        Five destinations, matching the website's mobile bar exactly. Friends
+        stays a route - it is reached from the home header - but is not a tab;
+        see `TABS` in `navigation/tab-bar.tsx` for why Explore took the slot.
+      */}
       <Tabs.Screen name="index" options={{ title: 'Home' }} />
-      <Tabs.Screen name="friends" options={{ title: 'Friends' }} />
+      <Tabs.Screen name="explore" options={{ title: 'Explore' }} />
       <Tabs.Screen name="create" options={{ title: 'Create' }} />
       <Tabs.Screen name="tickets" options={{ title: 'Tickets' }} />
       <Tabs.Screen name="profile" options={{ title: 'Profile' }} />
+      <Tabs.Screen name="friends" options={{ title: 'Friends' }} />
     </Tabs>
   );
 }

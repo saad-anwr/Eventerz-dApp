@@ -45,6 +45,40 @@ import { haptics } from '@/utils/haptics';
 
 const FRAME_SIZE = 250;
 
+/**
+ * Turn a check-in failure into something an operator can act on at a door.
+ *
+ * `check_in_ticket` (migration 0002) raises in Postgres' voice: "only the event
+ * host can check guests in", "not authenticated", "invalid ticket code". Two of
+ * those describe a state the person holding the phone can fix, and none of them
+ * says how. With a queue waiting, "invalid ticket code" is indistinguishable
+ * from "the app is broken".
+ *
+ * The mapping is on the message rather than the SQLSTATE because the errors
+ * arrive through PostgREST and supabase-js as text by the time they get here.
+ */
+function explainCheckInError(message: string): string {
+  if (/not authenticated|sign in|28000/i.test(message)) {
+    return 'Sign in with Google on this device first - check-in is recorded against you as the host.';
+  }
+  if (/only the event host/i.test(message)) {
+    return 'That ticket is for an event you do not host. Only the host can check its guests in.';
+  }
+  if (/already been checked in/i.test(message)) {
+    return 'This guest is already checked in.';
+  }
+  if (/invalid ticket code|ticket not found/i.test(message)) {
+    return 'That code did not match a valid ticket. Ask the guest to reopen it from their Tickets tab.';
+  }
+  if (/not an Eventerz ticket/i.test(message)) {
+    return 'That QR is not an Eventerz ticket.';
+  }
+  if (/network|fetch|timeout/i.test(message)) {
+    return 'Could not reach the server. Check your connection and scan again.';
+  }
+  return message || 'Try scanning again.';
+}
+
 /** Sweeping laser line inside the reticle. */
 function ScanLine() {
   const y = useSharedValue(0);
@@ -240,10 +274,8 @@ export default function ScanScreen() {
         onSuccess: (ticket) => setScanned(ticket),
         onError: (error) => {
           haptics.error();
-          toast.error(
-            'Check-in failed',
-            error instanceof Error ? error.message : 'Try scanning again.',
-          );
+          const raw = error instanceof Error ? error.message : '';
+          toast.error('Check-in failed', explainCheckInError(raw));
           // Re-arm after the toast so the operator can retry.
           setTimeout(() => {
             locked.current = false;
@@ -366,26 +398,31 @@ export default function ScanScreen() {
         }}
       >
         {/*
-          Emulators have no camera. Rather than ship a fake-scan button to
-          production, offer manual entry - it exercises the same server-side
-          redemption path and is genuinely useful at a door when a phone screen
-          is too cracked or dim to scan.
+          Manual entry, always offered.
+
+          It used to appear only when the camera was unavailable, on the
+          reasoning that a working camera makes it redundant. A door disagrees:
+          the codes that need typing in are the ones the camera cannot read -
+          a cracked screen, a phone at minimum brightness, a guest holding a
+          printout that has been in a pocket all day - and those all happen on a
+          device whose camera works perfectly. Hiding the fallback exactly when
+          the camera is present removed it from every case it exists for.
+
+          It is also the only route on an emulator, which has no camera at all.
         */}
-        {!granted && (
-          <Button
-            label={manualOpen ? 'Hide manual entry' : 'Enter code manually'}
-            icon={QrCode}
-            variant="secondary"
-            onPress={() => setManualOpen((open) => !open)}
-            fullWidth
-          />
-        )}
+        <Button
+          label={manualOpen ? 'Hide manual entry' : 'Enter code manually'}
+          icon={QrCode}
+          variant="secondary"
+          onPress={() => setManualOpen((open) => !open)}
+          fullWidth
+        />
 
         {manualOpen && (
           <View className="mt-3 gap-3">
             <TextField
               label="Ticket code"
-              placeholder="eventerz:v1:checkin?ticket=...&secret=..."
+              placeholder="https://eventerz.xyz/checkin?ticket=...&secret=..."
               value={manualCode}
               onChangeText={setManualCode}
               autoCapitalize="none"

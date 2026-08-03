@@ -9,13 +9,48 @@
 import { create } from 'zustand';
 
 import { userRepository } from '@/repositories';
+import { toUser } from '@/repositories/supabase/rows';
 import { AnalyticsEvent, analytics, walletService } from '@/services';
+import { useAuthStore } from '@/store/auth-store';
 import type {
   User,
   WalletAccount,
   WalletConnectionStatus,
   WalletId,
 } from '@/types';
+
+/**
+ * Who the app is, given a connected wallet.
+ *
+ * # The rule, and the bug that made it necessary
+ *
+ * **A signed-in Google account always wins.** `connect`, `restore` and
+ * `refreshUser` all used to call `ensureWalletUser` and assign the result
+ * straight onto `user`, unconditionally. That is fine when nobody is signed in
+ * and actively wrong when somebody is: a wallet that has not been linked yet
+ * resolves to a provisional `wallet:<address>` identity, so connecting a wallet
+ * while signed in *replaced* the real profile with a placeholder.
+ *
+ * Everything downstream then wrote that placeholder into a uuid column:
+ *
+ *     Could not publish
+ *     invalid input syntax for type uuid: "wallet:CiM2ZRkc..."
+ *
+ * which is exactly what publishing an event did. It also explains why the
+ * failure looked intermittent and why "switching" appeared to cure it -
+ * anything that re-ran `AuthIdentityBridge` re-adopted the real profile, until
+ * the next wallet event clobbered it again.
+ *
+ * Reading the auth store here rather than waiting for that bridge is what makes
+ * it deterministic: the identity is resolved at the moment the wallet changes,
+ * from the account that is signed in at that moment, instead of being assigned
+ * twice and depending on which assignment lands last.
+ */
+async function resolveIdentity(address: string): Promise<User> {
+  const profile = useAuthStore.getState().profile;
+  if (profile) return toUser(profile);
+  return userRepository.ensureWalletUser(address);
+}
 
 interface WalletState {
   status: WalletConnectionStatus;
@@ -68,7 +103,7 @@ export const useWalletStore = create<WalletState>()((set, get) => ({
     set({ status: 'connecting', error: null });
     try {
       const account = await walletService.connect(walletId);
-      const user = await userRepository.ensureWalletUser(account.address);
+      const user = await resolveIdentity(account.address);
       set({ status: 'connected', account, user });
       analytics.identify(user.id, { walletId, cluster: account.cluster });
       analytics.track(AnalyticsEvent.WalletConnected, { walletId });
@@ -104,7 +139,7 @@ export const useWalletStore = create<WalletState>()((set, get) => ({
         set({ isRestoring: false });
         return;
       }
-      const user = await userRepository.ensureWalletUser(account.address);
+      const user = await resolveIdentity(account.address);
       set({ status: 'connected', account, user, isRestoring: false });
       void get().refreshBalance();
     } catch {
@@ -129,7 +164,7 @@ export const useWalletStore = create<WalletState>()((set, get) => ({
     const { account } = get();
     if (!account) return;
     try {
-      set({ user: await userRepository.ensureWalletUser(account.address) });
+      set({ user: await resolveIdentity(account.address) });
     } catch {
       // Keep whatever identity is on screen. A failed re-resolve is not worth
       // blanking the profile the user is looking at.

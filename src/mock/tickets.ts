@@ -5,6 +5,7 @@
  * whoever is connected - the mock wallet mints a fresh address per session.
  */
 
+import { siteConfig } from '@/constants/config';
 import type { Badge, Ticket } from '@/types';
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -18,7 +19,9 @@ export function buildQrPayload(
   ticketId: string,
   owner: string,
 ): string {
-  return `eventerz:v1:checkin?event=${eventId}&ticket=${ticketId}&owner=${owner}`;
+  // Shaped like the live payload (see `toTicket`) so the mock exercises the
+  // same parser rather than a format only the mock produces.
+  return `${siteConfig.url}/checkin?ticket=${ticketId}&secret=mock-${eventId}&owner=${owner}`;
 }
 
 export function buildMockTickets(ownerId: string, ownerAddress: string): Ticket[] {

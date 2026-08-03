@@ -165,26 +165,43 @@ record(
     : 'real wallet, real backend',
 );
 
-/* --------------------------------------------------------------- program -- */
+/* ---------------------------------------------------------- on-chain plan -- */
 
-console.log(`\n${c.bold('Anchor program')}`);
+/*
+ * The custom Anchor program was retired in favour of Metaplex Bubblegum.
+ *
+ * Nothing about that is a downgrade: Bubblegum is already deployed on mainnet,
+ * so there is no program to build, no 2-4 SOL of program rent, and - the part
+ * that actually mattered - no upgrade authority that could rewrite what
+ * `claim_seat` does to a paid event. A tree account costs about 0.31 SOL once.
+ *
+ * So a blank program id is no longer a failure. It is the intended shape, and
+ * this section checks the thing that replaced it.
+ */
+
+console.log(`\n${c.bold('On-chain assets (Metaplex cNFT)')}`);
 
 const programId = env.EXPO_PUBLIC_EVENTERZ_PROGRAM_ID ?? '';
+const merkleTree = env.EXPO_PUBLIC_MERKLE_TREE_ADDRESS ?? '';
 
-if (!programId) {
+if (programId && programId !== ANCHOR_PLACEHOLDER) {
   record(
-    'Program id is set',
-    'FAIL',
-    'blank - event creation, RSVP and check-in stay off-chain (Postgres only)',
-  );
-} else if (programId === ANCHOR_PLACEHOLDER) {
-  record(
-    'Program id is set',
-    'FAIL',
-    'still the `anchor init` placeholder - run `anchor keys sync` before deploying',
+    'Custom program is not in use',
+    'WARN',
+    `EXPO_PUBLIC_EVENTERZ_PROGRAM_ID is set to ${programId} - that path was retired; clients will attempt on-chain writes against it`,
   );
 } else {
-  record('Program id is set', 'PASS', programId);
+  record('Custom program is not in use', 'PASS', 'Bubblegum instead of a bespoke program');
+}
+
+if (!merkleTree) {
+  record(
+    'Merkle tree provisioned',
+    'WARN',
+    'blank - tickets and badges stay Postgres records; run scripts/create-tree.mjs to enable minting',
+  );
+} else {
+  record('Merkle tree provisioned', 'PASS', merkleTree);
 }
 
 /* ------------------------------------------------------------------ chain -- */
@@ -221,20 +238,32 @@ try {
     genesis === MAINNET_GENESIS ? genesis : `genesis ${genesis} is not mainnet`,
   );
 
-  if (programId && programId !== ANCHOR_PLACEHOLDER) {
-    const info = await rpcCall('getAccountInfo', [programId, { encoding: 'base64' }]);
+  /*
+   * A tree address that resolves to nothing, or to an account owned by anything
+   * other than SPL account-compression, is worse than a blank one: the config
+   * claims minting works and every mint fails. Checking the owner is what
+   * separates "a real tree" from "a well-formed pubkey somebody pasted".
+   */
+  const COMPRESSION_PROGRAM = 'cmtDvXumGCrqC1age74HJDoZ9pyrp2Ep6PPMU2X9jNc';
+
+  if (merkleTree) {
+    const info = await rpcCall('getAccountInfo', [merkleTree, { encoding: 'base64' }]);
     const account = info?.value;
     record(
-      'Program is deployed and executable',
-      account?.executable ? 'PASS' : 'FAIL',
+      'Merkle tree exists on this cluster',
+      account?.owner === COMPRESSION_PROGRAM ? 'PASS' : 'FAIL',
       account
-        ? account.executable
-          ? `owner ${account.owner}`
-          : 'the account exists but is not a program'
+        ? account.owner === COMPRESSION_PROGRAM
+          ? `owned by account-compression`
+          : `owned by ${account.owner}, not account-compression - this is not a tree`
         : 'no account at that address on this cluster',
     );
   } else {
-    record('Program is deployed and executable', 'FAIL', 'no usable program id to check');
+    record(
+      'Merkle tree exists on this cluster',
+      'WARN',
+      'nothing to check while EXPO_PUBLIC_MERKLE_TREE_ADDRESS is blank',
+    );
   }
 
   // The treasury only has to be able to receive. A brand-new address holding

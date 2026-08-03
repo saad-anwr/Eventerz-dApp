@@ -3,13 +3,24 @@
  * =========================
  *
  * Each function describes one product action in domain terms and delegates
- * signing to the active wallet adapter. Today the adapter is the mock, so
- * these return simulated signatures - but the call sites in the UI are already
- * final. Wiring Anchor/Metaplex means filling in the bodies here only.
+ * signing to the active wallet adapter. `USE_MOCK_WALLET` decides whether that
+ * adapter is the mock or Mobile Wallet Adapter; production builds ship the real
+ * one, so these are real signatures on mainnet.
  *
- * TODO(anchor):   load the Eventerz IDL, build instructions with @coral-xyz/anchor
- * TODO(metaplex): mint compressed tickets with @metaplex-foundation/mpl-bubblegum
- * TODO(helius):   read assets and transactions via the Helius DAS API
+ * What still routes through here, and what does not:
+ *
+ *   • **Wallet-to-wallet transfers** are System Program instructions and need
+ *     nothing deployed. These work today.
+ *   • **Compressed ticket minting does *not* belong here.** A Bubblegum mint is
+ *     signed by the tree authority, not by the person holding the ticket, so it
+ *     runs server-side in the `mint-cnft` Edge Function where that key can live
+ *     as a secret. Putting it here would both leak the authority to a client and
+ *     let a guest mint their own ticket, which defeats the point of issuing one.
+ *   • **A bespoke Anchor program was retired.** There is no IDL to load and no
+ *     `@coral-xyz/anchor` instruction building to fill in - `Eventerz Program/`
+ *     is kept for reference only. See its `DEPLOY_MAINNET.md`.
+ *
+ * TODO(helius): read assets and transactions via the Helius DAS API
  */
 
 import { integrationsConfig } from '@/constants/config';

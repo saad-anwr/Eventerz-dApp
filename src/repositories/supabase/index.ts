@@ -23,7 +23,7 @@ import type {
 } from '@/types';
 
 import type { CreateEventInput, UpdateEventInput } from '../event-repository';
-import { PROFILE_COLUMNS } from '@/services/auth/types';
+import { PROFILE_COLUMNS, type ProfileRow } from '@/services/auth/types';
 import { postgrestLikePattern } from '@/utils/postgrest';
 import {
   parseQrPayload,
@@ -620,20 +620,24 @@ export const supabaseUserRepository = {
   /**
    * Resolve the profile that owns a wallet.
    *
-   * Unlike the mock, this cannot *create* a row: RLS requires `auth.uid()`, and
-   * a wallet on its own is not an authenticated session. So a wallet with no
-   * linked account gets a local, unsaved identity - enough to browse, not
-   * enough to RSVP. That is exactly the wallet-primary model: the wallet is the
-   * identity, but the account behind it is created by linking Google.
+   * Goes through `profile_for_wallet` (0022) rather than filtering
+   * `profiles.wallet_address` directly. The column still exists and is still
+   * accurate, but it only ever holds the account's *primary* wallet, so a
+   * direct filter answers "no such account" for every other wallet the same
+   * person has linked - which is the whole problem 0022 exists to fix. The
+   * function resolves through `wallet_links` instead.
+   *
+   * This cannot *create* a row: RLS requires `auth.uid()`, and a wallet on its
+   * own is not a Supabase session. A wallet nobody has linked therefore gets a
+   * local, unsaved identity - enough to browse, not enough to write. Turning it
+   * into an account is what signing in with Google does.
    */
   async ensureWalletUser(address: string): Promise<User> {
     const { data } = await client()
-      .from('profiles')
-      .select(PROFILE_COLUMNS)
-      .eq('wallet_address', address)
+      .rpc('profile_for_wallet', { p_wallet_address: address })
       .maybeSingle();
 
-    if (data) return toUser(data);
+    if (data) return toUser(data as ProfileRow);
 
     return {
       id: `wallet:${address}`,

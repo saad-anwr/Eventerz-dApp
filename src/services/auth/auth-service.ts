@@ -53,17 +53,134 @@ function extractError(url: string): string | null {
   return typeof description === 'string' ? description : null;
 }
 
+/* -------------------------------------------------------------------------- */
+/*  Exchanging the code exactly once                                           */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * In-flight and completed exchanges, keyed by authorization code.
+ *
+ * # The bug this exists to kill
+ *
+ * On Android a successful sign-in arrives **twice**. `openAuthSessionAsync`
+ * captures the redirect and resolves with the URL, *and* the OS separately
+ * matches `eventerz://auth/callback` against the app's intent filter and hands
+ * it to Expo Router, which mounts `app/auth/callback.tsx`. Both paths then hold
+ * the same one-time code and both used to exchange it.
+ *
+ * `exchangeCodeForSession` consumes the server-side flow state. Whichever call
+ * lost the race got:
+ *
+ *     invalid flow state, no valid flow state found
+ *
+ * which the connect sheet showed as "Google sign-in failed" - on a sign-in that
+ * had in fact just succeeded, because the winner had already stored the
+ * session. The user saw a red error, and was signed in.
+ *
+ * The callback screen tried to avoid this with a `getSession()` check before
+ * exchanging, but a check-then-act across two independent callers is not a
+ * lock: both read "no session" before either had written one.
+ *
+ * # Why a map and not a boolean
+ *
+ * A single "exchange in progress" flag would serialise two *different* sign-in
+ * attempts, and the second would join the first's result - signing the user
+ * into an account they did not pick. Keying on the code means only the callers
+ * racing over the *same* code share a result, which is exactly the set that
+ * should.
+ *
+ * Entries are kept after they settle rather than cleared. A code is single-use,
+ * so the map is bounded by the number of sign-in attempts in one app session,
+ * and keeping the settled result means the loser of a late race is handed the
+ * winner's answer instead of starting a second doomed exchange.
+ */
+const exchanges = new Map<string, Promise<AuthResult<void>>>();
+
+/** Defensive bound. Nobody signs in 50 times per launch; if they somehow do,
+    drop the oldest rather than grow without limit. */
+const MAX_TRACKED_EXCHANGES = 50;
+
+async function runExchange(code: string): Promise<AuthResult<void>> {
+  const supabase = getSupabaseClient();
+  if (!supabase) return { ok: false, error: NOT_CONFIGURED };
+
+  const { error } = await supabase.auth.exchangeCodeForSession(code);
+  if (!error) return { ok: true, data: undefined };
+
+  /*
+   * A failed exchange does not mean a failed sign-in.
+   *
+   * The redirect can be delivered twice by routes this process does not
+   * control - a cold start racing a warm one, or a browser that re-fires the
+   * intent. If a session exists by now, the code was spent by a call that
+   * worked and there is nothing wrong to report. Reporting it anyway is the
+   * whole visible bug.
+   */
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (session) return { ok: true, data: undefined };
+
+  return { ok: false, error: error.message };
+}
+
+/**
+ * Exchange an OAuth code for a session, at most once per code.
+ *
+ * Safe to call from every path that might receive the redirect; the second and
+ * later callers await the first one's result rather than racing it.
+ */
+export function exchangeAuthCode(code: string): Promise<AuthResult<void>> {
+  const existing = exchanges.get(code);
+  if (existing) return existing;
+
+  const pending = runExchange(code);
+  exchanges.set(code, pending);
+
+  if (exchanges.size > MAX_TRACKED_EXCHANGES) {
+    const oldest = exchanges.keys().next();
+    if (!oldest.done) exchanges.delete(oldest.value);
+  }
+
+  return pending;
+}
+
 /**
  * Run the full Google sign-in flow.
  *
  * Resolves only once the session exists (or the user backed out), so callers can
  * await it and immediately read the signed-in profile.
  */
+/**
+ * Force Google's account chooser on the next sign-in.
+ *
+ * Set when the user signs out, and only then. See `signInWithGoogle` for why
+ * the chooser is otherwise suppressed.
+ */
+let forceAccountChooser = false;
+
 export async function signInWithGoogle(): Promise<AuthResult<ProfileRow | null>> {
   const supabase = getSupabaseClient();
   if (!supabase) return { ok: false, error: NOT_CONFIGURED };
 
   const redirectTo = authRedirectUrl();
+
+  /*
+   * `prompt: 'select_account'` used to be sent on every attempt, which meant
+   * somebody already signed in to Google in Chrome - the overwhelmingly common
+   * case, and the one the shared cookie jar exists to serve - was still made to
+   * pick their account out of a list before anything happened. "Already signed
+   * in on the web, signs straight in on the phone" is the behaviour wanted, and
+   * an unconditional chooser is precisely what prevents it.
+   *
+   * Dropping it does not trap anyone on one account: Google still shows the
+   * chooser whenever the browser holds more than one session or consent has not
+   * been granted, and signing out here sets the flag that asks for it
+   * explicitly. That covers switching accounts, which is the only thing the
+   * unconditional version bought.
+   */
+  const queryParams: Record<string, string> = { access_type: 'offline' };
+  if (forceAccountChooser) queryParams.prompt = 'select_account';
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
@@ -71,7 +188,7 @@ export async function signInWithGoogle(): Promise<AuthResult<ProfileRow | null>>
       redirectTo,
       // We drive the browser ourselves - Supabase must not try to navigate.
       skipBrowserRedirect: true,
-      queryParams: { access_type: 'offline', prompt: 'select_account' },
+      queryParams,
     },
   });
 
@@ -101,10 +218,12 @@ export async function signInWithGoogle(): Promise<AuthResult<ProfileRow | null>>
     return { ok: false, error: 'Google did not return an authorization code.' };
   }
 
-  const { error: exchangeError } =
-    await supabase.auth.exchangeCodeForSession(code);
-  if (exchangeError) return { ok: false, error: exchangeError.message };
+  // Shared with the deep-link route, which may be handed the same code by the
+  // OS. Whichever arrives second gets this one's answer.
+  const exchange = await exchangeAuthCode(code);
+  if (!exchange.ok) return { ok: false, error: exchange.error };
 
+  forceAccountChooser = false;
   const profile = await getMyProfile();
   return { ok: true, data: profile };
 }
@@ -115,6 +234,10 @@ export async function signOut(): Promise<AuthResult> {
 
   const { error } = await supabase.auth.signOut();
   if (error) return { ok: false, error: error.message };
+
+  // Someone who deliberately signed out is the one person who might be
+  // switching accounts, so the next attempt asks which.
+  forceAccountChooser = true;
   return { ok: true, data: undefined };
 }
 
@@ -309,17 +432,106 @@ export async function linkWallet(
   }
 }
 
-/** Detach the wallet from this account, leaving the account intact. */
-export async function unlinkWallet(): Promise<AuthResult<ProfileRow>> {
+/** One wallet on the signed-in account. */
+export type LinkedWallet = {
+  address: string;
+  isPrimary: boolean;
+  label: string | null;
+  linkedAt: string;
+};
+
+/**
+ * Every wallet linked to the signed-in account, primary first.
+ *
+ * The set, not `profiles.wallet_address`. That column holds only the primary,
+ * which is why anything that used it as "is this wallet linked?" answered no
+ * for every wallet after the first - and then tried to link an already-linked
+ * wallet, asking the user to sign for something they had already signed for.
+ */
+export async function myWallets(): Promise<LinkedWallet[]> {
+  const supabase = getSupabaseClient();
+  if (!supabase) return [];
+
+  const { data, error } = await supabase.rpc('my_wallets');
+  if (error || !data) return [];
+
+  return (data as {
+    address: string;
+    is_primary: boolean;
+    label: string | null;
+    linked_at: string;
+  }[]).map((row) => ({
+    address: row.address,
+    isPrimary: row.is_primary,
+    label: row.label,
+    linkedAt: row.linked_at,
+  }));
+}
+
+/**
+ * Detach one wallet, leaving the account and its other wallets intact.
+ *
+ * Omitting the address removes the primary, which is what the old no-argument
+ * `unlinkWallet()` meant when an account could only hold one.
+ */
+export async function unlinkWallet(
+  walletAddress?: string,
+): Promise<AuthResult<ProfileRow>> {
   const supabase = getSupabaseClient();
   if (!supabase) return { ok: false, error: NOT_CONFIGURED };
 
-  const { data, error } = await supabase.rpc('unlink_wallet');
+  const { data, error } = walletAddress
+    ? await supabase.rpc('unlink_wallet_address', {
+        p_wallet_address: walletAddress,
+      })
+    : await supabase.rpc('unlink_wallet');
+
   if (error) return { ok: false, error: error.message };
   return { ok: true, data: data as ProfileRow };
 }
 
-/** Find the account that already owns a wallet, for the recovery path. */
+/** Promote one of the account's wallets to primary. */
+export async function setPrimaryWallet(
+  walletAddress: string,
+): Promise<AuthResult<ProfileRow>> {
+  const supabase = getSupabaseClient();
+  if (!supabase) return { ok: false, error: NOT_CONFIGURED };
+
+  const { data, error } = await supabase.rpc('set_primary_wallet', {
+    p_wallet_address: walletAddress,
+  });
+  if (error) return { ok: false, error: error.message };
+  return { ok: true, data: data as ProfileRow };
+}
+
+/**
+ * Whether an address is claimed, and by whom - as a verdict, not an id.
+ *
+ * `unlinked` | `mine` | `taken`. This is what lets the app tell a returning
+ * user "that wallet belongs to an Eventerz account - sign in to reach it"
+ * instead of silently handing them a provisional identity that fails on the
+ * first write.
+ */
+export async function walletLinkStatus(
+  walletAddress: string,
+): Promise<'unlinked' | 'mine' | 'taken'> {
+  const supabase = getSupabaseClient();
+  if (!supabase) return 'unlinked';
+
+  const { data, error } = await supabase.rpc('wallet_link_status', {
+    p_wallet_address: walletAddress,
+  });
+  if (error) return 'unlinked';
+  return (data as 'unlinked' | 'mine' | 'taken') ?? 'unlinked';
+}
+
+/**
+ * Find the account that owns a wallet, for the recovery path.
+ *
+ * Resolves through `wallet_links` (0022) rather than filtering
+ * `profiles.wallet_address`, so it answers for any linked wallet rather than
+ * only whichever one happens to be primary.
+ */
 export async function profileForWallet(
   walletAddress: string,
 ): Promise<ProfileRow | null> {
@@ -327,12 +539,13 @@ export async function profileForWallet(
   if (!supabase) return null;
 
   const { data } = await supabase
-    .from('profiles')
-    .select(PROFILE_COLUMNS)
-    .eq('wallet_address', walletAddress)
+    .rpc('profile_for_wallet', { p_wallet_address: walletAddress })
     .maybeSingle();
 
-  return data;
+  // `maybeSingle()` narrows the RPC's declared row type to `... | null`, so the
+  // cast has to go through `unknown` - asserting `null` to `ProfileRow` is what
+  // TypeScript rejects, and rightly.
+  return (data as unknown as ProfileRow | null) ?? null;
 }
 
 export { isSupabaseConfigured };

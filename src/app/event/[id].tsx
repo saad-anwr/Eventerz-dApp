@@ -6,6 +6,7 @@
  * schedule, description. A sticky RSVP bar sits above the safe area.
  */
 
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
@@ -562,12 +563,35 @@ export default function EventDetailScreen() {
               end={{ x: 1, y: 1 }}
               style={{ position: 'absolute', inset: 0 }}
             />
-            <LinearGradient
-              colors={['rgba(255,255,255,0.30)', 'transparent']}
-              start={{ x: 0.2, y: 0 }}
-              end={{ x: 0.85, y: 0.7 }}
-              style={{ position: 'absolute', inset: 0 }}
-            />
+            {/*
+              The host's banner.
+
+              This hero rendered the gradient and nothing else, so an event with
+              a banner showed its artwork on the website and a flat colour wash
+              in the app - including to the host who had just uploaded it, which
+              is what made the upload look like it had failed when the real
+              failure was upstream (see `uploadEventBanner`).
+            */}
+            {event.coverImage && (
+              <Image
+                source={{ uri: event.coverImage }}
+                style={{ position: 'absolute', inset: 0 }}
+                contentFit="cover"
+                transition={200}
+                cachePolicy="memory-disk"
+                accessibilityIgnoresInvertColors
+              />
+            )}
+            {/* The white lift belongs to the bare gradient only - over a photo
+                it washes out the badges. See the event card for the argument. */}
+            {!event.coverImage && (
+              <LinearGradient
+                colors={['rgba(255,255,255,0.30)', 'transparent']}
+                start={{ x: 0.2, y: 0 }}
+                end={{ x: 0.85, y: 0.7 }}
+                style={{ position: 'absolute', inset: 0 }}
+              />
+            )}
           </Animated.View>
 
           {/* Scrim so the title stays readable regardless of gradient */}

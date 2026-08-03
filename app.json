@@ -50,6 +50,26 @@
             "BROWSABLE",
             "DEFAULT"
           ]
+        },
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "www.eventerz.xyz",
+              "pathPrefix": "/checkin"
+            },
+            {
+              "scheme": "https",
+              "host": "eventerz.xyz",
+              "pathPrefix": "/checkin"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
       ]
     },

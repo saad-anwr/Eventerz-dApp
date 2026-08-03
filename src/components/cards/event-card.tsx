@@ -7,6 +7,7 @@
  * Memoised and kept free of blur so a FlatList of these stays at 60fps.
  */
 
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { memo, useCallback } from 'react';
 import { View } from 'react-native';
@@ -76,13 +77,50 @@ export const EventCard = memo(function EventCard({
           end={{ x: 1, y: 1 }}
           style={{ position: 'absolute', inset: 0 }}
         />
-        {/* Highlight sweep, matching the web card's radial overlay. */}
-        <LinearGradient
-          colors={['rgba(255,255,255,0.32)', 'transparent']}
-          start={{ x: 0.15, y: 0 }}
-          end={{ x: 0.75, y: 0.9 }}
-          style={{ position: 'absolute', inset: 0 }}
-        />
+        {/*
+          The host's banner, over the gradient.
+
+          The web card has always drawn this and the app card never did, so an
+          event with a banner rendered as a plain gradient on the phone and with
+          its artwork in a browser - the same event, visibly different products.
+          The gradient stays underneath as the fallback while the image loads,
+          and for the events that have none.
+        */}
+        {event.coverImage && (
+          <Image
+            source={{ uri: event.coverImage }}
+            style={{ position: 'absolute', inset: 0 }}
+            contentFit="cover"
+            transition={160}
+            cachePolicy="memory-disk"
+            accessibilityIgnoresInvertColors
+          />
+        )}
+        {/*
+          Over a gradient: a white highlight sweep, matching the web card's
+          radial overlay, because a flat two-stop gradient needs the lift.
+
+          Over a photo: a dark scrim instead, never the highlight. The pills and
+          the calendar tile are white on translucent black, which is legible
+          against a gradient and can vanish against a bright photo - adding a
+          30% *white* wash on top of a light banner is what made the category
+          pill unreadable. A photo brings its own visual interest and needs
+          darkening, not lifting.
+        */}
+        {event.coverImage ? (
+          <LinearGradient
+            colors={['rgba(0,0,0,0.45)', 'rgba(0,0,0,0.12)', 'rgba(0,0,0,0.5)']}
+            locations={[0, 0.45, 1]}
+            style={{ position: 'absolute', inset: 0 }}
+          />
+        ) : (
+          <LinearGradient
+            colors={['rgba(255,255,255,0.32)', 'transparent']}
+            start={{ x: 0.15, y: 0 }}
+            end={{ x: 0.75, y: 0.9 }}
+            style={{ position: 'absolute', inset: 0 }}
+          />
+        )}
 
         {/* Top-left pills */}
         <View className="absolute left-3 top-3 flex-row gap-1.5">

@@ -1,14 +1,16 @@
 /**
  * Keeps the Google account and the connected wallet bound together.
  *
- * The wallet is the primary identity, so whenever both exist we make sure the
- * server knows they belong to the same person. Runs once per (account, wallet)
- * pair - re-linking the same address every render would be a wasted round trip.
+ * The account is the account and wallets attach to it, many to one (migration
+ * 0022), so whenever both exist we make sure the server knows this wallet is
+ * one of that account's. Runs once per (account, wallet) pair - re-linking the
+ * same address every render would be a wasted round trip and, worse, a wallet
+ * popup.
  *
  * Inert when Supabase is not configured.
  */
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 
 import { useAuthStore } from '@/store/auth-store';
 import { toast } from '@/store/toast-store';
@@ -18,7 +20,20 @@ export function useLinkGoogleWallet(): void {
   const isLive = useAuthStore((s) => s.isLive);
   const profile = useAuthStore((s) => s.profile);
   const linkWallet = useAuthStore((s) => s.linkWallet);
+  const wallets = useAuthStore((s) => s.wallets);
   const address = useWalletStore((s) => s.account?.address ?? null);
+
+  /*
+   * The membership test used to be `profile.wallet_address === address`. That
+   * column holds only the *primary* wallet, so every additional wallet on the
+   * account read as unlinked on every render - and this hook responded by
+   * asking the user to sign a link challenge for a wallet that was already
+   * linked. Testing the set is the whole point of the set existing.
+   */
+  const linked = useMemo(
+    () => new Set(wallets.map((w) => w.address)),
+    [wallets],
+  );
 
   /**
    * The address currently being linked, not the last one attempted.
@@ -38,7 +53,7 @@ export function useLinkGoogleWallet(): void {
 
   useEffect(() => {
     if (!isLive || !profile || !address) return;
-    if (profile.wallet_address === address) return;
+    if (linked.has(address)) return;
     if (inFlight.current === address) return;
 
     inFlight.current = address;
@@ -67,5 +82,5 @@ export function useLinkGoogleWallet(): void {
         );
       }
     })();
-  }, [isLive, profile, address, linkWallet]);
+  }, [isLive, profile, address, linkWallet, linked]);
 }

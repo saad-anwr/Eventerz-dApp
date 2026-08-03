@@ -48,7 +48,7 @@ export default function NotFoundScreen() {
             label="Browse events"
             icon={Compass}
             fullWidth
-            onPress={() => router.replace('/discover')}
+            onPress={() => router.replace('/(tabs)/explore')}
           />
           <Button
             label="Go home"
