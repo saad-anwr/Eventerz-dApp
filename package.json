@@ -88,7 +88,7 @@
     "deps:check": "node scripts/check-deps.mjs",
     "secrets:check": "node scripts/check-secrets.mjs --all",
     "postinstall": "node scripts/check-deps.mjs",
-    "prepare": "git config core.hooksPath .githooks",
+    "prepare": "git config core.hooksPath .githooks || exit 0",
     "eas-build-pre-install": "node scripts/check-build-env.mjs",
     "build:check": "npx expo-doctor@latest && npx tsc --noEmit && npx expo lint && vitest run",
     "eas:apk": "npx eas-cli build --platform android --profile preview",
