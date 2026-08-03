@@ -45,7 +45,7 @@ import { PressableFade } from '@/components/ui/pressable-scale';
 import { Screen } from '@/components/ui/screen';
 import { Text } from '@/components/ui/text';
 import { TextInput } from '@/components/ui/text-input';
-import { GoogleAccountRow } from '@/features/wallet';
+import { GoogleAccountRow, LinkedWallets } from '@/features/wallet';
 import { integrationsConfig, siteConfig } from '@/constants/config';
 import { resetMockDatabase } from '@/mock';
 import { useMockBackend } from '@/repositories';
@@ -333,6 +333,17 @@ export default function SettingsScreen() {
             </Text>
           </View>
         )}
+
+        {/*
+          Every wallet on the account, not just the one connected right now.
+          Renders nothing when signed out - wallets attach to an account, so
+          there is no set to show without one.
+        */}
+        <Group title="Linked wallets">
+          <View className="pt-1 pb-2">
+            <LinkedWallets />
+          </View>
+        </Group>
 
         {/*
           Appearance.
