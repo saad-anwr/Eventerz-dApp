@@ -8,12 +8,11 @@
 
 export {
   House as Home,
-  // `Compass` is the website's Explore glyph. Same icon, same slot, both
-  // platforms - the point of the shared tab set.
-  Compass,
+  // Community, Profile and Settings use the same glyphs as the website's nav,
+  // so the two products read as one app in the same slots.
   Users,
   Plus,
-  Ticket,
+  Settings,
   UserRound as User,
   type LucideIcon,
 } from 'lucide-react-native';

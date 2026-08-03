@@ -66,21 +66,23 @@ export default function HomeScreen() {
   );
 
   const openCommunity = useCallback(
-    (community: Community) => router.push(`/community/${community.id}`),
+    (community: Community) => router.push(`/communities/${community.id}`),
     [router],
   );
 
   const handleQuickAction = useCallback(
     (id: string) => {
       switch (id) {
-        case 'create':
-          requireWallet(() => router.push('/(tabs)/create'));
+        // Explore needs no wallet - browsing events is the one thing a
+        // signed-out visitor should never be stopped from doing.
+        case 'explore':
+          router.push('/explore');
           break;
         case 'scan':
           requireWallet(() => router.push('/scan'));
           break;
         case 'tickets':
-          requireWallet(() => router.push('/(tabs)/tickets'));
+          requireWallet(() => router.push('/tickets'));
           break;
         case 'wallet':
           requireWallet(() => router.push('/(tabs)/profile'));
@@ -108,8 +110,6 @@ export default function HomeScreen() {
         <HomeHeader
           onConnect={openSheet}
           onOpenNotifications={() => router.push('/notifications')}
-          onOpenMessages={() => router.push('/messages')}
-          onOpenFriends={() => router.push('/(tabs)/friends')}
           onOpenProfile={() => router.push('/(tabs)/profile')}
         />
         <WalletStrip />
@@ -145,7 +145,7 @@ export default function HomeScreen() {
               title="Featured"
               subtitle="Hand-picked by the Eventerz team"
               icon={Sparkles}
-              onAction={() => router.push('/(tabs)/explore')}
+              onAction={() => router.push('/explore')}
             />
             <View className="mt-4">
               <FeaturedCarousel
@@ -205,7 +205,7 @@ export default function HomeScreen() {
             title="Upcoming"
             subtitle="Starting soon across every community"
             icon={CalendarCheck}
-            onAction={() => router.push('/(tabs)/explore')}
+            onAction={() => router.push('/explore')}
           />
           <View
             className="mt-4 gap-4"

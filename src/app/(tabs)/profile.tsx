@@ -123,7 +123,7 @@ export default function ProfileScreen() {
   );
 
   const openCommunity = useCallback(
-    (community: Community) => router.push(`/community/${community.id}`),
+    (community: Community) => router.push(`/communities/${community.id}`),
     [router],
   );
 
@@ -148,7 +148,7 @@ export default function ProfileScreen() {
           <IconButton
             icon={Settings}
             label="Settings"
-            onPress={() => router.push('/settings')}
+            onPress={() => router.push('/(tabs)/settings')}
             variant="secondary"
             size={40}
             iconSize={18}
@@ -225,7 +225,7 @@ export default function ProfileScreen() {
             <IconButton
               icon={Users}
               label="Friends"
-              onPress={() => router.push('/(tabs)/friends')}
+              onPress={() => router.push('/(tabs)/community')}
               variant="glass"
               size={40}
               iconSize={18}
@@ -233,7 +233,7 @@ export default function ProfileScreen() {
             <IconButton
               icon={Settings}
               label="Settings"
-              onPress={() => router.push('/settings')}
+              onPress={() => router.push('/(tabs)/settings')}
               variant="glass"
               size={40}
               iconSize={18}
@@ -495,7 +495,7 @@ export default function ProfileScreen() {
             title="Attendance badges"
             subtitle="Proof-of-Attendance NFTs you own"
             icon={BadgeCheck}
-            onAction={() => router.push('/(tabs)/tickets')}
+            onAction={() => router.push('/tickets')}
           />
           {badges.isLoading ? (
             <View
@@ -614,7 +614,7 @@ export default function ProfileScreen() {
                 actionLabel={tab === 'attending' ? 'Discover' : 'Create event'}
                 onAction={() =>
                   router.push(
-                    tab === 'attending' ? '/(tabs)/explore' : '/(tabs)/create',
+                    tab === 'attending' ? '/explore' : '/(tabs)/create',
                   )
                 }
               />

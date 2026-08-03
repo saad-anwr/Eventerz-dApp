@@ -224,7 +224,7 @@ export default function TicketsScreen() {
               title="No badges yet"
               description="Check in at your first event to earn a Proof-of-Attendance badge."
               actionLabel="Find an event"
-              onAction={() => router.push('/(tabs)/explore')}
+              onAction={() => router.push('/explore')}
             />
           ) : (
             <View
@@ -300,7 +300,7 @@ export default function TicketsScreen() {
                   : 'Tickets move here once you check in at the door.'
               }
               actionLabel="Discover events"
-              onAction={() => router.push('/(tabs)/explore')}
+              onAction={() => router.push('/explore')}
             />
           )
         }

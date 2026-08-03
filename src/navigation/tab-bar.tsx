@@ -23,11 +23,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PressableScale } from '@/components/ui/pressable-scale';
 import { Text } from '@/components/ui/text';
 import {
-  Compass,
   Home,
   Plus,
-  Ticket,
+  Settings,
   User,
+  Users,
   type LucideIcon,
 } from '@/navigation/tab-icons';
 import { useOverlayOpen } from '@/store/overlay-store';
@@ -45,27 +45,36 @@ interface TabDescriptor {
 /**
  * Route order must match the file order in `app/(tabs)/`.
  *
- * # Why Explore is here and Friends is not
+ * # The rule these five follow
  *
- * These five are the same five the website's mobile bar shows, in the same
- * order, so the two products stop being differently shaped. Picking which five
- * came down to one gap: the app had no Explore tab at all. Browsing events is
- * the core loop of an events app - discover, get a ticket, turn up - and it was
- * the one destination reachable only by tapping "Discover" inside an empty
- * state. Friends, meanwhile, held a whole tab for a list most accounts have
- * nothing in yet.
+ * **A tab is a place you cannot get to from somewhere else.** The previous set
+ * broke that badly enough to be worth writing down: Tickets was a tab *and* a
+ * quick action *and* the "View all" on Home; Explore was a tab *and* a hero
+ * button; Create was a tab *and* a hero button *and* a quick action. Three
+ * routes to one screen is not three times as discoverable - it is a home screen
+ * where most of what you see does nothing new, and the things with no route at
+ * all (settings, the inbox) are the ones buried.
  *
- * So Friends moves to the home header alongside Messages and Notifications,
- * where the rest of the social surface already lives, and Explore takes the
- * slot. Nothing is lost - the header entry carries the pending-request badge,
- * which is the only part of Friends that is ever time-sensitive.
+ * So each of these five owns a domain nothing else does:
+ *
+ *   Home       what is happening - and the way into Explore, which is a search
+ *              over the same events rather than a separate destination
+ *   Community  people: friends, requests, messages. Three screens that were
+ *              two header icons and a tab, all answering "who do I know here"
+ *   Create     the one action, raised, centred
+ *   Profile    you as others see you - hosting, attending, tickets, badges
+ *   Settings   account, wallets, language, privacy. Had no tab at all and was
+ *              reachable only through a gear icon inside Profile
+ *
+ * Tickets and Explore stay as routes, pushed from Home and Profile. Losing a
+ * tab is not losing a screen; it is losing the third way of reaching one.
  */
 const TABS: TabDescriptor[] = [
   { name: 'index', label: 'Home', icon: Home },
-  { name: 'explore', label: 'Explore', icon: Compass },
+  { name: 'community', label: 'Community', icon: Users },
   { name: 'create', label: 'Create', icon: Plus },
-  { name: 'tickets', label: 'Tickets', icon: Ticket },
   { name: 'profile', label: 'Profile', icon: User },
+  { name: 'settings', label: 'Settings', icon: Settings },
 ];
 
 const CENTER_INDEX = 2;

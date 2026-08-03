@@ -20,16 +20,15 @@ export default function TabsLayout() {
       }}
     >
       {/*
-        Five destinations, matching the website's mobile bar exactly. Friends
-        stays a route - it is reached from the home header - but is not a tab;
-        see `TABS` in `navigation/tab-bar.tsx` for why Explore took the slot.
+        Five destinations, matching the website's nav exactly. Explore and
+        Tickets are routes rather than tabs - see `TABS` in
+        `navigation/tab-bar.tsx` for the rule that decides which is which.
       */}
       <Tabs.Screen name="index" options={{ title: 'Home' }} />
-      <Tabs.Screen name="explore" options={{ title: 'Explore' }} />
+      <Tabs.Screen name="community" options={{ title: 'Community' }} />
       <Tabs.Screen name="create" options={{ title: 'Create' }} />
-      <Tabs.Screen name="tickets" options={{ title: 'Tickets' }} />
       <Tabs.Screen name="profile" options={{ title: 'Profile' }} />
-      <Tabs.Screen name="friends" options={{ title: 'Friends' }} />
+      <Tabs.Screen name="settings" options={{ title: 'Settings' }} />
     </Tabs>
   );
 }

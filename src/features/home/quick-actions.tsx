@@ -9,7 +9,7 @@ import { View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import {
-  Plus,
+  Compass,
   QrCode,
   Ticket,
   Wallet,
@@ -28,8 +28,21 @@ interface QuickAction {
   accent: AccentKey;
 }
 
+/**
+ * Three, not four - and deliberately not "Create".
+ *
+ * Create was here *and* the raised centre tab *and* a hero button on the
+ * dashboard: three controls, one destination, occupying the most valuable strip
+ * of the home screen. The centre tab is the one that stays, because it is
+ * always visible and always in the same place.
+ *
+ * What remains is exactly the set with no tab of its own. Explore is the way
+ * into the event search that used to be a tab; Tickets and Scan QR are the two
+ * things a person does at a door, and neither is somewhere you navigate to
+ * often enough to spend a tab on.
+ */
 const ACTIONS: QuickAction[] = [
-  { id: 'create', label: 'Create', icon: Plus, accent: 'purple' },
+  { id: 'explore', label: 'Explore', icon: Compass, accent: 'purple' },
   { id: 'scan', label: 'Scan QR', icon: QrCode, accent: 'blue' },
   { id: 'tickets', label: 'Tickets', icon: Ticket, accent: 'cyan' },
   { id: 'wallet', label: 'Wallet', icon: Wallet, accent: 'green' },

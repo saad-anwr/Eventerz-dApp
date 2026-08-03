@@ -149,7 +149,7 @@ export default function DirectMessageScreen() {
         <ErrorState
           title="Person not found"
           description="This account may have been removed."
-          onRetry={() => router.replace('/messages')}
+          onRetry={() => router.replace('/(tabs)/community')}
         />
       </Screen>
     );

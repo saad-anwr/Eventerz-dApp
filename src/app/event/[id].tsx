@@ -995,7 +995,7 @@ export default function EventDetailScreen() {
                 label="View"
                 variant="secondary"
                 size="sm"
-                onPress={() => router.push(`/community/${community.id}`)}
+                onPress={() => router.push(`/communities/${community.id}`)}
               />
             </View>
           </Section>

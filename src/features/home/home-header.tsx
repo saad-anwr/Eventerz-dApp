@@ -11,11 +11,10 @@ import { View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { Avatar } from '@/components/ui/avatar';
-import { Bell, MessageCircle, Users, Wallet } from '@/components/ui/icon';
+import { Bell, Wallet } from '@/components/ui/icon';
 import { PressableScale } from '@/components/ui/pressable-scale';
 import { Text } from '@/components/ui/text';
 import { useGreeting } from '@/hooks/use-greeting';
-import { usePendingFriendRequests } from '@/hooks/use-friends';
 import { useUnreadNotificationCount } from '@/hooks/use-notifications';
 import { useWalletStore } from '@/store/wallet-store';
 import { brand } from '@/theme/colors';
@@ -26,21 +25,10 @@ import { formatSol, shortenAddress } from '@/utils/format';
 export const HomeHeader = memo(function HomeHeader({
   onConnect,
   onOpenNotifications,
-  onOpenMessages,
-  onOpenFriends,
   onOpenProfile,
 }: {
   onConnect: () => void;
   onOpenNotifications: () => void;
-  /**
-   * Messages and Friends live in the header rather than the tab bar on purpose.
-   * The raised "Create" button only sits centred with an odd number of tabs, so
-   * a sixth and seventh tab would push it off-centre - a visible regression to
-   * the bar's whole design in exchange for two more entry points. The five tabs
-   * that remain are the five the website shows.
-   */
-  onOpenMessages: () => void;
-  onOpenFriends: () => void;
   onOpenProfile: () => void;
 }) {
   const greeting = useGreeting();
@@ -48,16 +36,8 @@ export const HomeHeader = memo(function HomeHeader({
   const account = useWalletStore((s) => s.account);
   const balanceSol = useWalletStore((s) => s.balanceSol);
   const { data: unread = 0 } = useUnreadNotificationCount();
-  const { data: pendingRequests } = usePendingFriendRequests(
-    user?.id ?? undefined,
-  );
 
   const connected = Boolean(account);
-  // Only requests waiting on *this* user are worth a badge; an outgoing one is
-  // waiting on somebody else and needs nothing from them.
-  const friendRequests = (pendingRequests ?? []).filter(
-    (request) => !request.outgoing,
-  ).length;
 
   return (
     <Animated.View
@@ -116,73 +96,18 @@ export const HomeHeader = memo(function HomeHeader({
       </View>
 
       {/*
-        Friends moved out of the tab bar when Explore took its slot (see `TABS`
-        in `navigation/tab-bar.tsx`), so it lives here with the rest of the
-        social surface. The badge carries pending requests, which is the only
-        part of Friends that is ever time-sensitive - without it, moving the tab
-        would have hidden the one thing on that screen waiting on the user.
-      */}
-      {connected && (
-        <PressableScale
-          onPress={onOpenFriends}
-          scaleTo={0.9}
-          accessibilityRole="button"
-          accessibilityLabel={
-            friendRequests > 0
-              ? `Friends, ${friendRequests} pending requests`
-              : 'Friends'
-          }
-          className="items-center justify-center border border-white/10 bg-white/[0.06]"
-          style={{
-            width: TOUCH_TARGET,
-            height: TOUCH_TARGET,
-            borderRadius: radius.full,
-          }}
-        >
-          <Users size={18} color="#f8fafc" strokeWidth={2} />
-          {friendRequests > 0 && (
-            <View
-              className="absolute items-center justify-center border-2 border-brand-bg"
-              style={{
-                top: 6,
-                right: 6,
-                minWidth: 17,
-                height: 17,
-                borderRadius: 9,
-                paddingHorizontal: 3,
-                backgroundColor: brand.purple,
-              }}
-            >
-              <Text
-                style={{
-                  fontFamily: fontFamily.bold,
-                  fontSize: 9,
-                  color: '#ffffff',
-                }}
-              >
-                {friendRequests > 9 ? '9+' : friendRequests}
-              </Text>
-            </View>
-          )}
-        </PressableScale>
-      )}
+        No Friends or Messages icons here any more.
 
-      {connected && (
-        <PressableScale
-          onPress={onOpenMessages}
-          scaleTo={0.9}
-          accessibilityRole="button"
-          accessibilityLabel="Messages"
-          className="items-center justify-center border border-white/10 bg-white/[0.06]"
-          style={{
-            width: TOUCH_TARGET,
-            height: TOUCH_TARGET,
-            borderRadius: radius.full,
-          }}
-        >
-          <MessageCircle size={18} color="#f8fafc" strokeWidth={2} />
-        </PressableScale>
-      )}
+        They used to sit in this row *and* be a tab, and once Community became a
+        tab covering friends, requests and messages together, these were a
+        second route to a screen already one tap away - the exact redundancy
+        this pass exists to remove. The pending-request count is not lost: it
+        rides on the Community tab itself, where somebody looking for it will
+        be looking.
+
+        Notifications keeps its bell, because notifications are the one thing
+        here that is genuinely not a destination in the bar.
+      */}
 
       {connected ? (
         <PressableScale
