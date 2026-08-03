@@ -29,10 +29,8 @@ import {
   LayoutDashboard,
   MapPin,
   Pencil,
-  Settings,
   Ticket,
   Trophy,
-  Users,
   Wallet,
   DynamicIcon,
 } from '@/components/ui/icon';
@@ -141,20 +139,11 @@ export default function ProfileScreen() {
     return (
       <Screen tabBarInset padded>
         {/*
-          Settings stays reachable while signed out - it holds account recovery,
-          notification and privacy controls that should not require a wallet.
+          The settings shortcut that used to sit here is gone: Settings is its
+          own tab, visible at the bottom of this very screen, signed in or out.
+          It still must not require a wallet - it holds account recovery and
+          privacy controls - and as a tab it never did.
         */}
-        <View className="flex-row justify-end pt-2">
-          <IconButton
-            icon={Settings}
-            label="Settings"
-            onPress={() => router.push('/(tabs)/settings')}
-            variant="secondary"
-            size={40}
-            iconSize={18}
-          />
-        </View>
-
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}
@@ -222,22 +211,15 @@ export default function ProfileScreen() {
               size={40}
               iconSize={18}
             />
-            <IconButton
-              icon={Users}
-              label="Friends"
-              onPress={() => router.push('/(tabs)/community')}
-              variant="glass"
-              size={40}
-              iconSize={18}
-            />
-            <IconButton
-              icon={Settings}
-              label="Settings"
-              onPress={() => router.push('/(tabs)/settings')}
-              variant="glass"
-              size={40}
-              iconSize={18}
-            />
+            {/*
+              No Friends or Settings buttons.
+
+              Both are tabs now, permanently on screen at the bottom. A shortcut
+              to a destination the user can already see is the redundancy this
+              pass removed everywhere else - and here it was worse than
+              harmless, because Settings had *two* entry points on this one
+              screen.
+            */}
           </View>
         </View>
 
