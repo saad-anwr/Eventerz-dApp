@@ -156,8 +156,3 @@ export async function computeBudgetInstructions(
     ComputeBudgetProgram.setComputeUnitPrice({ microLamports: price }),
   ];
 }
-
-/** The priority fee a given kind will cost at `price`, in lamports. */
-export function priorityFeeLamports(kind: ComputeKind, microLamports: number): number {
-  return Math.ceil((COMPUTE_UNITS[kind] * microLamports) / 1_000_000);
-}

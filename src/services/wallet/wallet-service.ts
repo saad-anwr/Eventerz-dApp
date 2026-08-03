@@ -50,16 +50,6 @@ export function getWalletAdapter(): WalletAdapter {
   return adapter;
 }
 
-/** True when the connected wallet is a real one, not the demo adapter. */
-export function isRealWallet(): boolean {
-  return getWalletAdapter().id === 'mwa';
-}
-
-/** Test seam - lets a spec inject a stub without touching env vars. */
-export function setWalletAdapter(next: WalletAdapter | null): void {
-  adapter = next;
-}
-
 export const walletService = {
   listWallets: () => getWalletAdapter().listWallets(),
   connect: (id: Parameters<WalletAdapter['connect']>[0]) =>

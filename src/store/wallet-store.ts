@@ -206,11 +206,3 @@ export const useWalletStore = create<WalletState>()((set, get) => ({
 
   clearError: () => set({ error: null, status: 'disconnected' }),
 }));
-
-/* -------------------------------------------------------------------------- */
-/*  Selectors - keep components subscribed to the narrowest slice possible.    */
-/* -------------------------------------------------------------------------- */
-
-export const selectIsConnected = (s: WalletState) => s.status === 'connected';
-export const selectAddress = (s: WalletState) => s.account?.address ?? null;
-export const selectUserId = (s: WalletState) => s.user?.id ?? null;

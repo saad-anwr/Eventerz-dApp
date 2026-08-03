@@ -181,15 +181,6 @@ export type NotificationRow = {
   created_at: string;
 };
 
-export type RsvpRow = {
-  id: string;
-  event_id: string;
-  profile_id: string;
-  status: RsvpState;
-  wallet_address: string | null;
-  created_at: string;
-};
-
 /* -------------------------------------------------------------------------- */
 /*  Mappers                                                                    */
 /* -------------------------------------------------------------------------- */

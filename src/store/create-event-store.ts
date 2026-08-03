@@ -20,8 +20,6 @@ export const CREATE_STEPS = [
   { id: 'review', label: 'Review' },
 ] as const;
 
-export type CreateStepId = (typeof CREATE_STEPS)[number]['id'];
-
 export interface EventDraft {
   title: string;
   description: string;

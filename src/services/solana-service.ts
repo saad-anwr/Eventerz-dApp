@@ -23,8 +23,8 @@
  * TODO(helius): read assets and transactions via the Helius DAS API
  */
 
-import { integrationsConfig } from '@/constants/config';
 import type { TransactionIntent } from '@/types';
+import { explorerTxUrl } from '@/utils/explorer';
 
 import { walletService } from './wallet';
 
@@ -34,15 +34,9 @@ export interface OnChainResult {
   explorerUrl: string;
 }
 
-function explorerUrl(signature: string): string {
-  const cluster = integrationsConfig.solanaNetwork;
-  const suffix = cluster === 'mainnet-beta' ? '' : `?cluster=${cluster}`;
-  return `https://explorer.solana.com/tx/${signature}${suffix}`;
-}
-
 async function submit(intent: TransactionIntent): Promise<OnChainResult> {
   const { signature } = await walletService.signAndSendTransaction(intent);
-  return { signature, explorerUrl: explorerUrl(signature) };
+  return { signature, explorerUrl: explorerTxUrl(signature) };
 }
 
 export const solanaService = {

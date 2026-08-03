@@ -13,7 +13,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { brand } from '@/theme/colors';
-import { TOUCH_TARGET, radius } from '@/theme/layout';
+import { radius } from '@/theme/layout';
 import { fontFamily } from '@/theme/typography';
 import { cn } from '@/utils/cn';
 import { haptics } from '@/utils/haptics';
@@ -131,6 +131,3 @@ export const SearchBar = memo(function SearchBar({
     </View>
   );
 });
-
-/** Minimum touch height for the trailing slot, exported for callers. */
-export const SEARCH_BAR_HEIGHT = Math.max(50, TOUCH_TARGET);

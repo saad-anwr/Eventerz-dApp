@@ -16,24 +16,13 @@
  * fetching profiles rather than filtering a single column.
  */
 
-import { getSupabaseClient } from '@/services/auth/supabase-client';
 import { assertRealIdentity } from '@/utils/identity';
 import type { User } from '@/types';
 
 import { toUser, type FriendRequestRow } from './rows';
 import type { ProfileRow } from '@/services/auth/types';
 import { PROFILE_COLUMNS } from '@/services/auth/types';
-
-function client() {
-  const supabase = getSupabaseClient();
-  if (!supabase) {
-    throw new Error(
-      'Supabase is not configured. Set EXPO_PUBLIC_SUPABASE_URL and ' +
-        'EXPO_PUBLIC_SUPABASE_ANON_KEY.',
-    );
-  }
-  return supabase;
-}
+import { client } from './client';
 
 /** A pending request, with the other party resolved for rendering. */
 export interface PendingRequest {

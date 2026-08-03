@@ -21,7 +21,6 @@ import { Text } from '@/components/ui/text';
 import { toast } from '@/store/toast-store';
 import { useAuthStore } from '@/store/auth-store';
 import { useWalletStore } from '@/store/wallet-store';
-import { brand } from '@/theme/colors';
 import { TOUCH_TARGET, radius } from '@/theme/layout';
 import { haptics } from '@/utils/haptics';
 
@@ -192,4 +191,3 @@ export const GoogleAccountRow = memo(function GoogleAccountRow() {
 });
 
 export { GoogleMark };
-export const GOOGLE_ACCENT = brand.blue;

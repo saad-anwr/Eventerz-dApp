@@ -5,14 +5,6 @@ import { useWalletStore } from '@/store/wallet-store';
 
 import { queryKeys } from './query-keys';
 
-export function useCommunities() {
-  return useQuery({
-    queryKey: queryKeys.communities.list(),
-    queryFn: () => communityRepository.list(),
-    staleTime: 5 * 60_000,
-  });
-}
-
 export function useTrendingCommunities(limit = 5) {
   return useQuery({
     queryKey: queryKeys.communities.trending(),

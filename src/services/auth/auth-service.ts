@@ -504,48 +504,15 @@ export async function setPrimaryWallet(
   return { ok: true, data: data as ProfileRow };
 }
 
-/**
- * Whether an address is claimed, and by whom - as a verdict, not an id.
+/*
+ * Resolving the account that owns a wallet lives in
+ * `repositories/supabase/index.ts` (`ensureWalletUser`), which calls the same
+ * `profile_for_wallet` RPC and is what the app actually reads. A second copy
+ * used to sit here.
  *
- * `unlinked` | `mine` | `taken`. This is what lets the app tell a returning
- * user "that wallet belongs to an Eventerz account - sign in to reach it"
- * instead of silently handing them a provisional identity that fails on the
- * first write.
+ * `wallet_link_status` (0022) is granted to `anon` and `authenticated` and is
+ * still the right call for "is this address already claimed, and by me?" - it
+ * simply has no caller yet.
  */
-export async function walletLinkStatus(
-  walletAddress: string,
-): Promise<'unlinked' | 'mine' | 'taken'> {
-  const supabase = getSupabaseClient();
-  if (!supabase) return 'unlinked';
-
-  const { data, error } = await supabase.rpc('wallet_link_status', {
-    p_wallet_address: walletAddress,
-  });
-  if (error) return 'unlinked';
-  return (data as 'unlinked' | 'mine' | 'taken') ?? 'unlinked';
-}
-
-/**
- * Find the account that owns a wallet, for the recovery path.
- *
- * Resolves through `wallet_links` (0022) rather than filtering
- * `profiles.wallet_address`, so it answers for any linked wallet rather than
- * only whichever one happens to be primary.
- */
-export async function profileForWallet(
-  walletAddress: string,
-): Promise<ProfileRow | null> {
-  const supabase = getSupabaseClient();
-  if (!supabase) return null;
-
-  const { data } = await supabase
-    .rpc('profile_for_wallet', { p_wallet_address: walletAddress })
-    .maybeSingle();
-
-  // `maybeSingle()` narrows the RPC's declared row type to `... | null`, so the
-  // cast has to go through `unknown` - asserting `null` to `ProfileRow` is what
-  // TypeScript rejects, and rightly.
-  return (data as unknown as ProfileRow | null) ?? null;
-}
 
 export { isSupabaseConfigured };

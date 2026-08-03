@@ -153,12 +153,6 @@ export function isFree(price: string): boolean {
   return price.trim().toLowerCase() === 'free';
 }
 
-/** Percentage of an event's capacity that is filled, clamped to 0-100. */
-export function fillPercent(attendees: number, capacity: number): number {
-  if (capacity <= 0) return 0;
-  return Math.min(100, Math.round((attendees / capacity) * 100));
-}
-
 /** Pluralise without a dependency - `plural(1, "spot")` -> "1 spot". */
 export function plural(count: number, singular: string, suffix = 's'): string {
   return `${count} ${singular}${count === 1 ? '' : suffix}`;

@@ -434,7 +434,6 @@ Each is a stub with a documented TODO, already wired into the UI:
 | Metaplex / cNFTs    | `services/solana-service.ts` -> `mintTicket`          |
 | Helius DAS          | `services/solana-service.ts` -> `getWalletAssets`     |
 | Token gating        | `services/solana-service.ts` -> `checkTokenGate`      |
-| REST backend        | `services/api-client.ts` (typed, auth, timeout)      |
 | Supabase            | `constants/config.ts` env keys                       |
 | Push notifications  | `services/notification-service.ts`                   |
 | Analytics           | `services/analytics-service.ts`                      |

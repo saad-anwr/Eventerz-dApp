@@ -43,7 +43,7 @@ import { Text } from '@/components/ui/text';
 import { integrationsConfig } from '@/constants/config';
 import { useRecordPayment } from '@/hooks/use-messages';
 import { walletService } from '@/services/wallet';
-import { explorerTxUrl } from '@/services/solana/program';
+import { explorerTxUrl } from '@/utils/explorer';
 import { toast } from '@/store/toast-store';
 import { useWalletStore } from '@/store/wallet-store';
 import { accents, brand } from '@/theme/colors';

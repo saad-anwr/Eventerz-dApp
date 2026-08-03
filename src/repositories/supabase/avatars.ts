@@ -19,8 +19,8 @@
 import { Buffer } from 'buffer';
 import { File } from 'expo-file-system';
 
-import { getSupabaseClient } from '@/services/auth/supabase-client';
 import { assertRealIdentity } from '@/utils/identity';
+import { client } from './client';
 
 const BUCKET = 'avatars';
 
@@ -32,12 +32,6 @@ const MIME: Record<string, string> = {
   webp: 'image/webp',
   avif: 'image/avif',
 };
-
-function client() {
-  const supabase = getSupabaseClient();
-  if (!supabase) throw new Error('Sign-in is not configured.');
-  return supabase;
-}
 
 /**
  * Upload a picked image and return its public URL.

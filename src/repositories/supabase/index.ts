@@ -5,7 +5,6 @@
  * them from one flag, so screens and hooks never learn which is in play.
  */
 
-import { getSupabaseClient } from '@/services/auth/supabase-client';
 import type {
   AnalyticsPoint,
   AppNotification,
@@ -39,24 +38,9 @@ import {
   type NotificationRow,
   type TicketRow,
 } from './rows';
+import { client, fail } from './client';
 
 const PAGE_SIZE = 8;
-
-function client() {
-  const supabase = getSupabaseClient();
-  if (!supabase) {
-    throw new Error(
-      'Supabase is not configured. Set EXPO_PUBLIC_SUPABASE_URL and ' +
-        'EXPO_PUBLIC_SUPABASE_ANON_KEY, or set EXPO_PUBLIC_USE_MOCK_DATA=true.',
-    );
-  }
-  return supabase;
-}
-
-/** Turn a PostgREST error into something worth showing a user. */
-function fail(context: string, error: { message: string } | null): never {
-  throw new Error(error?.message ?? `${context} failed.`);
-}
 
 /**
  * The body of a non-2xx Edge Function response.

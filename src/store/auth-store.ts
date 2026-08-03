@@ -268,5 +268,4 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
 /*  Selectors                                                                  */
 /* -------------------------------------------------------------------------- */
 
-export const selectGoogleLinked = (s: AuthState) => s.status === 'linked';
 export const selectGoogleEmail = (s: AuthState) => s.sessionEmail;

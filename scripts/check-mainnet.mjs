@@ -23,6 +23,7 @@
  * release. A warning is a thing worth knowing that will still work.
  */
 
+import { createHash } from 'node:crypto';
 import { readFileSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -31,6 +32,30 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 
 /** The address `anchor init` writes. Real on mainnet, owned by someone else. */
 const ANCHOR_PLACEHOLDER = 'Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS';
+
+/**
+ * SHA-256 of the Helius key that was published to a public repository on
+ * 31 Jul 2026 and stayed readable for ~17 hours, plus the ~15 minutes an APK
+ * with the same key compiled into it was downloadable.
+ *
+ * The hash rather than the key: this file is committed, and committing the
+ * value again is the whole mistake. A 128-bit key behind SHA-256 is not
+ * recoverable from this, but an exact match is detectable - which is all the
+ * check needs.
+ *
+ * Delete this constant and the check below once rotation is done and confirmed.
+ */
+const COMPROMISED_RPC_KEY_SHA256 =
+  '03d54d4cbe0375f08a0866088591a593c936648c9f419b721b46f27d23ea94e8';
+
+const rpcKeyOf = (url) => (url.match(/api[-_]?key=([^&\s]+)/i) ?? [])[1] ?? '';
+const isCompromised = (url) => {
+  const key = rpcKeyOf(url);
+  return (
+    key !== '' &&
+    createHash('sha256').update(key).digest('hex') === COMPROMISED_RPC_KEY_SHA256
+  );
+};
 
 const c = {
   dim: (s) => `\x1b[2m${s}\x1b[0m`,
@@ -114,6 +139,23 @@ record(
   'Dedicated RPC configured',
   /^https?:\/\//i.test(rpc) ? 'PASS' : 'FAIL',
   rpc ? rpc.replace(/api-key=[^&]+/, 'api-key=***') : 'blank - the public endpoint is rate-limited and will stall under load',
+);
+
+/*
+ * Rotation is not optional and it is not a warning. The exposed key is a
+ * billable credential that sat in a public repository for ~17 hours; public
+ * repositories are continuously harvested by bots, so it must be treated as
+ * scraped rather than as a near miss. Shipping a build that still carries it
+ * means shipping someone else's spend.
+ */
+const leaked =
+  isCompromised(rpc) || isCompromised(easEnv.EXPO_PUBLIC_HELIUS_RPC_URL ?? '');
+record(
+  'RPC key is not the one that leaked',
+  leaked ? 'FAIL' : 'PASS',
+  leaked
+    ? 'this is the key published on 31 Jul 2026 - revoke it in the Helius dashboard, issue a new one, and set a spend cap'
+    : 'rotated, or never the exposed one',
 );
 
 /*

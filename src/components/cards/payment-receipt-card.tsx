@@ -26,6 +26,7 @@ import { toast } from '@/store/toast-store';
 import { accents } from '@/theme/colors';
 import { radius } from '@/theme/layout';
 import { formatTokenAmount } from '@/utils/amount';
+import { explorerTxUrl } from '@/utils/explorer';
 import type { PaymentReceipt } from '@/types';
 
 interface PaymentReceiptCardProps {
@@ -34,17 +35,12 @@ interface PaymentReceiptCardProps {
   mine: boolean;
 }
 
-function explorerUrl(signature: string, cluster: string): string {
-  const suffix = cluster === 'mainnet-beta' ? '' : `?cluster=${cluster}`;
-  return `https://explorer.solana.com/tx/${signature}${suffix}`;
-}
-
 export function PaymentReceiptCard({ payment, mine }: PaymentReceiptCardProps) {
   const tint = mine ? accents.green : accents.cyan;
   const pretty = formatTokenAmount(payment.amount, payment.decimals, payment.symbol);
 
   const open = useCallback(async () => {
-    const url = explorerUrl(payment.signature, payment.cluster);
+    const url = explorerTxUrl(payment.signature, payment.cluster);
     try {
       await Linking.openURL(url);
     } catch {

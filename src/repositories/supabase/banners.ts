@@ -35,8 +35,8 @@
 import { Buffer } from 'buffer';
 import { File } from 'expo-file-system';
 
-import { getSupabaseClient } from '@/services/auth/supabase-client';
 import { assertRealIdentity } from '@/utils/identity';
+import { client } from './client';
 
 const BUCKET = 'event-banners';
 
@@ -51,12 +51,6 @@ const MIME: Record<string, string> = {
   webp: 'image/webp',
   avif: 'image/avif',
 };
-
-function client() {
-  const supabase = getSupabaseClient();
-  if (!supabase) throw new Error('Sign-in is not configured.');
-  return supabase;
-}
 
 /**
  * True for anything already hosted - an `https://` URL, or the public URL of a

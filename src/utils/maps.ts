@@ -45,12 +45,6 @@ export function coordinatesOf(
   return { lat: latitude, lng: longitude };
 }
 
-/** True when there is anything worth showing a map card for. */
-export function isMappable(place: MappableLocation): boolean {
-  if (place.isOnline) return false;
-  return Boolean(coordinatesOf(place) || place.location.trim());
-}
-
 /**
  * A flat map image, or null when one cannot be produced.
  *

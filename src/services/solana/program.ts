@@ -37,8 +37,6 @@ import {
  */
 import { Buffer } from 'buffer';
 
-import { integrationsConfig } from '@/constants/config';
-
 /* -------------------------------------------------------------------------- */
 /*  Program identity                                                           */
 /* -------------------------------------------------------------------------- */
@@ -534,9 +532,3 @@ export function decodeSeatAccount(data: Uint8Array): OnChainSeat | null {
   };
 }
 
-/** Explorer link for a signature, on whichever cluster this build targets. */
-export function explorerTxUrl(signature: string): string {
-  const cluster = integrationsConfig.solanaNetwork;
-  const suffix = cluster === 'mainnet-beta' ? '' : `?cluster=${cluster}`;
-  return `https://explorer.solana.com/tx/${signature}${suffix}`;
-}

@@ -27,7 +27,3 @@ export function initials(name: string): string {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
-/** Deterministic pick from any list - used for mock variety. */
-export function pickBySeed<T>(seed: string, list: readonly T[]): T {
-  return list[hash(seed) % list.length];
-}

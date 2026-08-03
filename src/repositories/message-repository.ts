@@ -16,19 +16,13 @@
 
 import { mockUsers } from '@/mock';
 import type { Conversation, Message, PaymentReceipt, User } from '@/types';
+import { mockDelay } from '@/utils/async';
 import { uid } from '@/utils/format';
 
-import { MOCK_LATENCY_MS } from '@/constants/config';
-
-const mockDelay = () =>
-  new Promise((resolve) => setTimeout(resolve, MOCK_LATENCY_MS));
+import { dmChannelId } from './supabase/messages';
 
 /** Session-scoped. Cleared on reload, which is the honest lifetime for a mock. */
 const threads: Record<string, Message[]> = {};
-
-export function dmChannelId(a: string, b: string): string {
-  return `dm:${[a, b].sort().join('__')}`;
-}
 
 export const messageRepository = {
   async listConversations(profileId: string): Promise<Conversation[]> {

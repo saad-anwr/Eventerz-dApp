@@ -7,7 +7,6 @@ import { useCallback, useSyncExternalStore } from 'react';
 
 import { usePreferencesStore } from '@/store/preferences-store';
 
-import { SOURCE_LANGUAGE } from './languages';
 import { quotaExhausted, subscribe, translate } from './translate';
 
 /**
@@ -47,11 +46,6 @@ export function useTranslate(): (text: string) => string {
     (text: string) => translate(text, language, version),
     [language, version],
   );
-}
-
-/** The active language code. */
-export function useLanguage(): string {
-  return usePreferencesStore((s) => s.language) || SOURCE_LANGUAGE;
 }
 
 /**

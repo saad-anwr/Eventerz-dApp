@@ -7,7 +7,6 @@
  * row.
  */
 
-import { getSupabaseClient } from '@/services/auth/supabase-client';
 import type { Conversation, Message, PaymentReceipt, User } from '@/types';
 
 import {
@@ -21,21 +20,7 @@ import {
 import type { ProfileRow } from '@/services/auth/types';
 import { PROFILE_COLUMNS } from '@/services/auth/types';
 import { assertRealIdentity } from '@/utils/identity';
-
-function client() {
-  const supabase = getSupabaseClient();
-  if (!supabase) {
-    throw new Error(
-      'Supabase is not configured. Set EXPO_PUBLIC_SUPABASE_URL and ' +
-        'EXPO_PUBLIC_SUPABASE_ANON_KEY.',
-    );
-  }
-  return supabase;
-}
-
-function fail(context: string, error: { message: string } | null): never {
-  throw new Error(error?.message ?? `${context} failed.`);
-}
+import { client, fail } from './client';
 
 /**
  * Canonical DM channel key.

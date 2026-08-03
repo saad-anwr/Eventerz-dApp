@@ -136,16 +136,3 @@ export const mockUsers: User[] = [
   },
 ];
 
-/**
- * The signed-out placeholder. Once a wallet connects, `authStore` swaps this
- * for a real profile keyed by the wallet address.
- */
-export const guestUser: User = {
-  id: 'u_guest',
-  name: 'Guest',
-  handle: 'guest',
-  authMethod: 'wallet',
-  reputation: 0,
-  interests: [],
-  createdAt: Date.now(),
-};

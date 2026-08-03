@@ -9,14 +9,17 @@ dist/
 web-build/
 expo-env.d.ts
 
-# Native
+# Native / signing material
 .kotlin/
 *.orig.*
 *.jks
+*.keystore
 *.p8
 *.p12
 *.key
 *.mobileprovision
+id_rsa
+id_ed25519
 
 # Metro
 .metro-health-check*
@@ -33,9 +36,12 @@ yarn-error.*
 # JetBrains IDE
 .idea/
 
-# local env files — `.env.example` is committed, real values are not
-.env
-.env*.local
+# Every env file stays local — except the placeholder template, which is the
+# only record of *which* variables a fresh clone has to set. `.env` and
+# `.env*.local` alone left `.env.production` (and anything else someone
+# invents) tracked, which is the same gap that published a key once already.
+.env*
+!.env.example
 
 # typescript
 *.tsbuildinfo
