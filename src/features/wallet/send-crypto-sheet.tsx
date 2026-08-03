@@ -42,6 +42,7 @@ import { ArrowUpRight, Check, Coins, ShieldCheck } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import { integrationsConfig } from '@/constants/config';
 import { useRecordPayment } from '@/hooks/use-messages';
+import { transfersEnabled } from '@/services/solana/fees';
 import { walletService } from '@/services/wallet';
 import { explorerTxUrl } from '@/utils/explorer';
 import { toast } from '@/store/toast-store';
@@ -158,6 +159,7 @@ export function SendCryptoSheet({
 
   const busy = phase === 'sending' || phase === 'recording';
   const canSend =
+    transfersEnabled() &&
     Boolean(account) &&
     Boolean(recipient.walletAddress) &&
     parsed !== null &&
@@ -166,6 +168,15 @@ export function SendCryptoSheet({
     phase === 'form';
 
   const send = useCallback(async () => {
+    /*
+     * The authoritative check, not the button's `disabled` state.
+     *
+     * This is the only place in the app that hands a signed transfer to a
+     * wallet, so the guard belongs here rather than only on whatever opened the
+     * sheet. A screen that forgets to hide its button, or a deep link that
+     * mounts this directly, must still be unable to move a lamport.
+     */
+    if (!transfersEnabled()) return;
     if (!recipient.walletAddress || parsed === null) return;
     setError('');
     haptics.selection();

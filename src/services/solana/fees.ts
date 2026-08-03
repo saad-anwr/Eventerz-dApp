@@ -165,6 +165,22 @@ export function formatFeeSol(lamports: bigint): string {
 export const FEES_PAUSED = true;
 
 /**
+ * The master switch: no path in the app moves real money while this is true.
+ *
+ * `FEES_PAUSED` only ever covered *platform* fees - the $5 create and the $1
+ * RSVP that settle to the treasury. It never covered peer-to-peer transfers in
+ * DMs, which are a different thing entirely: Eventerz is not a party to them,
+ * they need no deployed program, and they were live on mainnet with real SOL
+ * while every other money path was switched off.
+ *
+ * v1.0.0 ships as a mainnet app with no real money in it, so both categories
+ * are off together and there is one constant to flip rather than two to
+ * remember. Nothing below is deleted - the quoting, transfer and receipt code
+ * stays exercised and ready for the release that turns this back on.
+ */
+export const REAL_MONEY_PAUSED = true;
+
+/**
  * Devnet and testnet SOL is free, so charging there is meaningless.
  *
  * Callers treat `false` as "this action is free": the create flow skips the
@@ -172,4 +188,16 @@ export const FEES_PAUSED = true;
  * charge without leaving a half-paid path anywhere.
  */
 export const feesEnabled = (): boolean =>
-  !FEES_PAUSED && integrationsConfig.solanaNetwork === 'mainnet-beta';
+  !REAL_MONEY_PAUSED &&
+  !FEES_PAUSED &&
+  integrationsConfig.solanaNetwork === 'mainnet-beta';
+
+/**
+ * Wallet-to-wallet transfers in DMs.
+ *
+ * Gated on the cluster rather than switched off outright: the concern is *real*
+ * money, and devnet SOL is play money, so a devnet build keeps the feature
+ * usable for testing while a mainnet build cannot move a lamport.
+ */
+export const transfersEnabled = (): boolean =>
+  !REAL_MONEY_PAUSED || integrationsConfig.solanaNetwork !== 'mainnet-beta';

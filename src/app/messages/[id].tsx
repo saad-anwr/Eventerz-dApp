@@ -43,6 +43,7 @@ import {
 } from '@/hooks/use-messages';
 import { useUser } from '@/hooks/use-users';
 import { dmChannelId } from '@/repositories';
+import { transfersEnabled } from '@/services/solana/fees';
 import { useWalletStore } from '@/store/wallet-store';
 import { accents, brand } from '@/theme/colors';
 import { radius, screenPadding } from '@/theme/layout';
@@ -265,7 +266,13 @@ export default function DirectMessageScreen() {
             paddingBottom: insets.bottom + 10,
           }}
         >
-          {!isSelf && (
+          {/*
+            Hidden rather than disabled while transfers are paused. A greyed-out
+            coin button invites people to tap it and learn nothing; a composer
+            with no coin button simply does not offer a feature this release
+            does not have.
+          */}
+          {!isSelf && transfersEnabled() && (
             <PressableScale
               onPress={() => setSendingCrypto(true)}
               accessibilityRole="button"

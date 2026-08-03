@@ -45,7 +45,12 @@ import { PressableFade } from '@/components/ui/pressable-scale';
 import { Screen } from '@/components/ui/screen';
 import { Text } from '@/components/ui/text';
 import { TextInput } from '@/components/ui/text-input';
-import { GoogleAccountRow, LinkedWallets } from '@/features/wallet';
+import {
+  ConnectWalletSheet,
+  GoogleAccountRow,
+  LinkedWallets,
+  useConnectWallet,
+} from '@/features/wallet';
 import { integrationsConfig, siteConfig } from '@/constants/config';
 import { resetMockDatabase } from '@/mock';
 import { useMockBackend } from '@/repositories';
@@ -194,6 +199,10 @@ export default function SettingsScreen() {
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
+  // Hosts the connect sheet that `LinkedWallets` opens to add a wallet.
+  const { sheetVisible, openSheet, closeSheet, handleConnected } =
+    useConnectWallet();
+
   const user = useWalletStore((s) => s.user);
   const account = useWalletStore((s) => s.account);
   const disconnect = useWalletStore((s) => s.disconnect);
@@ -341,7 +350,7 @@ export default function SettingsScreen() {
         */}
         <Group title="Linked wallets">
           <View className="pt-1 pb-2">
-            <LinkedWallets />
+            <LinkedWallets onLink={openSheet} />
           </View>
         </Group>
 
@@ -771,6 +780,18 @@ export default function SettingsScreen() {
           />
         </View>
       </Modal>
+
+      {/*
+        Linking a wallet reuses the connect sheet rather than having its own
+        flow. Choosing a wallet there connects it, and `useLinkGoogleWallet`
+        then issues the challenge and posts the signature - so there is exactly
+        one path to a linked wallet, and it always includes the proof.
+      */}
+      <ConnectWalletSheet
+        visible={sheetVisible}
+        onClose={closeSheet}
+        onConnected={handleConnected}
+      />
     </Screen>
   );
 }

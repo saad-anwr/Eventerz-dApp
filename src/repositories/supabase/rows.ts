@@ -206,7 +206,7 @@ export function toEventItem(
     hostId: row.host_id,
     communityId: row.community_id ?? undefined,
     coverGradient: row.cover_gradient as CoverGradientKey,
-    coverImage: row.cover_image ?? undefined,
+    coverImage: displayableBanner(row.cover_image),
     category: row.category,
     startsAt: row.starts_at,
     endsAt: row.ends_at ?? undefined,
@@ -342,6 +342,29 @@ export function toCommunity(
  * `parseQrPayload` still accepts the old form, because tickets minted before
  * this change are in people's wallets and have to keep working.
  */
+/**
+ * A banner URL that can actually be fetched, or nothing.
+ *
+ * Events created before the upload step existed stored the picker's local path
+ * - `file:///data/user/0/.../ImagePicker/abc.jpeg` - straight into
+ * `cover_image`. That file lives in a cache directory the OS clears, and means
+ * nothing on any other device, so the value is unusable everywhere including
+ * the phone that wrote it.
+ *
+ * `uploadEventBanner` fixed the write path; this guards the read, both for the
+ * rows already stored and against anything that writes a bad value later. A
+ * missing banner falls back to the event's gradient, which is the designed
+ * empty state rather than a broken image.
+ */
+export function displayableBanner(
+  value: string | null | undefined,
+): string | undefined {
+  if (!value) return undefined;
+  const trimmed = value.trim();
+  if (!/^(https?:)?\/\//i.test(trimmed)) return undefined;
+  return trimmed;
+}
+
 export function toTicket(row: TicketRow): Ticket {
   return {
     id: row.id,

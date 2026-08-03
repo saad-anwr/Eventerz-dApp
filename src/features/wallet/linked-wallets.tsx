@@ -32,7 +32,7 @@ import { View } from 'react-native';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Check, Star, Trash2, Wallet } from '@/components/ui/icon';
+import { Check, Plus, Star, Trash2, Wallet } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import { useAuthStore } from '@/store/auth-store';
 import { toast } from '@/store/toast-store';
@@ -42,7 +42,15 @@ import { fontFamily } from '@/theme/typography';
 import { shortenAddress } from '@/utils/format';
 import { haptics } from '@/utils/haptics';
 
-export const LinkedWallets = memo(function LinkedWallets() {
+/** Matches `max_wallets_per_profile()` in migration 0022. */
+const MAX_WALLETS = 10;
+
+export const LinkedWallets = memo(function LinkedWallets({
+  /** Opens the connect sheet. Owned by the screen, which hosts the sheet. */
+  onLink,
+}: {
+  onLink: () => void;
+}) {
   const profile = useAuthStore((s) => s.profile);
   const wallets = useAuthStore((s) => s.wallets);
   const setPrimary = useAuthStore((s) => s.setPrimaryWallet);
@@ -96,8 +104,8 @@ export const LinkedWallets = memo(function LinkedWallets() {
         >
           <Wallet size={18} color="#94a2b8" strokeWidth={2} />
           <Text variant="bodySm" className="flex-1 text-muted-foreground">
-            No wallets linked yet. Connect one and approve the signature to
-            attach it to this account.
+            No wallets linked yet. Link one and approve the signature to attach
+            it to this account.
           </Text>
         </View>
       ) : (
@@ -161,11 +169,32 @@ export const LinkedWallets = memo(function LinkedWallets() {
         ))
       )}
 
+      {/*
+        The way *in*.
+
+        This panel shipped with Remove and "Make main" and no way to add a
+        wallet, which made a screen about managing several wallets usable only
+        for taking them away. Linking goes through the same connect sheet as
+        every other wallet action: choosing a wallet there triggers
+        `useLinkGoogleWallet`, which issues the challenge, has the wallet sign
+        it and posts it to the `link-wallet` Edge Function. No second linking
+        path to keep in step, and no route to a linked row without a signature.
+      */}
+      <Button
+        label={
+          wallets.length === 0 ? 'Link a wallet' : 'Link another wallet'
+        }
+        icon={Plus}
+        variant="secondary"
+        onPress={onLink}
+        disabled={busy !== null || wallets.length >= MAX_WALLETS}
+        fullWidth
+      />
+
       <Text variant="caption" className="text-muted-foreground">
-        Up to 10 wallets can share this account. Connecting a new wallet while
-        signed in links it automatically once you approve the signature - your
-        tickets, friends and reputation stay on the account, not on any one
-        wallet.
+        {wallets.length >= MAX_WALLETS
+          ? `You have reached the limit of ${MAX_WALLETS} linked wallets. Remove one to link another.`
+          : `Up to ${MAX_WALLETS} wallets can share this account. Your tickets, friends and reputation stay on the account, not on any one wallet.`}
       </Text>
     </View>
   );
