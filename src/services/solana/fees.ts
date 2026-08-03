@@ -150,6 +150,26 @@ export function formatFeeSol(lamports: bigint): string {
   return `${(Number(lamports) / LAMPORTS_PER_SOL).toFixed(4)} SOL`;
 }
 
-/** Devnet and testnet SOL is free, so charging there is meaningless. */
+/**
+ * Platform fees are paused.
+ *
+ * Flip to `false` to start charging again - nothing else needs to change, and
+ * the quoting, transfer and receipt code below stays exercised and ready.
+ *
+ * Paused deliberately rather than deleted: taking $5 to create an event is a
+ * hard thing to ask for while the program is undeployed and the Edge Functions
+ * are not live, and a fee that fails after the money moves is worse than no fee
+ * at all. Every fee is non-refundable and irreversible, so the safe default
+ * while the backend is still landing is not to charge.
+ */
+export const FEES_PAUSED = true;
+
+/**
+ * Devnet and testnet SOL is free, so charging there is meaningless.
+ *
+ * Callers treat `false` as "this action is free": the create flow skips the
+ * transfer entirely and RSVP goes straight through, so pausing here removes the
+ * charge without leaving a half-paid path anywhere.
+ */
 export const feesEnabled = (): boolean =>
-  integrationsConfig.solanaNetwork === 'mainnet-beta';
+  !FEES_PAUSED && integrationsConfig.solanaNetwork === 'mainnet-beta';

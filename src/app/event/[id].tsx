@@ -72,6 +72,7 @@ import {
   formatEventDateLong,
   formatEventTimeRange,
   plural,
+  shortenAddress,
 } from '@/utils/format';
 import {
   RSVP_PRESENTATION,
@@ -307,6 +308,7 @@ export default function EventDetailScreen() {
   const { data: community } = useCommunity(event?.communityId);
   const { data: ticket } = useTicketForEvent(id);
   const currentUser = useWalletStore((s) => s.user);
+  const walletAddress = useWalletStore((s) => s.account?.address ?? null);
 
   // Computed before the loading guard below, so both must tolerate no event yet.
   const myStatus = event ? myRsvpState(event, currentUser?.id) : undefined;
@@ -809,7 +811,18 @@ export default function EventDetailScreen() {
           </Section>
         )}
 
-        {/* Wallet requirement / token gate */}
+        {/*
+          Wallet requirement / token gate.
+
+          "Wallet required" used to show even with a wallet already connected,
+          which reads as an unmet condition blocking the RSVP - the one thing
+          this panel should never imply when it is already satisfied. A
+          connected wallet now gets the settled state, and names the address so
+          it is obvious *which* wallet will sign.
+
+          Token gates are unchanged: holding the asset is a separate question
+          from being connected, and it is checked at RSVP.
+        */}
         <Section delay={180}>
           <View
             className={
@@ -819,20 +832,30 @@ export default function EventDetailScreen() {
             }
             style={{ borderRadius: radius['2xl'] }}
           >
-            <Lock
-              size={17}
-              color={event.tokenGated ? brand.purple : '#94a2b8'}
-              strokeWidth={2}
-            />
+            {!event.tokenGated && walletAddress ? (
+              <BadgeCheck size={17} color={brand.green} strokeWidth={2} />
+            ) : (
+              <Lock
+                size={17}
+                color={event.tokenGated ? brand.purple : '#94a2b8'}
+                strokeWidth={2}
+              />
+            )}
             <View className="flex-1">
               <Text variant="title">
-                {event.tokenGated ? 'Token-gated entry' : 'Wallet required'}
+                {event.tokenGated
+                  ? 'Token-gated entry'
+                  : walletAddress
+                    ? 'Wallet connected'
+                    : 'Wallet required'}
               </Text>
               <Text variant="caption" className="mt-1 text-muted-foreground">
                 {event.tokenGated
                   ? (event.gateRequirement ??
                     'Your wallet must hold the required asset to RSVP.')
-                  : 'RSVP is signed from your wallet - that is what keeps this bot-free.'}
+                  : walletAddress
+                    ? `${shortenAddress(walletAddress, 4)} will sign your RSVP.`
+                    : 'RSVP is signed from your wallet - that is what keeps this bot-free.'}
               </Text>
               {event.requiresApproval && (
                 <Text variant="caption" className="mt-1.5 text-muted-foreground">

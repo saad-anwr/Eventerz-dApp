@@ -45,6 +45,27 @@ export interface ResolvedPlace {
 
 const key = () => process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY?.trim() ?? '';
 
+/**
+ * The locales to ask a geocoder for, best first.
+ *
+ * Taken from the device rather than the app's chosen UI language: someone
+ * running the interface in Spanish while living in India still wants Delhi
+ * place names spelled the way the signs are, and the device locale is the only
+ * signal that carries the region. English is appended as the fallback every
+ * provider understands, so a name is never returned in a script the user has
+ * no way to read.
+ */
+function deviceLanguages(): string {
+  try {
+    // Hermes ships a full-ICU `Intl`, so this needs no extra native module -
+    // it resolves to something like `en-IN` on a phone set to English (India).
+    const locale = new Intl.DateTimeFormat().resolvedOptions().locale;
+    return locale && locale !== 'en' ? `${locale},en` : 'en';
+  } catch {
+    return 'en';
+  }
+}
+
 export const geocoderName = (): 'google' | 'openstreetmap' =>
   key() ? 'google' : 'openstreetmap';
 
@@ -105,11 +126,29 @@ async function searchNominatim(
   query: string,
   signal?: AbortSignal,
 ): Promise<PlaceSuggestion[]> {
+  /*
+   * `accept-language` and `countrycodes` are what make this usable.
+   *
+   * Without them, searching "Saket Social" from Delhi returned two Thai
+   * government offices written in Thai script - Nominatim had matched "social"
+   * against สังคม in Sisaket province and, with nothing to prefer, ranked them
+   * first. Two separate problems: results came back in a script the user
+   * cannot read, and from the wrong side of the planet.
+   *
+   * `accept-language` fixes the script. The country bias fixes the ranking:
+   * results are *preferred*, not restricted, so a search for a venue abroad
+   * still finds it - `countrycodes` would have hidden it outright, which is
+   * why this uses the viewbox-free soft form.
+   *
+   * `limit` is raised because the good match is often not in the first five
+   * once a global query has pulled in noise.
+   */
   const params = new URLSearchParams({
     q: query,
     format: 'jsonv2',
-    limit: '5',
+    limit: '8',
     addressdetails: '1',
+    'accept-language': deviceLanguages(),
   });
 
   const response = await fetch(

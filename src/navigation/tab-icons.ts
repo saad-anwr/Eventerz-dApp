@@ -8,7 +8,7 @@
 
 export {
   House as Home,
-  Compass,
+  Users,
   Plus,
   Ticket,
   UserRound as User,

@@ -58,6 +58,7 @@ export {
   ExternalLink,
   Eye,
   EyeOff,
+  FileText,
   Flame,
   Globe,
   GraduationCap,

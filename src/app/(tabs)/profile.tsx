@@ -33,6 +33,7 @@ import {
   Ticket,
   Trophy,
   Users,
+  Wallet,
   DynamicIcon,
 } from '@/components/ui/icon';
 import { PressableScale } from '@/components/ui/pressable-scale';
@@ -83,7 +84,7 @@ export default function ProfileScreen() {
   const bottomPadding = useListBottomPadding();
   const [tab, setTab] = useState<TabValue>('attending');
 
-  const { isConnected, sheetVisible, openSheet, closeSheet, handleConnected } =
+  const { sheetVisible, openSheet, closeSheet, handleConnected } =
     useConnectWallet();
 
   const user = useWalletStore((s) => s.user);
@@ -126,7 +127,17 @@ export default function ProfileScreen() {
     [router],
   );
 
-  if (!isConnected || !user || !account) {
+  /*
+   * Gated on having an identity, not on having a wallet.
+   *
+   * It used to require `isConnected && account` as well, so signing in with
+   * Google left this screen still offering "Connect wallet" while the app was
+   * demonstrably signed in - the home banner said "Welcome, <email>" at the
+   * same moment. A Google account is a real profile row; it earns the profile
+   * screen. Everything genuinely wallet-shaped below (address, balance, Seeker
+   * status, holdings) is guarded on `account` individually.
+   */
+  if (!user) {
     return (
       <Screen tabBarInset padded>
         {/*
@@ -214,7 +225,7 @@ export default function ProfileScreen() {
             <IconButton
               icon={Users}
               label="Friends"
-              onPress={() => router.push('/friends')}
+              onPress={() => router.push('/(tabs)/friends')}
               variant="glass"
               size={40}
               iconSize={18}
@@ -301,7 +312,38 @@ export default function ProfileScreen() {
             )}
           </View>
 
-          {/* Wallet chip */}
+          {/*
+            Wallet chip, or an invitation to connect one.
+
+            A Google account gets this screen without a wallet, so this is the
+            one place that has to hold both states: the address when there is
+            one, and the way to get one when there is not. Tickets and check-in
+            still need a wallet, and saying so here is better than a profile
+            that quietly omits the row.
+          */}
+          {!account && (
+            <PressableScale
+              onPress={openSheet}
+              scaleTo={0.98}
+              accessibilityRole="button"
+              accessibilityLabel="Connect a wallet"
+              className="mt-4 flex-row items-center gap-2.5 border border-white/10 bg-white/[0.04] px-3.5 py-3"
+              style={{ borderRadius: radius.xl }}
+            >
+              <Wallet size={14} color={brand.purple} strokeWidth={2.2} />
+              <View className="flex-1">
+                <Text variant="bodySm">Connect a wallet</Text>
+                <Text variant="micro" className="text-muted-foreground">
+                  Needed for tickets and check-in
+                </Text>
+              </View>
+              <Text variant="micro" style={{ color: brand.purple }}>
+                Connect
+              </Text>
+            </PressableScale>
+          )}
+
+          {account && (
           <PressableScale
             onPress={copyAddress}
             scaleTo={0.98}
@@ -342,6 +384,7 @@ export default function ProfileScreen() {
             )}
             <Copy size={14} color="#94a2b8" strokeWidth={2.2} />
           </PressableScale>
+          )}
 
           {/*
             Seeker ownership.
@@ -374,9 +417,11 @@ export default function ProfileScreen() {
           tokens look empty - `getWalletAssets` was a stub that never asked for
           them.
         */}
-        <View className="mt-3" style={{ paddingHorizontal: screenPadding }}>
-          <HoldingsList address={account.address} />
-        </View>
+        {account && (
+          <View className="mt-3" style={{ paddingHorizontal: screenPadding }}>
+            <HoldingsList address={account.address} />
+          </View>
+        )}
 
         {/* Reputation */}
         <View className="mt-6" style={{ paddingHorizontal: screenPadding }}>
@@ -569,7 +614,7 @@ export default function ProfileScreen() {
                 actionLabel={tab === 'attending' ? 'Discover' : 'Create event'}
                 onAction={() =>
                   router.push(
-                    tab === 'attending' ? '/(tabs)/discover' : '/(tabs)/create',
+                    tab === 'attending' ? '/discover' : '/(tabs)/create',
                   )
                 }
               />

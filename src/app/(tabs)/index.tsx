@@ -138,7 +138,7 @@ export default function HomeScreen() {
               title="Featured"
               subtitle="Hand-picked by the Eventerz team"
               icon={Sparkles}
-              onAction={() => router.push('/(tabs)/discover')}
+              onAction={() => router.push('/discover')}
             />
             <View className="mt-4">
               <FeaturedCarousel
@@ -198,7 +198,7 @@ export default function HomeScreen() {
             title="Upcoming"
             subtitle="Starting soon across every community"
             icon={CalendarCheck}
-            onAction={() => router.push('/(tabs)/discover')}
+            onAction={() => router.push('/discover')}
           />
           <View
             className="mt-4 gap-4"

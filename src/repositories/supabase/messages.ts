@@ -20,6 +20,7 @@ import {
 } from './rows';
 import type { ProfileRow } from '@/services/auth/types';
 import { PROFILE_COLUMNS } from '@/services/auth/types';
+import { assertRealIdentity } from '@/utils/identity';
 
 function client() {
   const supabase = getSupabaseClient();
@@ -132,6 +133,10 @@ export const supabaseMessageRepository = {
   ): Promise<void> {
     const trimmed = body.trim();
     if (!trimmed) return;
+
+    // Same reason as friend requests: a provisional identity is not a uuid, and
+    // the raw database error names the column rather than the remedy.
+    assertRealIdentity(senderId);
 
     const { error } = await client()
       .from('messages')

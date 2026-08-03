@@ -6,9 +6,13 @@
  * preview can read the same draft without duplication.
  */
 
+import DateTimePicker, {
+  type DateTimePickerEvent,
+} from '@react-native-community/datetimepicker';
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
-import { memo, useCallback, useMemo } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 
 import { Badge } from '@/components/ui/badge';
@@ -136,9 +140,15 @@ export const BasicsStep = memo(function BasicsStep() {
 /**
  * Date/time entry.
  *
- * A full calendar picker needs `@react-native-community/datetimepicker`, which
- * is not in Expo Go. Rather than ship a broken picker, this offers relative
- * presets that cover the common cases and writes real ISO timestamps.
+ * Presets first, because they are what most events need and they turn a
+ * four-field form into one tap. They used to be the *only* option, which meant
+ * the wizard could not express "the 14th at 6:45" - five relative days at six
+ * whole hours was the entire set of schedulable events.
+ *
+ * So the native pickers sit beside them, from
+ * `@react-native-community/datetimepicker`. The note that used to be here said
+ * that package is unavailable in Expo Go; true, and irrelevant - this app ships
+ * as a build, not as a Expo Go project.
  */
 const DATE_PRESETS = [
   { label: 'Tomorrow', days: 1 },
@@ -211,6 +221,77 @@ export const ScheduleStep = memo(function ScheduleStep() {
       (24 * 60 * 60 * 1000),
   );
 
+  /*
+   * Manual entry, alongside the presets.
+   *
+   * The presets cover the common cases and nothing else - there was no way to
+   * say "the 14th at 6:45", so any event that did not fall on one of five
+   * relative days at one of six whole hours simply could not be created.
+   *
+   * `null` means closed; Android shows these as modal dialogs, so only one is
+   * ever open.
+   */
+  const [picker, setPicker] = useState<'date' | 'time' | null>(null);
+
+  const onPickDate = useCallback(
+    (_: DateTimePickerEvent, picked?: Date) => {
+      setPicker(null);
+      if (!picked) return; // Dismissed.
+
+      // Keep the time of day; this control only moves the day.
+      const next = new Date(draft.startsAt);
+      next.setFullYear(picked.getFullYear(), picked.getMonth(), picked.getDate());
+      const nextEnd = new Date(next);
+      nextEnd.setHours(nextEnd.getHours() + durationHours);
+      setField('startsAt', next.toISOString());
+      setField('endsAt', nextEnd.toISOString());
+    },
+    [draft.startsAt, durationHours, setField],
+  );
+
+  const onPickTime = useCallback(
+    (_: DateTimePickerEvent, picked?: Date) => {
+      setPicker(null);
+      if (!picked) return;
+
+      const next = new Date(draft.startsAt);
+      next.setHours(picked.getHours(), picked.getMinutes(), 0, 0);
+      const nextEnd = new Date(next);
+      nextEnd.setHours(nextEnd.getHours() + durationHours);
+      setField('startsAt', next.toISOString());
+      setField('endsAt', nextEnd.toISOString());
+    },
+    [draft.startsAt, durationHours, setField],
+  );
+
+  /** Nudge the end time without touching the start. Floors at 30 minutes. */
+  const adjustDuration = useCallback(
+    (deltaMinutes: number) => {
+      const startMs = new Date(draft.startsAt).getTime();
+      const endMs = new Date(draft.endsAt).getTime();
+      const nextMs = Math.max(
+        startMs + 30 * 60 * 1000,
+        endMs + deltaMinutes * 60 * 1000,
+      );
+      setField('endsAt', new Date(nextMs).toISOString());
+    },
+    [draft.endsAt, draft.startsAt, setField],
+  );
+
+  const exactDuration = useMemo(() => {
+    const minutes = Math.max(
+      30,
+      Math.round(
+        (new Date(draft.endsAt).getTime() - new Date(draft.startsAt).getTime()) /
+          60000,
+      ),
+    );
+    const h = Math.floor(minutes / 60);
+    const m = minutes % 60;
+    if (h === 0) return `${m} min`;
+    return m === 0 ? `${h} hr` : `${h} hr ${m} min`;
+  }, [draft.endsAt, draft.startsAt]);
+
   return (
     <View className="gap-6">
       {/* Summary */}
@@ -240,6 +321,19 @@ export const ScheduleStep = memo(function ScheduleStep() {
               onPress={() => setDays(preset.days)}
             />
           ))}
+          <Chip
+            label="Pick a date"
+            icon={Calendar}
+            selected={
+              // Highlighted when the date is not one of the presets, so a
+              // custom choice does not look like nothing is selected.
+              !DATE_PRESETS.some((p) => p.days === selectedDays)
+            }
+            onPress={() => {
+              haptics.selection();
+              setPicker('date');
+            }}
+          />
         </View>
       </FieldGroup>
 
@@ -251,10 +345,26 @@ export const ScheduleStep = memo(function ScheduleStep() {
               label={new Date(0, 0, 0, hour).toLocaleTimeString('en-US', {
                 hour: 'numeric',
               })}
-              selected={start.getHours() === hour}
+              selected={
+                start.getHours() === hour && start.getMinutes() === 0
+              }
               onPress={() => setHour(hour)}
             />
           ))}
+          <Chip
+            label="Pick a time"
+            icon={Clock}
+            selected={
+              start.getMinutes() !== 0 ||
+              !TIME_PRESETS.includes(
+                start.getHours() as (typeof TIME_PRESETS)[number],
+              )
+            }
+            onPress={() => {
+              haptics.selection();
+              setPicker('time');
+            }}
+          />
         </View>
       </FieldGroup>
 
@@ -264,17 +374,61 @@ export const ScheduleStep = memo(function ScheduleStep() {
             <Chip
               key={preset.label}
               label={preset.label}
-              selected={durationHours === preset.hours}
+              selected={
+                durationHours === preset.hours &&
+                new Date(draft.endsAt).getMinutes() ===
+                  new Date(draft.startsAt).getMinutes()
+              }
               onPress={() => setDuration(preset.hours)}
             />
           ))}
         </View>
+
+        {/*
+          Fine adjustment, in half hours.
+
+          The presets jump 1 / 2 / 3 / 8 hours, which cannot express a 90-minute
+          workshop. Stepping the end time is enough control without a second
+          time picker and a second way to make the end precede the start.
+        */}
+        <View className="mt-2.5 flex-row items-center gap-2">
+          <Chip
+            label="-30 min"
+            onPress={() => {
+              haptics.selection();
+              adjustDuration(-30);
+            }}
+          />
+          <Chip
+            label="+30 min"
+            onPress={() => {
+              haptics.selection();
+              adjustDuration(30);
+            }}
+          />
+          <Text variant="caption" className="ml-1 text-muted-foreground">
+            {exactDuration}
+          </Text>
+        </View>
+
         {errors.endsAt && (
           <Text variant="caption" className="text-red-400">
             {errors.endsAt}
           </Text>
         )}
       </FieldGroup>
+
+      {picker !== null && (
+        <DateTimePicker
+          value={new Date(draft.startsAt)}
+          mode={picker}
+          display="default"
+          // No event may be created in the past; the time picker is unbounded
+          // because "today at 9pm" is legitimate and clamping it is confusing.
+          minimumDate={picker === 'date' ? new Date() : undefined}
+          onChange={picker === 'date' ? onPickDate : onPickTime}
+        />
+      )}
     </View>
   );
 });
@@ -400,12 +554,36 @@ export const DesignStep = memo(function DesignStep() {
             end={{ x: 1, y: 1 }}
             style={{ position: 'absolute', inset: 0 }}
           />
+          {/*
+            The uploaded banner, over the gradient.
+
+            Picking an image used to set `coverImage` and change nothing on
+            screen - "Banner added" appeared and the card kept showing the
+            gradient, so the only way to tell whether the upload worked was to
+            publish. The gradient stays underneath as the backdrop for images
+            that do not fill the frame.
+          */}
+          {draft.coverImage && (
+            <Image
+              source={{ uri: draft.coverImage }}
+              style={{ position: 'absolute', inset: 0 }}
+              contentFit="cover"
+              transition={150}
+            />
+          )}
           <LinearGradient
             colors={['rgba(255,255,255,0.3)', 'transparent']}
             start={{ x: 0.15, y: 0 }}
             end={{ x: 0.8, y: 0.9 }}
             style={{ position: 'absolute', inset: 0 }}
           />
+          {/* Keeps the title legible over a photo of anything. */}
+          {draft.coverImage && (
+            <LinearGradient
+              colors={['transparent', 'rgba(0,0,0,0.55)']}
+              style={{ position: 'absolute', inset: 0 }}
+            />
+          )}
           <View className="mt-auto p-4">
             <Text variant="title" style={{ color: '#ffffff' }} numberOfLines={1}>
               {draft.title || 'Your event name'}
@@ -639,6 +817,16 @@ export const ReviewStep = memo(function ReviewStep() {
               end={{ x: 1, y: 1 }}
               style={{ position: 'absolute', inset: 0 }}
             />
+            {/* The banner the host uploaded - this is the last look before
+                publishing, so it has to show what will actually ship. */}
+            {draft.coverImage && (
+              <Image
+                source={{ uri: draft.coverImage }}
+                style={{ position: 'absolute', inset: 0 }}
+                contentFit="cover"
+                transition={150}
+              />
+            )}
             <View className="absolute left-3 top-3 flex-row gap-1.5">
               <Badge label={draft.category} size="sm" />
               {draft.tokenGated && (

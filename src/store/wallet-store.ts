@@ -39,6 +39,19 @@ interface WalletState {
    * a real account on the server and a placeholder on screen.
    */
   refreshUser: () => Promise<void>;
+  /**
+   * Take a signed-in Supabase profile as the app's identity.
+   *
+   * The wallet used to be the only thing that could populate `user`, so signing
+   * in with Google produced an account on the server and nothing on screen:
+   * Profile still offered "Connect wallet", and every write still carried the
+   * provisional `wallet:<address>` id - which Postgres rejected outright with
+   * `invalid input syntax for type uuid`, killing friend requests and messages.
+   *
+   * The website never had this problem because its identity *is* the profile
+   * row. This is the same rule: a real row always wins over a placeholder.
+   */
+  adoptProfile: (user: User | null) => void;
   updateProfile: (patch: Partial<User>) => Promise<void>;
   clearError: () => void;
 }
@@ -121,6 +134,26 @@ export const useWalletStore = create<WalletState>()((set, get) => ({
       // Keep whatever identity is on screen. A failed re-resolve is not worth
       // blanking the profile the user is looking at.
     }
+  },
+
+  adoptProfile: (user) => {
+    if (user) {
+      set({ user });
+      analytics.identify(user.id, { authMethod: user.authMethod });
+      return;
+    }
+
+    /*
+     * Signed out. Fall back to the wallet's own identity if one is still
+     * connected rather than blanking it - disconnecting Google should not
+     * disconnect the wallet.
+     */
+    const { account } = get();
+    if (!account) {
+      set({ user: null });
+      return;
+    }
+    void get().refreshUser();
   },
 
   updateProfile: async (patch) => {

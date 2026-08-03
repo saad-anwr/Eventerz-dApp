@@ -7,32 +7,47 @@
  * fully functional with no `.env` file present.
  */
 
+/**
+ * The production domain, and it has to be: this is the origin in every link the
+ * app shares. It was a `*.vercel.app` preview URL, so sharing an event or a
+ * ticket sent people to a deploy preview rather than to the site - a link that
+ * works today and is not guaranteed to exist tomorrow.
+ *
+ * Must match `siteConfig.url` in the website's `lib/site.ts`, since both name
+ * the same pages. `EXPO_PUBLIC_SITE_URL` overrides it so a preview build can
+ * point at a preview deploy; the trailing slash is stripped because every use
+ * appends a path.
+ *
+ * Hoisted out of the object literal so `links.terms` and `links.privacy` can be
+ * built from it - a literal cannot reference its own fields, and writing the
+ * domain out twice is how the two drift apart.
+ */
+const canonicalUrl = (
+  process.env.EXPO_PUBLIC_SITE_URL ?? 'https://www.eventerz.xyz'
+).replace(/\/$/, '');
+
 export const siteConfig = {
   name: 'Eventerz',
   shortName: 'Eventerz',
   tagline: 'Everything is On-chain. Why not your events?',
   description:
     'Eventerz is wallet-native event infrastructure on Solana. Discover events, RSVP on-chain, receive NFT tickets and Proof-of-Attendance, build portable reputation and join token-gated communities.',
-  /*
-   * The production domain, and it has to be: this is the origin in every link
-   * the app shares. It was a `*.vercel.app` preview URL, so sharing an event or
-   * a ticket sent people to a deploy preview rather than to the site - a link
-   * that works today and is not guaranteed to exist tomorrow.
-   *
-   * Must match `siteConfig.url` in the website's `lib/site.ts`, since both name
-   * the same pages. `EXPO_PUBLIC_SITE_URL` overrides it so a preview build can
-   * point at a preview deploy; the trailing slash is stripped because every use
-   * appends a path.
-   */
-  url: (
-    process.env.EXPO_PUBLIC_SITE_URL ?? 'https://www.eventerz.xyz'
-  ).replace(/\/$/, ''),
+  /** See `canonicalUrl` above. */
+  url: canonicalUrl,
   creator: 'Eventerz Labs',
   links: {
     twitter: 'https://twitter.com/eventerz_web',
     github: 'https://github.com/saad-anwr/Eventerz',
     discord: 'https://discord.gg/_saadanwar',
     support: 'mailto:support@eventerz.xyz',
+    /*
+     * Built from `canonicalUrl` rather than written out, so a preview build
+     * pointed at a preview deploy shows that deploy's copy instead of silently
+     * linking to production. These are the exact URLs given to the Solana dApp
+     * Store listing, so they have to resolve publicly and without signing in.
+     */
+    terms: `${canonicalUrl}/terms`,
+    privacy: `${canonicalUrl}/privacy`,
   },
 } as const;
 

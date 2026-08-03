@@ -26,6 +26,7 @@ import { ToastHost } from '@/components/ui/toast';
 import { useLinkGoogleWallet } from '@/features/wallet/use-link-google-wallet';
 import { useAppFonts } from '@/hooks/use-app-fonts';
 import { useRealtimeSync } from '@/hooks/use-realtime-sync';
+import { toUser } from '@/repositories/supabase/rows';
 import { queryClient } from '@/services/query-client';
 import { useAuthStore } from '@/store/auth-store';
 import { setActiveLanguage } from '@/i18n/translate';
@@ -145,6 +146,27 @@ function LanguageBridge() {
   return null;
 }
 
+/**
+ * Makes a signed-in Google account the app's identity.
+ *
+ * Without this, `walletStore.user` could only ever come from a connected
+ * wallet. Signing in with Google created a real profile row on the server and
+ * changed nothing on screen: Profile kept offering "Connect wallet", and every
+ * write still carried the provisional `wallet:<address>` id that Postgres
+ * rejects as a malformed uuid - which is what broke friend requests and
+ * messaging. The website has always used the profile row as its identity; this
+ * is the mobile half of the same rule.
+ */
+function AuthIdentityBridge() {
+  const profile = useAuthStore((s) => s.profile);
+
+  useEffect(() => {
+    useWalletStore.getState().adoptProfile(profile ? toUser(profile) : null);
+  }, [profile]);
+
+  return null;
+}
+
 export default function RootLayout() {
   const fontsReady = useAppFonts();
   const preferencesReady = usePreferencesStore((s) => s.hasHydrated);
@@ -197,6 +219,7 @@ export default function RootLayout() {
         <QueryClientProvider client={queryClient}>
           <RealtimeBridge />
           <LanguageBridge />
+          <AuthIdentityBridge />
           <ThemeProvider value={eventerzNavigationTheme}>
             <StatusBar style="light" />
 

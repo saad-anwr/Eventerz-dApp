@@ -14,12 +14,11 @@
 import { useRouter } from 'expo-router';
 import { useCallback } from 'react';
 import { FlatList, RefreshControl, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Avatar } from '@/components/ui/avatar';
 import { Button, IconButton } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
-import { ArrowLeft, MessageCircle, Users, X } from '@/components/ui/icon';
+import { MessageCircle, Users, X } from '@/components/ui/icon';
 import { PressableFade } from '@/components/ui/pressable-scale';
 import { Screen } from '@/components/ui/screen';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -172,7 +171,6 @@ function FriendRow({
 
 export default function FriendsScreen() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
   const meId = useWalletStore((s) => s.user?.id ?? null);
 
   const friends = useFriends(meId ?? undefined);
@@ -236,19 +234,19 @@ export default function FriendsScreen() {
       <View
         className="flex-row items-center gap-3"
         style={{
-          paddingTop: insets.top + 8,
+          // `Screen` already applies `insets.top` (its `edgeTop` default), so
+          // adding it again here double-padded the header - which only became
+          // obvious once this was a tab root with nothing above it.
+          paddingTop: 8,
           paddingHorizontal: screenPadding,
           paddingBottom: 12,
         }}
       >
-        <IconButton
-          icon={ArrowLeft}
-          label="Go back"
-          onPress={() => router.back()}
-          variant="secondary"
-          size={40}
-          iconSize={18}
-        />
+        {/*
+          No back button: this is a tab root now, not a pushed screen. A back
+          arrow on a tab either does nothing or drops the user out of the tab
+          they just chose.
+        */}
         <Text variant="h3" accessibilityRole="header">
           Friends
         </Text>
@@ -276,7 +274,7 @@ export default function FriendsScreen() {
           title="No friends yet"
           description="Find people at events you have been to, or from any profile."
           actionLabel="Discover"
-          onAction={() => router.push('/(tabs)/discover')}
+          onAction={() => router.push('/discover')}
         />
       ) : (
         <FlatList

@@ -17,6 +17,7 @@
  */
 
 import { getSupabaseClient } from '@/services/auth/supabase-client';
+import { assertRealIdentity } from '@/utils/identity';
 import type { User } from '@/types';
 
 import { toUser, type FriendRequestRow } from './rows';
@@ -110,6 +111,18 @@ export const friendsRepository = {
   },
 
   async send(requesterId: string, addresseeId: string): Promise<void> {
+    /*
+     * Checked before the insert, because Postgres's own complaint is useless to
+     * the person reading it. A wallet-only identity is `wallet:<address>`
+     * rather than a uuid, and the toast read:
+     *
+     *   invalid input syntax for type uuid: "wallet:CiM2ZRkc..."
+     *
+     * which names the constraint and not the fix.
+     */
+    assertRealIdentity(requesterId);
+    assertRealIdentity(addresseeId);
+
     if (requesterId === addresseeId) {
       throw new Error('You cannot add yourself.');
     }

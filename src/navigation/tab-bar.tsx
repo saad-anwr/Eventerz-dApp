@@ -23,11 +23,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PressableScale } from '@/components/ui/pressable-scale';
 import { Text } from '@/components/ui/text';
 import {
-  Compass,
   Home,
   Plus,
   Ticket,
   User,
+  Users,
   type LucideIcon,
 } from '@/navigation/tab-icons';
 import { useOverlayOpen } from '@/store/overlay-store';
@@ -45,7 +45,7 @@ interface TabDescriptor {
 /** Route order must match the file order in `app/(tabs)/`. */
 const TABS: TabDescriptor[] = [
   { name: 'index', label: 'Home', icon: Home },
-  { name: 'discover', label: 'Discover', icon: Compass },
+  { name: 'friends', label: 'Friends', icon: Users },
   { name: 'create', label: 'Create', icon: Plus },
   { name: 'tickets', label: 'Tickets', icon: Ticket },
   { name: 'profile', label: 'Profile', icon: User },

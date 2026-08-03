@@ -25,12 +25,14 @@ import {
   CircleHelp,
   ExternalLink,
   Eye,
+  FileText,
   Globe,
   Info,
   Link2,
   LogOut,
   RotateCcw,
   Shield,
+  ShieldCheck,
   Smartphone,
   Sparkles,
   Trash2,
@@ -589,6 +591,34 @@ export default function SettingsScreen() {
           {/* Informational - no onPress, so it renders inert rather than as a
               button that does nothing. */}
           <LinkRow icon={Info} title="Version" value={appVersion} />
+        </Group>
+
+        {/*
+          Legal.
+
+          Its own group rather than two more rows under About, because these are
+          the documents a store review looks for and burying them among source
+          and support links is how they get missed. Both open the live pages on
+          the website - the same URLs given to the Solana dApp Store listing, so
+          there is one copy to keep current instead of a second one embedded in
+          the binary that goes stale at the next release.
+        */}
+        <Group title="Legal">
+          <LinkRow
+            icon={FileText}
+            title="Terms of Use"
+            description="The rules for hosting, attending, and moving funds"
+            onPress={() => openLink(siteConfig.links.terms)}
+            external
+          />
+          <Divider />
+          <LinkRow
+            icon={ShieldCheck}
+            title="Privacy Policy"
+            description="What we collect, who sees it, and how to delete it"
+            onPress={() => openLink(siteConfig.links.privacy)}
+            external
+          />
         </Group>
 
         {/* Developer */}

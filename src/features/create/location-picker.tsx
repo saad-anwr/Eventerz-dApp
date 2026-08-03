@@ -85,6 +85,37 @@ export function LocationPicker({
     }
   }, []);
 
+  /**
+   * The venue field *is* the search box.
+   *
+   * There used to be two inputs: "Venue", and a separate "Search for a place to
+   * pin it on the map" underneath. Typing a real venue into the field labelled
+   * Venue did nothing, because the search lived in the other one - so the map
+   * feature was invisible to anyone who used the field that was named after the
+   * thing they were entering.
+   *
+   * One field now does both: it holds whatever the host wants displayed, and
+   * offers matches for it. Picking one attaches coordinates; editing afterwards
+   * drops them, exactly as before.
+   */
+  const onVenueChange = useCallback(
+    (next: string) => {
+      onChange(
+        pinned
+          ? {
+              location: next,
+              latitude: undefined,
+              longitude: undefined,
+              placeId: undefined,
+              address: undefined,
+            }
+          : { ...value, location: next },
+      );
+      onQueryChange(next);
+    },
+    [onChange, onQueryChange, pinned, value],
+  );
+
   /*
    * Debounced fetch - the part that genuinely talks to an external system, and
    * the only thing left in the effect. 350 ms is comfortably inside Nominatim's
@@ -154,29 +185,9 @@ export function LocationPicker({
         label={label}
         value={value.location}
         placeholder={placeholder}
-        icon={MapPin}
-        onChangeText={(next) =>
-          // Editing the words invalidates the pin. See the component note.
-          onChange(
-            pinned
-              ? {
-                  location: next,
-                  latitude: undefined,
-                  longitude: undefined,
-                  placeId: undefined,
-                  address: undefined,
-                }
-              : { ...value, location: next },
-          )
-        }
-      />
-
-      <TextField
-        value={query}
-        placeholder="Search for a place to pin it on the map"
-        icon={Search}
+        icon={pinned ? MapPin : Search}
         autoCorrect={false}
-        onChangeText={onQueryChange}
+        onChangeText={onVenueChange}
       />
 
       {searching && (
@@ -274,8 +285,8 @@ export function LocationPicker({
         </View>
       ) : (
         <Text variant="caption" className="px-1 text-muted-foreground">
-          Optional - a pinned location gets a map and directions on the event
-          screen. Searching uses{' '}
+          Keep typing to search - picking a match pins it on the map and adds
+          directions to the event screen. Powered by{' '}
           {geocoderName() === 'google' ? 'Google Places' : 'OpenStreetMap'}.
         </Text>
       )}
