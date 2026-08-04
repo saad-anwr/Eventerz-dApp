@@ -151,34 +151,43 @@ export function formatFeeSol(lamports: bigint): string {
 }
 
 /**
- * Platform fees are paused.
+ * Platform fees are live: $5 to create an event, $1 to RSVP, settled in SOL to
+ * `TREASURY_ADDRESS`.
  *
- * Flip to `false` to start charging again - nothing else needs to change, and
- * the quoting, transfer and receipt code below stays exercised and ready.
+ * They were paused while the backend was still landing. The reasons for that
+ * have gone: the Edge Functions are deployed, and the fee path never needed the
+ * Anchor program in the first place - it is a System Program transfer, which is
+ * why it works with nothing deployed.
  *
- * Paused deliberately rather than deleted: taking $5 to create an event is a
- * hard thing to ask for while the program is undeployed and the Edge Functions
- * are not live, and a fee that fails after the money moves is worse than no fee
- * at all. Every fee is non-refundable and irreversible, so the safe default
- * while the backend is still landing is not to charge.
+ * What has *not* changed is the property that made pausing the safe default:
+ * **every fee is non-refundable and irreversible.** There is no chargeback, no
+ * support tool to undo one, and no way to reach a user who was charged for an
+ * event that then failed to publish. That is why the callers pay first and only
+ * proceed on a confirmed transfer, and why `quoteFee` refuses rather than
+ * guesses when the SOL price cannot be established.
+ *
+ * Flip back to `true` to stop charging; nothing else needs to change.
  */
-export const FEES_PAUSED = true;
+export const FEES_PAUSED = false;
 
 /**
- * The master switch: no path in the app moves real money while this is true.
+ * Wallet-to-wallet transfers in DMs - still off.
  *
- * `FEES_PAUSED` only ever covered *platform* fees - the $5 create and the $1
- * RSVP that settle to the treasury. It never covered peer-to-peer transfers in
- * DMs, which are a different thing entirely: Eventerz is not a party to them,
- * they need no deployed program, and they were live on mainnet with real SOL
- * while every other money path was switched off.
+ * These were once folded in with platform fees under a single switch, which was
+ * wrong: they are a different kind of money. A platform fee is Eventerz
+ * charging for a service it renders. A DM transfer is two users paying each
+ * other, with Eventerz as neither party and no way to intervene if one of them
+ * is being defrauded.
  *
- * v1.0.0 ships as a mainnet app with no real money in it, so both categories
- * are off together and there is one constant to flip rather than two to
- * remember. Nothing below is deleted - the quoting, transfer and receipt code
- * stays exercised and ready for the release that turns this back on.
+ * So the two switch independently. Turning fees on says nothing about whether
+ * strangers should be able to send each other SOL inside a chat, and this
+ * stayed off when fees were turned on because only the fees were asked for.
+ *
+ * Gated on the cluster rather than switched off outright: devnet SOL is play
+ * money, so a devnet build keeps the feature exercisable while a mainnet build
+ * cannot move a lamport.
  */
-export const REAL_MONEY_PAUSED = true;
+export const TRANSFERS_PAUSED = true;
 
 /**
  * Devnet and testnet SOL is free, so charging there is meaningless.
@@ -188,16 +197,8 @@ export const REAL_MONEY_PAUSED = true;
  * charge without leaving a half-paid path anywhere.
  */
 export const feesEnabled = (): boolean =>
-  !REAL_MONEY_PAUSED &&
-  !FEES_PAUSED &&
-  integrationsConfig.solanaNetwork === 'mainnet-beta';
+  !FEES_PAUSED && integrationsConfig.solanaNetwork === 'mainnet-beta';
 
-/**
- * Wallet-to-wallet transfers in DMs.
- *
- * Gated on the cluster rather than switched off outright: the concern is *real*
- * money, and devnet SOL is play money, so a devnet build keeps the feature
- * usable for testing while a mainnet build cannot move a lamport.
- */
+/** @see TRANSFERS_PAUSED */
 export const transfersEnabled = (): boolean =>
-  !REAL_MONEY_PAUSED || integrationsConfig.solanaNetwork !== 'mainnet-beta';
+  !TRANSFERS_PAUSED || integrationsConfig.solanaNetwork !== 'mainnet-beta';
