@@ -18,7 +18,8 @@
       "android": {
         "buildType": "apk",
         "autoIncrement": "versionCode"
-      }
+      },
+      "channel": "preview"
     },
     "production": {
       "extends": "base",
@@ -27,7 +28,8 @@
       "android": {
         "buildType": "apk",
         "autoIncrement": "versionCode"
-      }
+      },
+      "channel": "production"
     },
     "play": {
       "extends": "base",
@@ -36,7 +38,8 @@
       "android": {
         "buildType": "app-bundle",
         "autoIncrement": "versionCode"
-      }
+      },
+      "channel": "play"
     }
   },
   "submit": {

@@ -31,9 +31,16 @@
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.VIBRATE",
-        "android.permission.INTERNET"
+        "android.permission.INTERNET",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.CAMERA",
+        "android.permission.VIBRATE",
+        "android.permission.INTERNET",
+        "android.permission.RECORD_AUDIO"
       ],
       "blockedPermissions": [
+        "android.permission.SYSTEM_ALERT_WINDOW",
+        "android.permission.RECORD_AUDIO",
         "android.permission.SYSTEM_ALERT_WINDOW",
         "android.permission.RECORD_AUDIO"
       ],
@@ -114,6 +121,12 @@
         "projectId": "331f0255-bd91-47f4-a736-df758f3c8b03"
       }
     },
-    "owner": "eventerz"
+    "owner": "eventerz",
+    "runtimeVersion": {
+      "policy": "fingerprint"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/331f0255-bd91-47f4-a736-df758f3c8b03"
+    }
   }
 }
