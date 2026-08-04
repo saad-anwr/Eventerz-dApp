@@ -1,6 +1,6 @@
 # Eventerz - Mobile
 
-**Everything is On-chain. Why not your events?**
+**Everything is On-chain. Why not your Meetups?**
 
 The native companion to [www.eventerz.xyz](https://www.eventerz.xyz) -
 a wallet-native event app for Android (built with the Solana Seeker in mind) and iOS.

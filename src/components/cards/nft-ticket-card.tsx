@@ -198,21 +198,28 @@ export const NftTicketCard = memo(function NftTicketCard({
             </Text>
           </View>
 
-          <View className="items-end">
-            <Text variant="micro" className="text-muted-foreground">
-              cNFT ASSET
-            </Text>
-            <Text
-              style={{
-                fontFamily: fontFamily.mono,
-                fontSize: 12,
-                color: '#94a2b8',
-                marginTop: 2,
-              }}
-            >
-              {shortenAddress(ticket.assetId, 6)}
-            </Text>
-          </View>
+          {/*
+            Only shown once a mint has really happened. `assetId` is empty until
+            then, so this rendered the label "cNFT ASSET" above an empty line -
+            claiming an on-chain asset and then failing to name it.
+          */}
+          {ticket.assetId ? (
+            <View className="items-end">
+              <Text variant="micro" className="text-muted-foreground">
+                cNFT ASSET
+              </Text>
+              <Text
+                style={{
+                  fontFamily: fontFamily.mono,
+                  fontSize: 12,
+                  color: '#94a2b8',
+                  marginTop: 2,
+                }}
+              >
+                {shortenAddress(ticket.assetId, 6)}
+              </Text>
+            </View>
+          ) : null}
         </View>
       </View>
     </PressableScale>

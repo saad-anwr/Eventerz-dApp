@@ -275,17 +275,43 @@ export default function TicketDetailScreen() {
           </View>
         </Animated.View>
 
-        {/* On-chain metadata */}
+        {/*
+          Ticket metadata.
+
+          `assetId` is empty until a Bubblegum mint has actually happened. This
+          block used to print "Standard: Compressed NFT (cNFT)" and a blank
+          "Asset ID" for every ticket regardless, which asserted an on-chain
+          asset that no cluster had ever seen - the exact failure the mint path
+          refuses to commit (`mint-cnft` returns `not-configured` rather than a
+          fabricated id), arriving through the UI instead.
+
+          A ticket with no asset is not a lesser ticket: it scans, it checks in,
+          it is a real record. It is just not an NFT, so it does not say it is.
+        */}
         <Animated.View
           entering={FadeInDown.delay(220).duration(420)}
           className="mt-6 border border-white/10 bg-white/[0.03] px-4"
           style={{ borderRadius: radius['2xl'] }}
         >
-          <MetaLine label="Standard" value="Compressed NFT (cNFT)" />
-          <View className="h-px bg-white/[0.06]" />
-          <MetaLine label="Asset ID" value={shortenAddress(ticket.assetId, 8)} mono />
-          <View className="h-px bg-white/[0.06]" />
-          <MetaLine label="Minted" value={fullTimestamp(ticket.mintedAt)} />
+          {ticket.assetId ? (
+            <>
+              <MetaLine label="Standard" value="Compressed NFT (cNFT)" />
+              <View className="h-px bg-white/[0.06]" />
+              <MetaLine
+                label="Asset ID"
+                value={shortenAddress(ticket.assetId, 8)}
+                mono
+              />
+              <View className="h-px bg-white/[0.06]" />
+              <MetaLine label="Minted" value={fullTimestamp(ticket.mintedAt)} />
+            </>
+          ) : (
+            <>
+              <MetaLine label="Standard" value="Eventerz ticket" />
+              <View className="h-px bg-white/[0.06]" />
+              <MetaLine label="Issued" value={fullTimestamp(ticket.mintedAt)} />
+            </>
+          )}
           {ticket.checkedInAt && (
             <>
               <View className="h-px bg-white/[0.06]" />

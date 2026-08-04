@@ -6,7 +6,7 @@
  * to a 120px splash mark.
  */
 
-import { memo } from 'react';
+import { memo, useId } from 'react';
 import { View } from 'react-native';
 import Svg, { Defs, LinearGradient, Path, Stop } from 'react-native-svg';
 
@@ -23,6 +23,26 @@ interface MarkProps {
 export const EventerzMark = memo(function EventerzMark({
   size = 36,
 }: MarkProps) {
+  /*
+   * Per-instance gradient ids.
+   *
+   * They were the literal strings `ez-front`, `ez-top` and `ez-side`, which is
+   * what made the web app's logo render as an empty box on phones: two `<Logo>`
+   * instances put two `id="ez-front"` elements in the DOM, the first sat inside
+   * a `display:none` sidebar, and the visible one's `url(#ez-front)` resolved to
+   * a gradient with no paint server behind it. An unresolvable fill paints
+   * nothing rather than falling back to a colour.
+   *
+   * On native `react-native-svg` scopes ids per `Svg`, so this is not the same
+   * bug here - but this component also renders on web (Expo web, and the
+   * `web-frame` preview), where it is exactly the same bug. One fix, both
+   * targets, and no way for a future second instance to reintroduce it.
+   */
+  const uid = useId().replace(/:/g, '');
+  const front = `ez-front-${uid}`;
+  const top = `ez-top-${uid}`;
+  const side = `ez-side-${uid}`;
+
   return (
     /*
      * The web app nests these paths in a `translate(4 3)` group. `react-native-svg`
@@ -33,52 +53,52 @@ export const EventerzMark = memo(function EventerzMark({
     <Svg width={size} height={size} viewBox="-4 -3 100 100" fill="none">
       <Defs>
         <LinearGradient
-          id="ez-front"
+          id={front}
           x1="24"
           y1="18"
           x2="80"
           y2="82"
           gradientUnits="userSpaceOnUse"
         >
-          <Stop stopColor="#A374FF" />
-          <Stop offset="1" stopColor="#7A2BE0" />
+          <Stop stopColor="#A97BFF" />
+          <Stop offset="1" stopColor="#7C3AED" />
         </LinearGradient>
         <LinearGradient
-          id="ez-top"
+          id={top}
           x1="14"
           y1="10"
           x2="80"
           y2="55"
           gradientUnits="userSpaceOnUse"
         >
-          <Stop stopColor="#E7DCFF" />
-          <Stop offset="1" stopColor="#C2A9FF" />
+          <Stop stopColor="#F3EDFF" />
+          <Stop offset="1" stopColor="#D2BCFF" />
         </LinearGradient>
         <LinearGradient
-          id="ez-side"
+          id={side}
           x1="14"
           y1="10"
           x2="24"
           y2="82"
           gradientUnits="userSpaceOnUse"
         >
-          <Stop stopColor="#5C24AE" />
-          <Stop offset="1" stopColor="#3E1A80" />
+          <Stop stopColor="#5B21B6" />
+          <Stop offset="1" stopColor="#3B1580" />
         </LinearGradient>
       </Defs>
 
       {/* Dark left-side fold */}
-      <Path d="M24 18 L24 82 L14 74 L14 10 Z" fill="url(#ez-side)" />
+      <Path d="M24 18 L24 82 L14 74 L14 10 Z" fill={`url(#${side})`} />
 
       {/* Light top facets */}
-      <Path d="M24 18 L80 18 L70 10 L14 10 Z" fill="url(#ez-top)" />
-      <Path d="M42 43 L72 43 L62 35 L32 35 Z" fill="url(#ez-top)" />
-      <Path d="M42 63 L80 63 L70 55 L32 55 Z" fill="url(#ez-top)" />
+      <Path d="M24 18 L80 18 L70 10 L14 10 Z" fill={`url(#${top})`} />
+      <Path d="M42 43 L72 43 L62 35 L32 35 Z" fill={`url(#${top})`} />
+      <Path d="M42 63 L80 63 L70 55 L32 55 Z" fill={`url(#${top})`} />
 
       {/* Bright front face */}
       <Path
         d="M24 18 L80 18 L80 37 L42 37 L42 43 L72 43 L72 58 L42 58 L42 63 L80 63 L80 82 L24 82 Z"
-        fill="url(#ez-front)"
+        fill={`url(#${front})`}
       />
     </Svg>
   );
