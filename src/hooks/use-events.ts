@@ -267,12 +267,43 @@ export function useUpdateEvent(eventId: string | undefined) {
        * re-uploaded on every save, copying the object and orphaning the old one.
        */
       let next = patch;
-      if (patch.coverImage && !isRemoteUri(patch.coverImage) && user) {
+      if (patch.coverImage && !isRemoteUri(patch.coverImage)) {
+        /*
+         * A local `file://` URI must never reach the database.
+         *
+         * The condition here used to end in `&& user`, so a save with no
+         * resolved identity skipped the upload and wrote the picker's device
+         * path into `cover_image` verbatim - re-creating, on the edit path, the
+         * exact bug the upload step was added to fix. Failing is right: there
+         * is no correct value to store, and the row is better left alone.
+         */
+        if (!user) throw new Error('Sign in again to change the banner.');
         assertRealIdentity(user.id);
-        next = {
-          ...patch,
-          coverImage: await uploadEventBanner(user.id, patch.coverImage),
-        };
+
+        /*
+         * A failed upload must not cost the host the rest of their edits.
+         *
+         * Publishing already degrades to the gradient rather than aborting
+         * (see `useCreateEvent`); this path did not, so a flaky upload threw
+         * away a changed time, venue and description along with the banner.
+         * Same treatment: keep the banner the event already has, save
+         * everything else, and say what happened.
+         */
+        try {
+          next = {
+            ...patch,
+            coverImage: await uploadEventBanner(user.id, patch.coverImage),
+          };
+        } catch (error) {
+          const { coverImage: _dropped, ...rest } = patch;
+          next = rest;
+          toast.info(
+            'Banner could not be uploaded',
+            error instanceof Error
+              ? `${error.message} Your other changes were saved and the event kept its previous cover.`
+              : 'Your other changes were saved and the event kept its previous cover.',
+          );
+        }
       }
 
       return eventRepository.updateEvent(eventId, next);

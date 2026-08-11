@@ -80,10 +80,23 @@ export async function uploadEventBanner(
   // policy would reject it with something unreadable.
   assertRealIdentity(profileId);
 
-  const extension = (localUri.split('.').pop() ?? 'jpg')
-    .split('?')[0]
-    .toLowerCase();
-  const contentType = MIME[extension] ?? 'image/jpeg';
+  /*
+   * The extension and the content type have to agree.
+   *
+   * This used to keep whatever extension the URI ended in while falling back to
+   * `image/jpeg` for anything not in the table - so an iPhone's `.heic` was
+   * stored at `<uid>/<ts>.heic` and *labelled* `image/jpeg`. The bucket accepts
+   * it (the declared type is on the allow-list), the bytes are HEIC, and every
+   * client that fetches it gets a file whose content contradicts its own
+   * `Content-Type`. Browsers render that as a broken image, which is the
+   * failure this module exists to remove.
+   *
+   * Deriving both from one lookup means an unrecognised extension is stored as
+   * the thing it is claimed to be, rather than under a name that disagrees.
+   */
+  const raw = (localUri.split('?')[0].split('.').pop() ?? '').toLowerCase();
+  const extension = raw in MIME ? raw : 'jpg';
+  const contentType = MIME[extension];
   const path = `${profileId}/${Date.now()}.${extension}`;
 
   const base64 = await new File(localUri).base64();
