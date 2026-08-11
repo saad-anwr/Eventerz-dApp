@@ -41,43 +41,10 @@ import { brand } from '@/theme/colors';
 import { makeShadow, screenPadding } from '@/theme/layout';
 import { fontFamily } from '@/theme/typography';
 import type { Ticket } from '@/types';
+import { explainCheckInError } from '@/utils/check-in';
 import { haptics } from '@/utils/haptics';
 
 const FRAME_SIZE = 250;
-
-/**
- * Turn a check-in failure into something an operator can act on at a door.
- *
- * `check_in_ticket` (migration 0002) raises in Postgres' voice: "only the event
- * host can check guests in", "not authenticated", "invalid ticket code". Two of
- * those describe a state the person holding the phone can fix, and none of them
- * says how. With a queue waiting, "invalid ticket code" is indistinguishable
- * from "the app is broken".
- *
- * The mapping is on the message rather than the SQLSTATE because the errors
- * arrive through PostgREST and supabase-js as text by the time they get here.
- */
-function explainCheckInError(message: string): string {
-  if (/not authenticated|sign in|28000/i.test(message)) {
-    return 'Sign in with Google on this device first - check-in is recorded against you as the host.';
-  }
-  if (/only the event host/i.test(message)) {
-    return 'That ticket is for an event you do not host. Only the host can check its guests in.';
-  }
-  if (/already been checked in/i.test(message)) {
-    return 'This guest is already checked in.';
-  }
-  if (/invalid ticket code|ticket not found/i.test(message)) {
-    return 'That code did not match a valid ticket. Ask the guest to reopen it from their Tickets tab.';
-  }
-  if (/not an Eventerz ticket/i.test(message)) {
-    return 'That QR is not an Eventerz ticket.';
-  }
-  if (/network|fetch|timeout/i.test(message)) {
-    return 'Could not reach the server. Check your connection and scan again.';
-  }
-  return message || 'Try scanning again.';
-}
 
 /** Sweeping laser line inside the reticle. */
 function ScanLine() {

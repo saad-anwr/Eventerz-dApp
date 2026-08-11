@@ -5,30 +5,73 @@
  * whoever is connected - the mock wallet mints a fresh address per session.
  */
 
-import { siteConfig } from '@/constants/config';
 import type { Badge, Ticket } from '@/types';
+import { buildCheckInUrl } from '@/utils/check-in';
 
 const DAY = 24 * 60 * 60 * 1000;
 
 /**
- * Encode the payload a scanner reads. Real check-in will sign this with the
- * organizer's key; today it is a deterministic, human-inspectable string.
+ * Encode the payload a scanner reads.
+ *
+ * Built with `buildCheckInUrl` - the same function `toTicket` uses for real
+ * tickets - rather than a hand-assembled string, so the mock cannot drift away
+ * from the live format.
+ *
+ * It had drifted. The old version emitted `secret=mock-<eventId>`, and the ids
+ * below were `t_summit` and friends. `parseQrPayload` matches a uuid
+ * (`[0-9a-f-]+`, because `tickets.id` and `tickets.qr_secret` are both `uuid`
+ * in migration 0002), so *every* mock payload failed it. The mock scanner
+ * appeared to work only because the mock repository carried a looser regex of
+ * its own - which is exactly the split the comment here claimed to prevent.
+ * Ids and secrets are uuid-shaped now, so the demo exercises the real parser.
  */
 export function buildQrPayload(
-  eventId: string,
   ticketId: string,
+  secret: string,
   owner: string,
 ): string {
-  // Shaped like the live payload (see `toTicket`) so the mock exercises the
-  // same parser rather than a format only the mock produces.
-  return `${siteConfig.url}/checkin?ticket=${ticketId}&secret=mock-${eventId}&owner=${owner}`;
+  return `${buildCheckInUrl(ticketId, secret)}&owner=${owner}`;
 }
+
+/**
+ * Ticket ids, uuid-shaped so they survive `parseQrPayload`.
+ *
+ * Exported because `mock/notifications.ts` deep-links to one of them; a
+ * hand-copied literal there would rot the first time an id changed here.
+ */
+/**
+ * A uuid-shaped random id.
+ *
+ * `uid()` from `@/utils` emits base36, which `parseQrPayload` rejects - the
+ * server's ids are uuids and the parser matches them. Freshly minted mock
+ * tickets need ids of the same shape or they are unscannable, which is the bug
+ * the seeds above already had. Hermes has no `crypto.randomUUID`, hence the
+ * manual assembly; this is demo data, so uniqueness is all that is required of
+ * it, not cryptographic randomness.
+ */
+export function mockUuid(): string {
+  const hex = (n: number) =>
+    Array.from({ length: n }, () =>
+      Math.floor(Math.random() * 16).toString(16),
+    ).join('');
+  return `${hex(8)}-${hex(4)}-4${hex(3)}-8${hex(3)}-${hex(12)}`;
+}
+
+export const MOCK_TICKET_IDS = {
+  summit: 'a1000000-0000-4000-8000-000000000001',
+  ama: 'a1000000-0000-4000-8000-000000000002',
+  seeker: 'a1000000-0000-4000-8000-000000000003',
+  bp: 'a1000000-0000-4000-8000-000000000004',
+  rust: 'a1000000-0000-4000-8000-000000000005',
+} as const;
 
 export function buildMockTickets(ownerId: string, ownerAddress: string): Ticket[] {
   const now = Date.now();
 
   const seeds: {
     id: string;
+    /** Stands in for `tickets.qr_secret`, which is a uuid on the server. */
+    secret: string;
     eventId: string;
     serial: number;
     status: Ticket['status'];
@@ -38,7 +81,8 @@ export function buildMockTickets(ownerId: string, ownerAddress: string): Ticket[
     checkedInAt?: number;
   }[] = [
     {
-      id: 't_summit',
+      id: MOCK_TICKET_IDS.summit,
+      secret: 'b2000000-0000-4000-8000-000000000001',
       eventId: 'e_summit',
       serial: 42,
       status: 'valid',
@@ -47,7 +91,8 @@ export function buildMockTickets(ownerId: string, ownerAddress: string): Ticket[
       mintedAt: now - 3 * DAY,
     },
     {
-      id: 't_ama',
+      id: MOCK_TICKET_IDS.ama,
+      secret: 'b2000000-0000-4000-8000-000000000002',
       eventId: 'e_ama',
       serial: 8,
       status: 'valid',
@@ -56,7 +101,8 @@ export function buildMockTickets(ownerId: string, ownerAddress: string): Ticket[
       mintedAt: now - 1 * DAY,
     },
     {
-      id: 't_seeker',
+      id: MOCK_TICKET_IDS.seeker,
+      secret: 'b2000000-0000-4000-8000-000000000003',
       eventId: 'e_seeker',
       serial: 17,
       status: 'valid',
@@ -65,7 +111,8 @@ export function buildMockTickets(ownerId: string, ownerAddress: string): Ticket[
       mintedAt: now - 5 * DAY,
     },
     {
-      id: 't_bp',
+      id: MOCK_TICKET_IDS.bp,
+      secret: 'b2000000-0000-4000-8000-000000000004',
       eventId: 'e_past_bp',
       serial: 128,
       status: 'used',
@@ -75,7 +122,8 @@ export function buildMockTickets(ownerId: string, ownerAddress: string): Ticket[
       checkedInAt: now - 20 * DAY,
     },
     {
-      id: 't_rust',
+      id: MOCK_TICKET_IDS.rust,
+      secret: 'b2000000-0000-4000-8000-000000000005',
       eventId: 'e_past_rust',
       serial: 9,
       status: 'used',
@@ -86,11 +134,11 @@ export function buildMockTickets(ownerId: string, ownerAddress: string): Ticket[
     },
   ];
 
-  return seeds.map((s) => ({
+  return seeds.map(({ secret, ...s }) => ({
     ...s,
     ownerId,
-    assetId: `cNFT_${s.id}_${ownerAddress.slice(0, 6)}`,
-    qrPayload: buildQrPayload(s.eventId, s.id, ownerAddress),
+    assetId: `cNFT_${s.serial}_${ownerAddress.slice(0, 6)}`,
+    qrPayload: buildQrPayload(s.id, secret, ownerAddress),
   }));
 }
 

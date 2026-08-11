@@ -1,5 +1,7 @@
 import type { AppNotification } from '@/types';
 
+import { MOCK_TICKET_IDS } from './tickets';
+
 const MIN = 60 * 1000;
 const HOUR = 60 * MIN;
 const DAY = 24 * HOUR;
@@ -14,7 +16,7 @@ export function buildMockNotifications(): AppNotification[] {
       body: 'Your ticket for Solana Superteam Summit landed in your wallet. Serial #42.',
       createdAt: now - 22 * MIN,
       read: false,
-      href: '/ticket/t_summit',
+      href: `/ticket/${MOCK_TICKET_IDS.summit}`,
     },
     {
       id: 'n2',

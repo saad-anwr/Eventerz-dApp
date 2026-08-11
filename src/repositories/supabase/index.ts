@@ -23,9 +23,9 @@ import type {
 
 import type { CreateEventInput, UpdateEventInput } from '../event-repository';
 import { PROFILE_COLUMNS, type ProfileRow } from '@/services/auth/types';
+import { parseQrPayload } from '@/utils/check-in';
 import { postgrestLikePattern } from '@/utils/postgrest';
 import {
-  parseQrPayload,
   toCommunity,
   toEventGuest,
   toEventItem,

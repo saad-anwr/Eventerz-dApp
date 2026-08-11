@@ -6,9 +6,16 @@
  * data pre-existed the connection.
  */
 
-import { buildMockBadges, buildMockTickets, buildQrPayload, db } from '@/mock';
+import {
+  buildMockBadges,
+  buildMockTickets,
+  buildQrPayload,
+  db,
+  mockUuid,
+} from '@/mock';
 import type { Badge, Ticket } from '@/types';
-import { mockDelay, uid } from '@/utils';
+import { mockDelay } from '@/utils';
+import { parseQrPayload } from '@/utils/check-in';
 
 let seededFor: string | null = null;
 
@@ -60,19 +67,22 @@ export const ticketRepository = {
     tier = 'General Admission',
   ): Promise<Ticket> {
     await mockDelay();
-    const id = uid('t');
+    // Uuid-shaped, not `uid('t')`: the payload this id goes into has to survive
+    // `parseQrPayload`, which matches the server's uuid format. See `mockUuid`.
+    const id = mockUuid();
+    const secret = mockUuid();
     const serial =
       Object.values(db.tickets).filter((t) => t.eventId === eventId).length + 1;
     const ticket: Ticket = {
       id,
       eventId,
       ownerId,
-      assetId: `cNFT_${id}_${ownerAddress.slice(0, 6)}`,
+      assetId: `cNFT_${serial}_${ownerAddress.slice(0, 6)}`,
       serial,
       status: 'valid',
       soulbound: false,
       tier,
-      qrPayload: buildQrPayload(eventId, id, ownerAddress),
+      qrPayload: buildQrPayload(id, secret, ownerAddress),
       mintedAt: Date.now(),
     };
     db.tickets[id] = ticket;
@@ -110,23 +120,20 @@ export const ticketRepository = {
   async redeemQr(payload: string): Promise<Ticket> {
     await mockDelay();
     /*
-     * Same set of accepted shapes as the live path - the https link tickets
-     * carry now, the app's deep link, and the legacy custom scheme. Kept in
-     * step deliberately: a scanner that works against the mock and fails
-     * against Supabase is worse than one that fails in both.
+     * The same parser the live path uses, rather than a second copy of the
+     * accepted shapes. The copy that used to sit here matched on `ticket`
+     * alone and never looked for `secret`, so a truncated code - the realistic
+     * failure, from a half-scanned or creased QR - checked a guest in here and
+     * was rejected as invalid against Supabase. A scanner that works against
+     * the mock and fails against the real database is worse than one that
+     * fails in both, which is the whole reason to share the definition instead
+     * of promising in a comment to keep two in step.
      */
-    const looksLikeOurs =
-      /^https?:\/\/[^\s]+\/checkin\?/i.test(payload.trim()) ||
-      /^eventerz:(\/\/)?(v1:)?checkin\?/i.test(payload.trim());
-    if (!looksLikeOurs) {
-      throw new Error('That QR code is not an Eventerz ticket.');
-    }
-    const match = /[?&]ticket=([^&\s]+)/.exec(payload);
-    const ticketId = match?.[1];
-    if (!ticketId) throw new Error('This ticket code is malformed.');
-    const ticket = db.tickets[ticketId];
+    const parsed = parseQrPayload(payload);
+    if (!parsed) throw new Error('That QR code is not an Eventerz ticket.');
+    const ticket = db.tickets[parsed.ticketId];
     if (!ticket) throw new Error('We could not find that ticket.');
-    return ticketRepository.checkIn(ticketId);
+    return ticketRepository.checkIn(parsed.ticketId);
   },
 
   async listBadges(_ownerId: string): Promise<Badge[]> {

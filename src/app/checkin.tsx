@@ -34,6 +34,7 @@ import { Text } from '@/components/ui/text';
 import { useRedeemTicket } from '@/hooks/use-tickets';
 import { brand } from '@/theme/colors';
 import { screenPadding } from '@/theme/layout';
+import { buildCheckInUrl, explainCheckInError } from '@/utils/check-in';
 import { haptics } from '@/utils/haptics';
 
 export default function CheckInScreen() {
@@ -61,19 +62,28 @@ export default function CheckInScreen() {
     if (incomplete) return;
     handled.current = true;
 
-    redeem.mutate(
-      `https://eventerz.xyz/checkin?ticket=${params.ticket}&secret=${params.secret}`,
-      {
-        onSuccess: () => {
-          haptics.success();
-          setDone(true);
-        },
-        onError: (e) => {
-          haptics.error();
-          setError(e instanceof Error ? e.message : 'Check-in failed.');
-        },
+    /*
+     * Rebuilt with `buildCheckInUrl` rather than a hand-written template with
+     * the production host baked into it. The literal was wrong on every deploy
+     * that is not `eventerz.xyz` - a preview build scanning its own tickets
+     * reassembled them under the wrong domain - and it duplicated a format that
+     * has exactly one definition.
+     */
+    redeem.mutate(buildCheckInUrl(params.ticket!, params.secret!), {
+      onSuccess: () => {
+        haptics.success();
+        setDone(true);
       },
-    );
+      onError: (e) => {
+        haptics.error();
+        // The same door-ready wording the scanner uses. This screen showed
+        // Postgres' own text - "only the event host can check guests in" - to
+        // a host who had just scanned a real ticket, with no hint of what to do.
+        setError(
+          explainCheckInError(e instanceof Error ? e.message : ''),
+        );
+      },
+    });
   }, [params.ticket, params.secret, incomplete, redeem]);
 
   const failure = incomplete

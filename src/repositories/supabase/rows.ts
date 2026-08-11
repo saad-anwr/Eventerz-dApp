@@ -7,7 +7,6 @@
  * index signature. An interface silently degrades every query to `never`.
  */
 
-import { siteConfig } from '@/constants/config';
 import type { CoverGradientKey } from '@/theme/colors';
 import type {
   AppNotification,
@@ -27,6 +26,7 @@ import type {
 } from '@/types';
 
 import type { ProfileRow } from '@/services/auth/types';
+import { buildCheckInUrl } from '@/utils/check-in';
 
 /* -------------------------------------------------------------------------- */
 /*  Rows                                                                       */
@@ -318,31 +318,6 @@ export function toCommunity(
 }
 
 /**
- * The QR payload carries the ticket id and its server-issued secret. The secret
- * is random rather than derived, so a payload cannot be forged from public data.
- *
- * # Why this is a URL and not `eventerz:v1:checkin?...`
- *
- * It used to be a bare custom scheme. Nothing outside this app knows what that
- * means, so pointing any ordinary camera at a ticket produced:
- *
- *     QR CODE - No usable data found
- *
- * That is not a cosmetic problem at a door. A host whose scanner will not open,
- * whose phone is the wrong one, or who is simply holding a device with no
- * Eventerz build has no route at all from the code on the guest's screen to a
- * check-in - the credential is right there and unreadable by anything.
- *
- * An `https://` payload is understood by every camera on both platforms. On a
- * phone with the app it opens the app (the intent filter in `app.json`); on any
- * other phone it opens the check-in page on the website, which does the same
- * thing for a signed-in host. The secret travels in the URL either way, exactly
- * as it did before - it is a bearer credential for one ticket and always was.
- *
- * `parseQrPayload` still accepts the old form, because tickets minted before
- * this change are in people's wallets and have to keep working.
- */
-/**
  * A banner URL that can actually be fetched, or nothing.
  *
  * Events created before the upload step existed stored the picker's local path
@@ -381,11 +356,6 @@ export function toTicket(row: TicketRow): Ticket {
   };
 }
 
-/** The scannable check-in link for a ticket. */
-export function buildCheckInUrl(ticketId: string, secret: string): string {
-  return `${siteConfig.url}/checkin?ticket=${ticketId}&secret=${secret}`;
-}
-
 export function toNotification(row: NotificationRow): AppNotification {
   return {
     id: row.id,
@@ -421,35 +391,3 @@ export function toUser(row: ProfileRow): User {
   };
 }
 
-/**
- * Parse a scanned QR payload back into its parts.
- *
- * Accepts three shapes, all of which are Eventerz check-in codes:
- *
- *   * `https://<host>/checkin?ticket=..&secret=..` - what tickets carry now.
- *   * `eventerz://checkin?...` - the app's own deep link.
- *   * `eventerz:v1:checkin?...` - what tickets minted before this change
- *     carry. Those are in people's wallets and cannot be re-issued, so
- *     dropping support would break every ticket already sold.
- *
- * The host is deliberately not checked against `siteConfig.url`. A preview
- * deploy, a custom domain and the production site all mint valid tickets, and
- * the credential that matters is the secret - which the server verifies. Being
- * strict about the domain here would reject real tickets to prevent nothing:
- * an attacker who can choose the domain can equally choose to omit it.
- */
-export function parseQrPayload(
-  payload: string,
-): { ticketId: string; secret: string } | null {
-  const trimmed = payload.trim();
-
-  const looksLikeOurs =
-    /^https?:\/\/[^\s]+\/checkin\?/i.test(trimmed) ||
-    /^eventerz:(\/\/)?(v1:)?checkin\?/i.test(trimmed);
-  if (!looksLikeOurs) return null;
-
-  const ticketId = /[?&]ticket=([0-9a-f-]+)/i.exec(trimmed)?.[1];
-  const secret = /[?&]secret=([0-9a-f-]+)/i.exec(trimmed)?.[1];
-  if (!ticketId || !secret) return null;
-  return { ticketId, secret };
-}
