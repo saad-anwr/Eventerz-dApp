@@ -22,6 +22,10 @@ import {
  */
 
 const TICKET = '3f2504e0-4f89-41d3-9a0c-0305e82c3301';
+// Two fixed UUIDs standing in for a ticket id and its check-in code. The round
+// trip needs opaque values it can compare, not real ones - nothing issued this
+// pair and no row anywhere has it.
+// check-secrets: allow fixed test fixture, never issued to a ticket
 const SECRET = '9c858901-8a57-4791-81fe-4c455b099bc9';
 
 describe('buildCheckInUrl / parseQrPayload round trip', () => {
