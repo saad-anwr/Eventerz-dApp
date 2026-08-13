@@ -84,6 +84,12 @@ const CHAIN_BY_CLUSTER = {
 type MwaChain = (typeof CHAIN_BY_CLUSTER)[keyof typeof CHAIN_BY_CLUSTER];
 
 /**
+ * How long to wait for a wallet to acknowledge a disconnect before giving up
+ * and clearing the session anyway. See `disconnect`.
+ */
+const DEAUTHORIZE_TIMEOUT_MS = 4000;
+
+/**
  * MWA returns addresses base64-encoded. Everything downstream - display,
  * profiles, explorer links - expects base58, so normalise at the boundary.
  *
@@ -390,9 +396,29 @@ export class MobileWalletAdapter implements WalletAdapter {
         // Read before the session is cleared below, or there is no base left
         // to associate with.
         const config = await this.association();
-        await transact(async (wallet) => {
-          await wallet.deauthorize({ auth_token: token });
-        }, config);
+        /*
+         * Bounded, because disconnecting must not depend on a wallet answering.
+         *
+         * `transact` has no timeout of its own on Android: if the association
+         * never completes - the wallet was uninstalled, its endpoint-specific
+         * URI no longer resolves, the user walked away from the sheet - the
+         * promise simply never settles. Observed on device: tapping "Disconnect
+         * wallet" dimmed the screen and stayed there, with no intent launched
+         * and no way out but force-quitting, because the local cleanup below
+         * was waiting on a reply that was never coming.
+         *
+         * Telling the wallet is a courtesy that lets it drop its own record.
+         * Clearing ours is the part the user asked for, so it happens either
+         * way.
+         */
+        await Promise.race([
+          transact(async (wallet) => {
+            await wallet.deauthorize({ auth_token: token });
+          }, config),
+          new Promise((resolve) =>
+            setTimeout(resolve, DEAUTHORIZE_TIMEOUT_MS),
+          ),
+        ]);
       } catch {
         // The wallet may have revoked us already, or been uninstalled. Either
         // way the local session must still be cleared.
