@@ -617,6 +617,18 @@ export const supabaseUserRepository = {
    * into an account is what signing in with Google does.
    */
   async ensureWalletUser(address: string): Promise<User> {
+    /*
+     * The `slice` calls below are why this guard exists rather than trusting the
+     * signature. A wallet that returned a null address used to reach here typed
+     * as `string`, and the crash the user saw was a TypeError from this
+     * function - "Cannot read property 'slice' of null" - reported as
+     * "Connection failed". `toBase58` now refuses at the boundary; this is the
+     * second line of defence, because a bad address should never be a crash.
+     */
+    if (typeof address !== 'string' || address.length === 0) {
+      throw new Error('That wallet did not provide a usable address.');
+    }
+
     const { data } = await client()
       .rpc('profile_for_wallet', { p_wallet_address: address })
       .maybeSingle();

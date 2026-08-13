@@ -72,13 +72,39 @@ type MwaChain = (typeof CHAIN_BY_CLUSTER)[keyof typeof CHAIN_BY_CLUSTER];
 /**
  * MWA returns addresses base64-encoded. Everything downstream - display,
  * profiles, explorer links - expects base58, so normalise at the boundary.
+ *
+ * # The crash this used to cause
+ *
+ * The catch used to be `return address` - "some wallets already hand back
+ * base58". That is true, and it also meant this function returned its input
+ * unchanged for *every* failure, including the one where the input was not a
+ * string at all. A wallet handing back an account with a null address therefore
+ * produced a `WalletAccount` whose `address` was `null`, typed as `string`. It
+ * was written to storage, adopted as the session, and eventually reached
+ * `ensureWalletUser`, which does `address.slice(0, 4)`:
+ *
+ *     Connection failed
+ *     Cannot read property 'slice' of null
+ *
+ * shown to the user - and to a dApp Store reviewer - at the moment they tried
+ * to onboard. A boundary that cannot decode its input has to say so, not pass
+ * the bad value along wearing the right type.
  */
-function toBase58(address: string): string {
+function toBase58(address: unknown): string {
+  if (typeof address !== 'string' || address.length === 0) {
+    throw new Error('The wallet returned an account with no address.');
+  }
+
   try {
     return new PublicKey(toUint8Array(address)).toBase58();
   } catch {
-    // Some wallets already hand back base58.
-    return address;
+    // Not base64. Some wallets already hand back base58 - accept it only if it
+    // really is a public key, rather than assuming.
+    try {
+      return new PublicKey(address).toBase58();
+    } catch {
+      throw new Error('The wallet returned an address we could not read.');
+    }
   }
 }
 
@@ -248,16 +274,31 @@ export class MobileWalletAdapter implements WalletAdapter {
       });
 
       const account = auth.accounts[0];
-      if (!account) throw new Error('The wallet returned no accounts.');
+      if (!account) {
+        throw new Error(
+          'That wallet did not share an account. Open it, make sure a wallet is set up, and try again.',
+        );
+      }
 
       const resolved: WalletAccount = {
+        // Throws rather than passing an unreadable value downstream - see
+        // `toBase58`. This is the line the `slice of null` crash came through.
         address: toBase58(account.address),
         label: account.label ?? undefined,
         walletId,
         cluster: integrationsConfig.solanaNetwork,
       };
 
-      await secureStorage.set(SecureKeys.WALLET_AUTH_TOKEN, auth.auth_token);
+      /*
+       * Persist only what is real. `secureStorage.set` with a non-string throws
+       * from inside expo-secure-store, which would surface here as a native
+       * message about SecureStore rather than about the wallet - and would do
+       * it *after* a successful authorization, making a connected wallet look
+       * like a failed one.
+       */
+      if (typeof auth.auth_token === 'string' && auth.auth_token.length > 0) {
+        await secureStorage.set(SecureKeys.WALLET_AUTH_TOKEN, auth.auth_token);
+      }
       await storage.set(StorageKeys.WALLET_SESSION, resolved);
 
       return resolved;
@@ -304,8 +345,15 @@ export class MobileWalletAdapter implements WalletAdapter {
         identity: APP_IDENTITY,
       });
 
+      // `accounts[0]` is not guaranteed - a wallet that reauthorized but shares
+      // nothing would read `.address` off undefined and throw a TypeError.
+      const signer = auth.accounts[0];
+      if (!signer) {
+        throw new Error('That wallet did not share an account to sign with.');
+      }
+
       const [signed] = await wallet.signMessages({
-        addresses: [auth.accounts[0].address],
+        addresses: [signer.address],
         payloads: [new TextEncoder().encode(message)],
       });
 
@@ -355,7 +403,11 @@ export class MobileWalletAdapter implements WalletAdapter {
         identity: APP_IDENTITY,
       });
 
-      const payer = new PublicKey(toBase58(auth.accounts[0].address));
+      const payerAccount = auth.accounts[0];
+      if (!payerAccount) {
+        throw new Error('That wallet did not share an account to pay with.');
+      }
+      const payer = new PublicKey(toBase58(payerAccount.address));
       const instruction = buildInstruction(intent, payer, programId);
 
       /*

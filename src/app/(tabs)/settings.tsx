@@ -195,6 +195,7 @@ export default function SettingsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [signOutVisible, setSignOutVisible] = useState(false);
+  const [googleSignOutVisible, setGoogleSignOutVisible] = useState(false);
   const [deleteVisible, setDeleteVisible] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -210,6 +211,7 @@ export default function SettingsScreen() {
   const isLive = useAuthStore((s) => s.isLive);
   const profile = useAuthStore((s) => s.profile);
   const deleteAccount = useAuthStore((s) => s.deleteAccount);
+  const signOutGoogle = useAuthStore((s) => s.signOut);
 
   const preferences = usePreferencesStore();
 
@@ -234,6 +236,29 @@ export default function SettingsScreen() {
     toast.info('Wallet disconnected', 'Your data stays on-chain.');
     router.replace('/(tabs)');
   }, [disconnect, router]);
+
+  /**
+   * Sign out of the Google account.
+   *
+   * There was no way to do this. "Disconnect wallet" renders only when a wallet
+   * is connected, so somebody who signed in with Google alone - the path this
+   * app now recommends to anyone without a wallet - had a Settings screen whose
+   * only account action was *delete*. Leaving and destroying were the same
+   * button.
+   *
+   * The wallet is disconnected alongside it when one is present: the Google
+   * account is the root identity (0022) and the wallet hangs off it, so keeping
+   * a wallet session attached to an account nobody is signed into any more is a
+   * half-signed-in state with no way to name it.
+   */
+  const handleSignOutGoogle = useCallback(async () => {
+    setGoogleSignOutVisible(false);
+    await signOutGoogle();
+    if (account) await disconnect();
+    haptics.success();
+    toast.info('Signed out', 'Your events, tickets and reputation are safe.');
+    router.replace('/(tabs)');
+  }, [signOutGoogle, account, disconnect, router]);
 
   /**
    * Delete, then leave.
@@ -641,16 +666,24 @@ export default function SettingsScreen() {
           />
         </Group>
 
-        {/* Developer */}
-        <Group title="Developer">
+        {/*
+          Titled for the person using the app, not for us.
+
+          This was "Developer", with a row called "Replay onboarding" - words
+          that describe who built the feature rather than what it does. Replaying
+          the intro is an ordinary thing a real user might want, and filing it
+          under "Developer" both hides it from them and makes a shipped app look
+          like a work in progress.
+        */}
+        <Group title="Help">
           <LinkRow
             icon={RotateCcw}
-            title="Replay onboarding"
-            description="Show the intro screens again on next launch"
+            title="Show the intro again"
+            description="Replays the welcome screens on your next launch"
             onPress={() => {
               preferences.resetOnboarding();
               haptics.success();
-              toast.success('Onboarding reset', 'It shows on your next launch.');
+              toast.success('Intro reset', 'It shows on your next launch.');
             }}
           />
           {/*
@@ -699,6 +732,27 @@ export default function SettingsScreen() {
           record to erase, and offering it there would promise something that
           does not happen.
         */}
+        {/*
+          Sign out, above Delete account and visually quieter than it.
+
+          Order and weight both matter here: leaving is the common action and
+          deleting is the irreversible one, so the reversible thing comes first
+          and only the destructive one is styled as destructive.
+        */}
+        {isLive && profile && (
+          <Button
+            label="Sign out"
+            icon={LogOut}
+            variant="secondary"
+            onPress={() => {
+              haptics.warning();
+              setGoogleSignOutVisible(true);
+            }}
+            fullWidth
+            className={account ? 'mt-3' : 'mt-8'}
+          />
+        )}
+
         {isLive && profile && (
           <Button
             label="Delete account"
@@ -740,6 +794,37 @@ export default function SettingsScreen() {
             label="Disconnect"
             variant="danger"
             onPress={handleSignOut}
+            className="flex-1"
+          />
+        </View>
+      </Modal>
+
+      {/*
+        Signing out is reversible, and the dialog says so plainly. The delete
+        dialog below deliberately reads nothing like this one - the two used to
+        be one button, and the whole point of separating them is that a person
+        can tell at a glance which one they are about to press.
+      */}
+      <Modal
+        visible={googleSignOutVisible}
+        onClose={() => setGoogleSignOutVisible(false)}
+        title="Sign out?"
+        subtitle={
+          account
+            ? 'Your wallet is disconnected too. Nothing is deleted - sign back in any time to pick up where you left off.'
+            : 'Nothing is deleted. Sign back in any time to pick up where you left off.'
+        }
+      >
+        <View className="flex-row gap-3">
+          <Button
+            label="Cancel"
+            variant="secondary"
+            onPress={() => setGoogleSignOutVisible(false)}
+            className="flex-1"
+          />
+          <Button
+            label="Sign out"
+            onPress={handleSignOutGoogle}
             className="flex-1"
           />
         </View>

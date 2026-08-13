@@ -28,16 +28,26 @@ export function isMwaAvailable(): boolean {
   return Constants.executionEnvironment !== ExecutionEnvironment.StoreClient;
 }
 
-/** Why the mock is in use, when it is. Surfaced in Settings. */
+/**
+ * Why a real wallet cannot be used, when it cannot. Surfaced in Settings.
+ *
+ * Written for whoever is reading it on the phone. These strings used to name
+ * environment variables and npm scripts - "set EXPO_PUBLIC_USE_MOCK_WALLET=false",
+ * "run a development build" - which is an instruction only the person who built
+ * the app could follow, in a screen shipped to people who did not. The
+ * conditions are all developer-only in practice, but a user-facing string has no
+ * way of knowing that, and one leaking into a release makes a finished app read
+ * as an unfinished one.
+ */
 export function walletAdapterReason(): string | null {
   if (featureFlags.useMockWallet) {
-    return 'Demo wallet - set EXPO_PUBLIC_USE_MOCK_WALLET=false to use a real wallet.';
+    return 'This build uses a practice wallet, so nothing here touches real funds.';
   }
   if (Platform.OS !== 'android') {
-    return 'Mobile Wallet Adapter is Android-only; using the demo wallet here.';
+    return 'Solana wallet apps connect on Android. A practice wallet is used here instead.';
   }
   if (!isMwaAvailable()) {
-    return 'Expo Go cannot load Mobile Wallet Adapter. Run a development build (npm run android).';
+    return 'Wallet connections are unavailable in this preview. A practice wallet is used instead.';
   }
   return null;
 }

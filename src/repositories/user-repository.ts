@@ -33,6 +33,12 @@ export const userRepository = {
    */
   async ensureWalletUser(address: string): Promise<User> {
     await mockDelay();
+    // Mirrors the guard in the Supabase repository - see the note there. The
+    // `slice` calls below are what turned a null address into a crash toast.
+    if (typeof address !== 'string' || address.length === 0) {
+      throw new Error('That wallet did not provide a usable address.');
+    }
+
     const existing = Object.values(db.users).find(
       (u) => u.walletAddress === address,
     );

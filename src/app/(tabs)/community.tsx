@@ -28,6 +28,7 @@ import { FlatList, RefreshControl, View } from 'react-native';
 import { Avatar } from '@/components/ui/avatar';
 import { Button, IconButton } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
+import { GoogleGate, useHasGoogleAccount } from '@/features/auth/google-gate';
 import { SegmentedControl } from '@/components/ui/form';
 import {
   Coins,
@@ -316,6 +317,8 @@ const SEPARATOR = () => (
 export default function CommunityScreen() {
   const router = useRouter();
   const meId = useWalletStore((s) => s.user?.id ?? null);
+  // Community is Google-gated - see the note at the gate below.
+  const hasGoogle = useHasGoogleAccount();
 
   const [segment, setSegment] = useState<Segment>('friends');
   const [searchInput, setSearchInput] = useState('');
@@ -456,6 +459,19 @@ export default function CommunityScreen() {
         </Text>
       </View>
 
+      {/*
+        Community is the one surface that needs a Google account.
+
+        A wallet-only user reaches every other screen - browsing, events,
+        tickets, RSVP - and is stopped only here, where the content is other
+        people. Showing the segments and three empty lists instead would be
+        worse than a gate: it looks like nobody uses the app, rather than like
+        the viewer has not signed in.
+      */}
+      {!hasGoogle ? (
+        <GoogleGate />
+      ) : (
+      <>
       <View style={{ paddingHorizontal: screenPadding, paddingBottom: 12 }}>
         <SegmentedControl
           options={[
@@ -633,6 +649,8 @@ export default function CommunityScreen() {
             refreshControl={refreshControl}
           />
         ))}
+      </>
+      )}
     </Screen>
   );
 }

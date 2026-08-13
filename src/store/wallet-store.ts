@@ -11,6 +11,10 @@ import { create } from 'zustand';
 import { userRepository } from '@/repositories';
 import { toUser } from '@/repositories/supabase/rows';
 import { AnalyticsEvent, analytics, walletService } from '@/services';
+import {
+  describeWalletError,
+  isWalletCancellation,
+} from '@/services/wallet/errors';
 import { useAuthStore } from '@/store/auth-store';
 import type {
   User,
@@ -110,13 +114,24 @@ export const useWalletStore = create<WalletState>()((set, get) => ({
       // Balance is decorative - never let it block the connected state.
       void get().refreshBalance();
     } catch (error) {
-      set({
-        status: 'error',
-        error:
-          error instanceof Error
-            ? error.message
-            : 'We could not connect that wallet.',
-      });
+      /*
+       * Never store a raw exception message.
+       *
+       * This used to be `error.message`, which the connect sheet then showed
+       * verbatim - so users, and a dApp Store reviewer, were shown
+       * `java.util.concurrent.CancellationException` and
+       * `Cannot read property 'slice' of null` under the heading "Connection
+       * failed". See `describeWalletError`.
+       *
+       * A cancellation is not an error state either. Backing out of the
+       * wallet's approval screen should leave the app exactly as it was, so it
+       * returns to `disconnected` with nothing to report.
+       */
+      if (isWalletCancellation(error)) {
+        set({ status: 'disconnected', error: null });
+        return;
+      }
+      set({ status: 'error', error: describeWalletError(error) });
     }
   },
 

@@ -110,7 +110,8 @@
           "photosPermission": "Eventerz needs photo access so you can pick a banner image for events you create."
         }
       ],
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      "./plugins/with-solana-wallet-queries"
     ],
     "experiments": {
       "reactCompiler": true

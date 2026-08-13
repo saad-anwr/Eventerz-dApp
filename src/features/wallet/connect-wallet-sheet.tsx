@@ -156,10 +156,19 @@ export const ConnectWalletSheet = memo(function ConnectWalletSheet({
         );
         onConnected?.();
         onClose();
-      } else {
-        haptics.error();
-        toast.error('Connection failed', state.error ?? 'Please try again.');
+        return;
       }
+
+      /*
+       * A cancelled connection leaves `error` null (see `wallet-store`), and
+       * gets no toast at all - the user dismissed the wallet on purpose, and
+       * telling them it "failed" reads as a bug in the app. The sheet stays
+       * open so they can pick a different wallet or use Google.
+       */
+      if (!state.error) return;
+
+      haptics.error();
+      toast.error('Connection failed', state.error);
     },
     [connect, onClose, onConnected],
   );
@@ -201,7 +210,14 @@ export const ConnectWalletSheet = memo(function ConnectWalletSheet({
       visible={visible}
       onClose={onClose}
       title="Connect a wallet"
-      subtitle="Your wallet is your Eventerz identity"
+      /*
+       * Not "your wallet is your Eventerz identity" any more. Migration 0022
+       * made the Google account the root and wallets attach to it, so the old
+       * line was both untrue and discouraging: it told anyone without a wallet
+       * - including a store reviewer on a device that has none - that there was
+       * no way in, while Google sits right below.
+       */
+      subtitle="Or continue with Google - no wallet needed to look around"
       maxHeightRatio={0.88}
     >
       {/*
