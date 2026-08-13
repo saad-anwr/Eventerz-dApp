@@ -44,7 +44,7 @@ import { accents, brand } from '@/theme/colors';
 import { radius, screenPadding } from '@/theme/layout';
 import { fontFamily } from '@/theme/typography';
 import type { AppNotification, NotificationKind } from '@/types';
-import { dayLabel, timeAgo } from '@/utils/format';
+import { dayLabel, timeAgoLabel } from '@/utils/format';
 import { haptics } from '@/utils/haptics';
 
 /**
@@ -97,7 +97,7 @@ function NotificationRow({
       <PressableFade
         onPress={() => onPress(item)}
         accessibilityRole="button"
-        accessibilityLabel={`${item.title}. ${item.body}. ${timeAgo(item.createdAt)} ago${
+        accessibilityLabel={`${item.title}. ${item.body}. ${timeAgoLabel(item.createdAt)}${
           item.read ? '' : '. Unread'
         }`}
         className="flex-row gap-3.5"
@@ -152,7 +152,7 @@ function NotificationRow({
           </Text>
 
           <Text variant="micro" className="mt-1.5 text-muted-foreground">
-            {timeAgo(item.createdAt)} ago
+            {timeAgoLabel(item.createdAt)}
           </Text>
         </View>
       </PressableFade>

@@ -11,21 +11,68 @@ export function uid(prefix = ''): string {
   return prefix ? `${prefix}_${id}` : id;
 }
 
-/** "just now" · "4m" · "2h" · "3d" · "12 Aug" - compact relative time. */
-export function timeAgo(ts: number): string {
+/**
+ * How long ago, and whether that answer is relative.
+ *
+ * `relative: false` means `value` is a calendar date rather than a duration.
+ * The distinction is returned rather than inferred, because inferring it means
+ * sniffing the formatted string - and that is the bug this pair exists to fix
+ * (see `timeAgoLabel`).
+ */
+function describeAge(ts: number): { value: string; relative: boolean } {
   const diff = Date.now() - ts;
   const sec = Math.round(diff / 1000);
-  if (sec < 45) return 'just now';
+  if (sec < 45) return { value: 'just now', relative: false };
   const min = Math.round(sec / 60);
-  if (min < 60) return `${min}m`;
+  if (min < 60) return { value: `${min}m`, relative: true };
   const hr = Math.round(min / 60);
-  if (hr < 24) return `${hr}h`;
+  if (hr < 24) return { value: `${hr}h`, relative: true };
   const day = Math.round(hr / 24);
-  if (day < 7) return `${day}d`;
-  return new Date(ts).toLocaleDateString('en-US', {
-    day: 'numeric',
-    month: 'short',
-  });
+  if (day < 7) return { value: `${day}d`, relative: true };
+  return {
+    // Past a week a duration stops being informative - "23d" is not something
+    // anybody converts back to a date in their head - so this switches to the
+    // date itself.
+    value: new Date(ts).toLocaleDateString('en-US', {
+      day: 'numeric',
+      month: 'short',
+    }),
+    relative: false,
+  };
+}
+
+/**
+ * "just now" · "4m" · "2h" · "3d" · "Aug 12" - compact relative time.
+ *
+ * Note the last case: past a week this returns an **absolute date**. Use it
+ * where space is tight and the value stands alone, like a chat row. Anywhere it
+ * is read as prose, use `timeAgoLabel`.
+ */
+export function timeAgo(ts: number): string {
+  return describeAge(ts).value;
+}
+
+/**
+ * The same instant as a finished phrase: "just now", "4m ago", "3d ago",
+ * "Aug 12".
+ *
+ * # Why this exists
+ *
+ * Callers wrote `` `${timeAgo(ts)} ago` ``, which is right for every relative
+ * value and wrong for the one case that is not. Past a week `timeAgo` returns a
+ * date, so the notifications list read:
+ *
+ *     Aug 6 ago
+ *     Jul 31 ago
+ *     Jul 30 ago
+ *
+ * The word belongs where the relative-or-absolute decision is made, which is
+ * `describeAge`. A caller cannot correctly append "ago" to a value whose kind
+ * it was never told, so the fix is to stop making that their job.
+ */
+export function timeAgoLabel(ts: number): string {
+  const { value, relative } = describeAge(ts);
+  return relative ? `${value} ago` : value;
 }
 
 /** Clock time - "6:42 PM". */

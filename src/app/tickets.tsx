@@ -33,7 +33,7 @@ import { accents, brand } from '@/theme/colors';
 import { radius, screenPadding } from '@/theme/layout';
 import { fontFamily } from '@/theme/typography';
 import type { Badge as BadgeModel, Ticket } from '@/types';
-import { timeAgo } from '@/utils/format';
+import { timeAgoLabel } from '@/utils/format';
 
 type TabValue = 'upcoming' | 'past' | 'badges';
 
@@ -60,7 +60,7 @@ function BadgeTile({ badge }: { badge: BadgeModel }) {
       className="flex-1 items-center border border-white/10 bg-white/[0.035] p-4"
       style={{ borderRadius: radius['2xl'], minWidth: 150 }}
       accessible
-      accessibilityLabel={`${badge.name}. ${badge.description}. Earned ${timeAgo(badge.earnedAt)} ago`}
+      accessibilityLabel={`${badge.name}. ${badge.description}. Earned ${timeAgoLabel(badge.earnedAt)}`}
     >
       <View
         className="items-center justify-center"
@@ -91,7 +91,7 @@ function BadgeTile({ badge }: { badge: BadgeModel }) {
         {badge.description}
       </Text>
       <Text variant="micro" className="mt-2 text-muted-foreground">
-        {timeAgo(badge.earnedAt)} ago
+        {timeAgoLabel(badge.earnedAt)}
       </Text>
     </View>
   );

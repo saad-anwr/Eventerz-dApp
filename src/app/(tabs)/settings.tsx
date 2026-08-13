@@ -42,7 +42,7 @@ import {
 } from '@/components/ui/icon';
 import { Modal } from '@/components/ui/modal';
 import { PressableFade } from '@/components/ui/pressable-scale';
-import { Screen } from '@/components/ui/screen';
+import { Screen, useListBottomPadding } from '@/components/ui/screen';
 import { Text } from '@/components/ui/text';
 import { TextInput } from '@/components/ui/text-input';
 import {
@@ -194,6 +194,17 @@ const appVersion = Constants.expoConfig?.version ?? '-';
 export default function SettingsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  /*
+   * The tab bar floats over the scroll view, so its height has to be part of
+   * the content inset or the last rows sit underneath it. This was
+   * `insets.bottom + 40`, which accounts for the gesture bar and not for the
+   * 62pt tab bar above it - so Settings, the longest screen in the app, could
+   * not be scrolled to its end and the footer stayed clipped behind the tabs.
+   *
+   * Every other tabbed screen already used this hook. This one had its own
+   * arithmetic, which is how it drifted.
+   */
+  const bottomPadding = useListBottomPadding();
   const [signOutVisible, setSignOutVisible] = useState(false);
   const [googleSignOutVisible, setGoogleSignOutVisible] = useState(false);
   const [deleteVisible, setDeleteVisible] = useState(false);
@@ -326,7 +337,7 @@ export default function SettingsScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
           paddingHorizontal: screenPadding,
-          paddingBottom: insets.bottom + 40,
+          paddingBottom: bottomPadding,
         }}
       >
         {/* Account */}
