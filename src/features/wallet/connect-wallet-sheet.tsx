@@ -229,6 +229,20 @@ export const ConnectWalletSheet = memo(function ConnectWalletSheet({
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 16 }}
       >
+        {/*
+          Said once, above the list, because the list cannot say it.
+
+          Mobile Wallet Adapter does not let an app choose a wallet: every row
+          fires the same association intent and Android decides which app
+          answers - usually by asking, or by opening the only one installed. So
+          five rows quietly promise a choice that is not ours to make. They earn
+          their place by showing what Eventerz works with; this line keeps them
+          from also implying something false.
+        */}
+        <Text variant="caption" className="mb-2.5 text-muted-foreground">
+          Any of these work. Your phone will ask which one to open.
+        </Text>
+
         <View className="gap-2.5">
           {SUPPORTED_WALLETS.map((wallet, index) => (
             <WalletRow

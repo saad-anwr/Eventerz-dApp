@@ -26,6 +26,15 @@ export interface WalletDescriptor {
   /** Store / download page, opened when the wallet is not installed. */
   downloadUrl: string;
   /**
+   * The host this wallet reports as its `wallet_uri_base` at authorization.
+   *
+   * Used to name the wallet that actually answered the association, which is
+   * not necessarily the row the user tapped - see `walletIdFromUriBase`. Kept
+   * separate from `downloadUrl` on purpose: that one is a marketing page and
+   * free to move, and identity should not break when it does.
+   */
+  uriBaseHost?: string;
+  /**
    * True for the Seeker's built-in wallet, which is offered first on Solana
    * Mobile hardware.
    */
@@ -45,6 +54,19 @@ export interface WalletAccount {
   label?: string;
   walletId: WalletId;
   cluster: SolanaCluster;
+  /**
+   * The wallet's own `https` base URI, returned by `authorize`.
+   *
+   * Mobile Wallet Adapter uses this to reach *the same wallet* again. Without
+   * it, every later association fires the generic `solana-wallet://` intent and
+   * Android picks - which on a phone with more than one wallet installed means
+   * the auth token from wallet A can be presented to wallet B. See
+   * `MobileWalletAdapter#association`.
+   *
+   * Optional because a wallet is not obliged to send one, and because sessions
+   * persisted before this field existed will not have it.
+   */
+  walletUriBase?: string;
 }
 
 export interface SignedTransactionResult {

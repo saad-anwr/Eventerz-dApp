@@ -109,8 +109,20 @@ export const useWalletStore = create<WalletState>()((set, get) => ({
       const account = await walletService.connect(walletId);
       const user = await resolveIdentity(account.address);
       set({ status: 'connected', account, user });
-      analytics.identify(user.id, { walletId, cluster: account.cluster });
-      analytics.track(AnalyticsEvent.WalletConnected, { walletId });
+      /*
+       * `account.walletId`, not the `walletId` argument. The argument is the
+       * row that was tapped, and Mobile Wallet Adapter does not honour it -
+       * Android picks which wallet answers, and the adapter reports which one
+       * did. Recording the tapped row would make the wallet breakdown in
+       * analytics a record of what people clicked rather than what they use.
+       */
+      analytics.identify(user.id, {
+        walletId: account.walletId,
+        cluster: account.cluster,
+      });
+      analytics.track(AnalyticsEvent.WalletConnected, {
+        walletId: account.walletId,
+      });
       // Balance is decorative - never let it block the connected state.
       void get().refreshBalance();
     } catch (error) {

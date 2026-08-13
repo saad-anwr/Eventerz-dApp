@@ -51,7 +51,7 @@ import type {
 } from '@/types';
 import { secureStorage, storage } from '@/utils';
 
-import { SUPPORTED_WALLETS } from './wallets';
+import { SUPPORTED_WALLETS, walletIdFromUriBase } from './wallets';
 
 /**
  * Identity shown in the wallet's approval sheet.
@@ -273,6 +273,47 @@ export class MobileWalletAdapter implements WalletAdapter {
     return new Connection(rpcEndpoint(), 'confirmed');
   }
 
+  /**
+   * How to reach the wallet we are already authorized with.
+   *
+   * # The bug this fixes
+   *
+   * Every `transact` here used to be called bare. A bare association fires the
+   * generic `solana-wallet://` intent, which is a request for *any* wallet -
+   * so on a phone with more than one installed, Android asks again on every
+   * signature and the user can answer with a different wallet than the one
+   * that authorized them.
+   *
+   * What happens then is not a clean failure. `reauthorize` presents wallet
+   * A's `auth_token` to wallet B, which has never issued it, and the error
+   * surfaces at the moment someone taps RSVP - the wallet was connected, the
+   * app said so, and signing fails anyway. On a Seeker, which ships a built-in
+   * wallet and where reviewers install others alongside it, that is the
+   * default configuration rather than an edge case.
+   *
+   * `wallet_uri_base` is what the protocol provides for this: an `https` base
+   * the wallet publishes at authorization, which builds an endpoint-specific
+   * association URL that resolves to that wallet and no other. The reference
+   * web implementation passes it on every subsequent transact; this is the
+   * same rule.
+   *
+   * Returns `undefined` when we have no base - a wallet is not obliged to send
+   * one, and a session stored before this existed will not have it. That is
+   * the old behaviour, which is correct as a fallback and wrong as a default.
+   */
+  private async association(): Promise<{ baseUri: string } | undefined> {
+    const account = await storage.get<WalletAccount>(
+      StorageKeys.WALLET_SESSION,
+    );
+    const baseUri = account?.walletUriBase;
+    // Guarded because the protocol rejects a non-https base by throwing, and a
+    // corrupt stored value should not be able to break signing.
+    if (typeof baseUri !== 'string' || !/^https:\/\//i.test(baseUri)) {
+      return undefined;
+    }
+    return { baseUri };
+  }
+
   async listWallets(): Promise<WalletDescriptor[]> {
     // MWA does not enumerate wallets - Android's association picker does. The
     // curated list still renders so the sheet looks the same before hand-off.
@@ -298,8 +339,18 @@ export class MobileWalletAdapter implements WalletAdapter {
         // `toBase58`. This is the line the `slice of null` crash came through.
         address: toBase58(account.address),
         label: account.label ?? undefined,
-        walletId,
+        /*
+         * Which wallet actually answered, not which row was tapped.
+         *
+         * The sheet lists five wallets, and tapping any of them fires the same
+         * association intent - Android decides which wallet opens. So the
+         * tapped id was a guess, and Settings printed it as fact: connect via
+         * the Phantom row, pick Solflare in the chooser, and the app would
+         * tell you Solflare was Phantom for the rest of the session.
+         */
+        walletId: walletIdFromUriBase(auth.wallet_uri_base) ?? walletId,
         cluster: integrationsConfig.solanaNetwork,
+        walletUriBase: auth.wallet_uri_base,
       };
 
       /*
@@ -323,9 +374,12 @@ export class MobileWalletAdapter implements WalletAdapter {
 
     if (token) {
       try {
+        // Read before the session is cleared below, or there is no base left
+        // to associate with.
+        const config = await this.association();
         await transact(async (wallet) => {
           await wallet.deauthorize({ auth_token: token });
-        });
+        }, config);
       } catch {
         // The wallet may have revoked us already, or been uninstalled. Either
         // way the local session must still be cleared.
@@ -351,6 +405,7 @@ export class MobileWalletAdapter implements WalletAdapter {
 
   async signMessage(message: string): Promise<string> {
     const token = await secureStorage.get(SecureKeys.WALLET_AUTH_TOKEN);
+    const config = await this.association();
 
     return transact(async (wallet) => {
       const auth = await wallet.reauthorize({
@@ -371,7 +426,7 @@ export class MobileWalletAdapter implements WalletAdapter {
       });
 
       return Buffer.from(signed).toString('base64');
-    });
+    }, config);
   }
 
   /**
@@ -413,6 +468,7 @@ export class MobileWalletAdapter implements WalletAdapter {
     }
 
     const token = await secureStorage.get(SecureKeys.WALLET_AUTH_TOKEN);
+    const config = await this.association();
     const connection = this.connection();
 
     return transact(async (wallet) => {
@@ -461,7 +517,7 @@ export class MobileWalletAdapter implements WalletAdapter {
       });
 
       return { signature };
-    });
+    }, config);
   }
 
   async getBalanceSol(address: string): Promise<number> {
