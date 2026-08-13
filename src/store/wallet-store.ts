@@ -143,6 +143,17 @@ export const useWalletStore = create<WalletState>()((set, get) => ({
         set({ status: 'disconnected', error: null });
         return;
       }
+
+      /*
+       * Logged, not shown.
+       *
+       * A wallet that authorized successfully and then failed inside our own
+       * code looked, from outside, exactly like one that never answered:
+       * "Connection failed" and nothing else, anywhere. There was no line in
+       * logcat either, so diagnosing it on a device meant rebuilding with a
+       * print statement. This is that print statement, kept.
+       */
+      console.warn('[wallet] connect failed', error);
       set({ status: 'error', error: describeWalletError(error) });
     }
   },

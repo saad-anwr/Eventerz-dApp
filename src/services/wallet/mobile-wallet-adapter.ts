@@ -51,6 +51,7 @@ import type {
 } from '@/types';
 import { secureStorage, storage } from '@/utils';
 
+import { walletMessage } from './errors';
 import { SUPPORTED_WALLETS, walletIdFromUriBase } from './wallets';
 
 /**
@@ -105,7 +106,7 @@ type MwaChain = (typeof CHAIN_BY_CLUSTER)[keyof typeof CHAIN_BY_CLUSTER];
  */
 function toBase58(address: unknown): string {
   if (typeof address !== 'string' || address.length === 0) {
-    throw new Error('The wallet returned an account with no address.');
+    throw walletMessage('The wallet returned an account with no address.');
   }
 
   try {
@@ -116,7 +117,19 @@ function toBase58(address: unknown): string {
     try {
       return new PublicKey(address).toBase58();
     } catch {
-      throw new Error('The wallet returned an address we could not read.');
+      /*
+       * Logged because this is the one failure whose cause lives in a value we
+       * never see. A public key is public, and knowing its length and encoding
+       * is the difference between diagnosing this in one attempt and guessing
+       * at it across rebuilds.
+       */
+      console.warn(
+        `[wallet] unreadable address from wallet: length=${address.length} ` +
+          `value=${address}`,
+      );
+      throw walletMessage(
+        'The wallet returned an address we could not read.',
+      );
     }
   }
 }
@@ -329,7 +342,7 @@ export class MobileWalletAdapter implements WalletAdapter {
 
       const account = auth.accounts[0];
       if (!account) {
-        throw new Error(
+        throw walletMessage(
           'That wallet did not share an account. Open it, make sure a wallet is set up, and try again.',
         );
       }
@@ -417,7 +430,7 @@ export class MobileWalletAdapter implements WalletAdapter {
       // nothing would read `.address` off undefined and throw a TypeError.
       const signer = auth.accounts[0];
       if (!signer) {
-        throw new Error('That wallet did not share an account to sign with.');
+        throw walletMessage('That wallet did not share an account to sign with.');
       }
 
       const [signed] = await wallet.signMessages({
@@ -479,7 +492,7 @@ export class MobileWalletAdapter implements WalletAdapter {
 
       const payerAccount = auth.accounts[0];
       if (!payerAccount) {
-        throw new Error('That wallet did not share an account to pay with.');
+        throw walletMessage('That wallet did not share an account to pay with.');
       }
       const payer = new PublicKey(toBase58(payerAccount.address));
       const instruction = buildInstruction(intent, payer, programId);

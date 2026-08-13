@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { describeWalletError, isWalletCancellation } from './errors';
+import { describeWalletError, isWalletCancellation, walletMessage } from './errors';
 
 /**
  * What a user is allowed to be shown when a wallet fails.
@@ -29,6 +29,40 @@ describe('the two failures that cost the submission', () => {
     expect(shown).not.toBeNull();
     expect(shown).not.toMatch(/slice|null|TypeError/i);
     expect(shown).toMatch(/could not be connected/i);
+  });
+});
+
+describe('a diagnosis we made ourselves', () => {
+  /*
+   * The Seeker's built-in wallet authorized successfully and the app still
+   * said "That wallet could not be connected." - because the adapter's precise
+   * finding was thrown as a plain Error, matched none of the patterns below,
+   * and was replaced by the catch-all. The useful half of the diagnosis was
+   * computed and then discarded, on every wallet failure.
+   */
+  it('survives instead of being replaced by the catch-all', () => {
+    const shown = describeWalletError(
+      walletMessage('The wallet returned an address we could not read.'),
+    );
+    expect(shown).toBe('The wallet returned an address we could not read.');
+    expect(shown).not.toMatch(/could not be connected/);
+  });
+
+  it('is never mistaken for a cancellation', () => {
+    // These are only raised *after* a wallet has answered, so silencing one
+    // would hide a real failure behind an empty screen.
+    const error = walletMessage('That wallet did not share an account.');
+    expect(isWalletCancellation(error)).toBe(false);
+    expect(describeWalletError(error)).toBe(
+      'That wallet did not share an account.',
+    );
+  });
+
+  it('wins even when its wording overlaps a pattern', () => {
+    // "cancelled" inside a sentence we wrote must not route it to silence.
+    const error = walletMessage('The transfer was cancelled by the network.');
+    expect(isWalletCancellation(error)).toBe(false);
+    expect(describeWalletError(error)).toMatch(/cancelled by the network/);
   });
 });
 

@@ -31,6 +31,38 @@
  * boundary is a native exception rather than a message written for anybody.
  */
 
+/**
+ * A failure we diagnosed ourselves, carrying a sentence already written for
+ * the person holding the phone.
+ *
+ * # The bug this fixes
+ *
+ * The adapter does real diagnosis - "that wallet did not share an account",
+ * "the wallet returned an address we could not read" - and throws it as a
+ * plain `Error`. The store then passed every such error through
+ * `describeWalletError`, which recognised none of them, fell through to its
+ * catch-all, and replaced a precise sentence with "That wallet could not be
+ * connected."
+ *
+ * So the useful half of the diagnosis was computed and then discarded, on
+ * every wallet failure. The user got a shrug, and so did we: with no logging
+ * either, a wallet that authorized successfully and then failed in our own
+ * code was indistinguishable from one that never answered.
+ *
+ * Anything thrown as one of these is passed through untouched.
+ */
+export class WalletMessageError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'WalletMessageError';
+  }
+}
+
+/** Throw a sentence that is already fit to show. See `WalletMessageError`. */
+export function walletMessage(message: string): WalletMessageError {
+  return new WalletMessageError(message);
+}
+
 /** Codes MWA sets on the errors it raises. */
 const WALLET_NOT_FOUND = /ERROR_WALLET_NOT_FOUND|no installed wallet/i;
 
@@ -49,6 +81,10 @@ const NOT_LINKED =
   /doesn't seem to be linked|not.*linked|only compatible with React Native Android/i;
 
 export function isWalletCancellation(error: unknown): boolean {
+  // We only raise these after the wallet has answered, so none of them is the
+  // user backing out - and silencing one would hide a real failure.
+  if (error instanceof WalletMessageError) return false;
+
   const message = messageOf(error);
   // Order matters: "wallet not found" must not be read as a cancellation, and
   // some devices report it with a cancellation wrapped around it.
@@ -72,6 +108,14 @@ function messageOf(error: unknown): string {
  *   should be shown nothing at all.
  */
 export function describeWalletError(error: unknown): string | null {
+  /*
+   * Ours already, and better than anything below could reconstruct - it was
+   * written knowing exactly which step failed. Passed through before any
+   * pattern matching, so a phrase in it cannot be mistaken for a cancellation
+   * or a missing wallet.
+   */
+  if (error instanceof WalletMessageError) return error.message;
+
   const message = messageOf(error);
 
   if (WALLET_NOT_FOUND.test(message)) {
