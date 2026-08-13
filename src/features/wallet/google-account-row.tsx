@@ -139,7 +139,7 @@ export const GoogleAccountRow = memo(function GoogleAccountRow() {
                 ? (sessionEmail ?? 'Signed in')
                 : isLive
                   ? 'Recover this account on another device'
-                  : 'Not configured - see docs/AUTH_SETUP.md'}
+                  : 'Unavailable right now'}
           </Text>
         </View>
 

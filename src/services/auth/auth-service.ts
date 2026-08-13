@@ -29,8 +29,18 @@ export type AuthResult<T = void> =
   | { ok: true; data: T }
   | { ok: false; error: string; cancelled?: boolean };
 
+/**
+ * Shown when the build has no backend credentials.
+ *
+ * Deliberately says nothing about environment variables or setup docs. This is
+ * a deployment fault, but it is read by whoever is holding the phone - and one
+ * of them is a store reviewer, for whom a message naming `EXPO_PUBLIC_*` and a
+ * path in the repo is indistinguishable from an unfinished app. The build log
+ * is where the operator finds out; see `scripts/check-build-env.mjs`, which
+ * fails the build before an artifact like this can exist.
+ */
 const NOT_CONFIGURED =
-  'Sign-in is not configured. Set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY - see docs/AUTH_SETUP.md.';
+  'Sign-in is unavailable right now. You can still connect a wallet to continue.';
 
 /**
  * Where Google returns the user. Must be registered in Supabase ->

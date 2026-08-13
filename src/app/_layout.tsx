@@ -239,18 +239,28 @@ export default function RootLayout() {
                 />
                 <Stack.Screen name="(tabs)" options={{ animation: 'fade' }} />
 
-                {/* Detail routes */}
+                {/*
+                  Detail routes.
+
+                  Every name here has to match a file under `app/`. Four did
+                  not - `community/[id]` (the directory is `communities`),
+                  `messages/index`, `settings` (it lives in the tab group) and
+                  `friends` (no such screen). Expo Router drops an unmatched
+                  `Screen` and warns, so each one cost a
+                  `[Layout children]: No route named ... exists` on every cold
+                  start, in a log a store reviewer may well be reading.
+                */}
                 <Stack.Screen name="event/[id]" />
                 <Stack.Screen name="ticket/[id]" />
-                <Stack.Screen name="community/[id]" />
+                <Stack.Screen name="communities/[id]" />
                 <Stack.Screen name="user/[id]" />
                 <Stack.Screen name="dashboard" />
                 <Stack.Screen name="notifications" />
-                <Stack.Screen name="messages/index" />
                 <Stack.Screen name="messages/[id]" />
                 <Stack.Screen name="event/edit/[id]" />
-                <Stack.Screen name="settings" />
-                <Stack.Screen name="friends" />
+                <Stack.Screen name="explore" />
+                <Stack.Screen name="tickets" />
+                <Stack.Screen name="checkin" />
                 {/* OAuth landing. Android delivers the redirect deep link to
                     the app as well as to the browser session, so this route
                     has to exist or a successful sign-in renders the 404. */}

@@ -388,13 +388,13 @@ export const eventRepository = {
    */
   async approveGuest(eventId: string): Promise<EventItem> {
     throw new Error(
-      'Guest approval needs the live backend - set EXPO_PUBLIC_USE_MOCK_DATA=false.',
+      'Approving guests is unavailable in this build.',
     );
   },
 
   async declineGuest(eventId: string): Promise<EventItem> {
     throw new Error(
-      'Guest approval needs the live backend - set EXPO_PUBLIC_USE_MOCK_DATA=false.',
+      'Approving guests is unavailable in this build.',
     );
   },
 

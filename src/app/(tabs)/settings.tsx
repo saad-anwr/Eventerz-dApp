@@ -544,8 +544,8 @@ export default function SettingsScreen() {
             }
             onPress={() =>
               toast.info(
-                'One wallet at a time',
-                'Multi-wallet support is coming with the native build.',
+                'This is the wallet you are signing with',
+                'Add or switch wallets under Linked wallets above.',
               )
             }
           />
@@ -554,11 +554,11 @@ export default function SettingsScreen() {
             icon={Globe}
             title="Network"
             value={integrationsConfig.solanaNetwork}
-            description="Set with EXPO_PUBLIC_SOLANA_NETWORK"
+            description="Where your tickets and payments settle"
             onPress={() =>
               toast.info(
-                'Configured via environment',
-                'See .env.example in the project root.',
+                'Solana network',
+                `Eventerz settles seats, tickets and payments on ${integrationsConfig.solanaNetwork}.`,
               )
             }
           />

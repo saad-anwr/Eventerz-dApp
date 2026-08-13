@@ -128,7 +128,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
       set({
         status: 'error',
         error:
-          'Google sign-in is not configured yet. See docs/AUTH_SETUP.md.',
+          'Google sign-in is unavailable right now. You can still connect a wallet to continue.',
       });
       return false;
     }

@@ -73,7 +73,7 @@ export const messageRepository = {
 
   async recordPayment(): Promise<PaymentReceipt> {
     throw new Error(
-      'Sending crypto needs the live backend - set EXPO_PUBLIC_USE_MOCK_DATA=false.',
+      'Sending crypto is unavailable in this build.',
     );
   },
 

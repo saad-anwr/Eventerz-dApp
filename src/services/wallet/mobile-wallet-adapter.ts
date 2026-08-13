@@ -53,11 +53,24 @@ import { secureStorage, storage } from '@/utils';
 
 import { SUPPORTED_WALLETS } from './wallets';
 
-/** Identity shown in the wallet's approval sheet. */
+/**
+ * Identity shown in the wallet's approval sheet.
+ *
+ * `icon` is a path *relative to `uri`*, which the wallet resolves and fetches -
+ * so it has to be a real, publicly readable image. It was `favicon.ico`, and
+ * `https://www.eventerz.xyz/favicon.ico` is a 404: the site is a Next.js app
+ * that serves an SVG mark and never had that file. The wallet therefore drew
+ * its fallback where our logo should be, on the approval sheet that is the
+ * first thing anyone sees when they connect - a reviewer included.
+ *
+ * A PNG rather than the site's `icon.svg` on purpose. This is fetched and
+ * decoded by a native Android image loader, and SVG support there is not
+ * something to rely on for the one image in the consent dialog.
+ */
 const APP_IDENTITY = {
   name: 'Eventerz',
   uri: 'https://www.eventerz.xyz',
-  icon: 'favicon.ico',
+  icon: 'icon.png',
 } as const;
 
 /** MWA's `Chain` union - kept as literals so the type flows to `authorize`. */
@@ -386,11 +399,16 @@ export class MobileWalletAdapter implements WalletAdapter {
   ): Promise<SignedTransactionResult> {
     const programId = eventerzProgramId();
 
+    /*
+     * Reads as a feature that is not on yet, because to the person holding the
+     * phone that is exactly what it is. It used to name the environment
+     * variable to set, which is an instruction only the operator can act on -
+     * and this string is shown in a toast to whoever tapped RSVP, including a
+     * store reviewer.
+     */
     if (intent.type !== 'transfer' && !programId) {
       throw new Error(
-        `On-chain ${intent.type.replace(/-/g, ' ')} is not available yet - ` +
-          'the Eventerz program has not been deployed. Set ' +
-          'EXPO_PUBLIC_EVENTERZ_PROGRAM_ID once it is live.',
+        `On-chain ${intent.type.replace(/-/g, ' ')} is not available yet.`,
       );
     }
 
