@@ -386,9 +386,21 @@ export type Database = {
         Args: { a: string; b: string };
         Returns: string;
       };
+      /**
+       * An array, since 0024 made this `returns setof public.profiles`.
+       *
+       * It was `returns public.profiles`, a bare composite, which Postgres
+       * always answers with exactly one row - a row of NULLs when nothing
+       * matched. That is what crashed onboarding for every wallet that had
+       * never been linked. A set returns nothing when there is nothing.
+       *
+       * Callers use `.maybeSingle()`, which coerces a one-row array to an
+       * object and gives `null` for zero rows, so the shape change is
+       * absorbed there.
+       */
       profile_for_wallet: {
         Args: { p_wallet_address: string };
-        Returns: ProfileRow;
+        Returns: ProfileRow[];
       };
       /** Legacy alias for `request_to_join`, kept for installed builds. */
       rsvp: {
