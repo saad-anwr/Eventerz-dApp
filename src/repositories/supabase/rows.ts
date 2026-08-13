@@ -372,7 +372,10 @@ export function toUser(row: ProfileRow): User {
   return {
     id: row.id,
     name: row.name,
-    handle: row.handle ?? row.id.slice(0, 8),
+    // `row.id ?? ''` because this line threw the TypeError that cost the dApp
+    // Store submission - see 0024. A mapper is the wrong place to discover that
+    // a row is not a row, but it is the last place that can avoid a crash.
+    handle: row.handle ?? (row.id ?? '').slice(0, 8),
     /*
      * No `email`. `toUser` maps whatever profile was fetched - a host, an
      * attendee, a search result - so anything set here is somebody else's. The

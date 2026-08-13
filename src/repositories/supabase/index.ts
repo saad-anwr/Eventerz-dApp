@@ -633,7 +633,26 @@ export const supabaseUserRepository = {
       .rpc('profile_for_wallet', { p_wallet_address: address })
       .maybeSingle();
 
-    if (data) return toUser(data as ProfileRow);
+    /*
+     * `data.id`, not `data`.
+     *
+     * 0022 declared `profile_for_wallet` as `returns public.profiles` - a bare
+     * composite type, which in Postgres always yields exactly one row. A wallet
+     * nobody has linked therefore came back not as zero rows but as a row of
+     * NULLs, which PostgREST reports as an object, which `maybeSingle()` hands
+     * over, which `if (data)` accepts. `toUser` then read
+     * `row.handle ?? row.id.slice(0, 8)` and threw
+     *
+     *     Cannot read property 'slice' of null
+     *
+     * under "Connection failed" - the error the dApp Store reviewer hit, on
+     * every wallet they owned, because an unlinked wallet is the only kind a
+     * reviewer has. 0024 fixes the function to `returns setof`; this checks the
+     * shape rather than the truthiness, so a schema that lies cannot crash
+     * onboarding again.
+     */
+    const row = data as ProfileRow | null;
+    if (row?.id) return toUser(row);
 
     return {
       id: `wallet:${address}`,
