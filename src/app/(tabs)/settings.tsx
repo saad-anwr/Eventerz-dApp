@@ -370,14 +370,22 @@ export default function SettingsScreen() {
 
         {/*
           Every wallet on the account, not just the one connected right now.
-          Renders nothing when signed out - wallets attach to an account, so
-          there is no set to show without one.
+
+          Gated on `profile` rather than left to `LinkedWallets`, which returns
+          null when signed out - wallets attach to an account, so there is no
+          set to show without one. The panel returning null was not enough: the
+          heading and its bordered container live out here, so a wallet-only
+          user got a "LINKED WALLETS" title above an empty 8px box. Whoever the
+          two conditions belong to, they have to agree, so this one mirrors the
+          panel's.
         */}
-        <Group title="Linked wallets">
-          <View className="pt-1 pb-2">
-            <LinkedWallets onLink={openSheet} />
-          </View>
-        </Group>
+        {profile && (
+          <Group title="Linked wallets">
+            <View className="pt-1 pb-2">
+              <LinkedWallets onLink={openSheet} />
+            </View>
+          </Group>
+        )}
 
         {/*
           Appearance.

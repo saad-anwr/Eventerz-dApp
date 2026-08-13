@@ -158,8 +158,31 @@ export const useWalletStore = create<WalletState>()((set, get) => ({
     }
   },
 
+  /**
+   * Disconnect, unconditionally.
+   *
+   * The adapter call is advisory and the state change is not. This used to be a
+   * bare `await walletService.disconnect()` followed by `set(...)`, so anything
+   * the adapter threw - a keychain read that failed, a wallet that had been
+   * uninstalled, a storage error - propagated out and skipped the `set`
+   * entirely. The user tapped Disconnect, was shown no error, and stayed
+   * connected. Worse, the rejection escaped into `handleSignOut`, which is not
+   * a promise anybody awaits, so it surfaced as an unhandled rejection instead
+   * of anything actionable.
+   *
+   * Disconnecting is a local decision. Telling the wallet about it is a
+   * courtesy, and a courtesy that fails must not be able to keep somebody
+   * signed in to a wallet they have asked to leave.
+   */
   disconnect: async () => {
-    await walletService.disconnect();
+    try {
+      await walletService.disconnect();
+    } catch (error) {
+      // Logged rather than shown: there is no decision for the user to make
+      // here, and the thing they asked for happens either way.
+      console.warn('[wallet] disconnect failed', error);
+    }
+
     set({
       status: 'disconnected',
       account: null,

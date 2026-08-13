@@ -389,7 +389,23 @@ export class MobileWalletAdapter implements WalletAdapter {
   }
 
   async disconnect(): Promise<void> {
-    const token = await secureStorage.get(SecureKeys.WALLET_AUTH_TOKEN);
+    /*
+     * Guarded, because this read used to sit outside every `try` in the method.
+     * expo-secure-store goes to the Android keystore, which can fail for
+     * reasons that have nothing to do with us - a device still locked after
+     * boot, a key invalidated by a biometric or lockscreen change. When it did,
+     * `disconnect` rejected before clearing anything and the wallet stayed
+     * connected.
+     *
+     * No token simply means no deauthorize call. The local session is still
+     * cleared below, which is the part that actually disconnects.
+     */
+    let token: string | null = null;
+    try {
+      token = await secureStorage.get(SecureKeys.WALLET_AUTH_TOKEN);
+    } catch (error) {
+      console.warn('[wallet] could not read auth token to deauthorize', error);
+    }
 
     if (token) {
       try {
@@ -425,8 +441,18 @@ export class MobileWalletAdapter implements WalletAdapter {
       }
     }
 
-    await secureStorage.remove(SecureKeys.WALLET_AUTH_TOKEN);
-    await storage.remove(StorageKeys.WALLET_SESSION);
+    /*
+     * `allSettled`, and both are attempted.
+     *
+     * Sequential awaits meant a failure clearing the token left the session
+     * behind, and `restore()` needs *both* halves - so a half-cleared
+     * disconnect could still come back as a connected wallet on next launch.
+     * Neither is worth abandoning the other for.
+     */
+    await Promise.allSettled([
+      secureStorage.remove(SecureKeys.WALLET_AUTH_TOKEN),
+      storage.remove(StorageKeys.WALLET_SESSION),
+    ]);
   }
 
   /**

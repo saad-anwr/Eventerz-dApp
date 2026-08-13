@@ -87,10 +87,46 @@ export const GlassCard = memo(function GlassCard({
       {/* Inner surface - inset by 1px when a gradient rim is showing. */}
       <View
         className={cn(
-          'flex-1',
           gradientBorder ? 'bg-[#0b1024]' : 'border border-white/10',
         )}
         style={{
+          /*
+           * `flexGrow`/`flexShrink` with an **auto** basis, not `flex-1`.
+           *
+           * # The bug this fixes
+           *
+           * This was `flex-1`, which compiles to `flexBasis: '0%'`. A
+           * percentage basis is resolved against the parent's main-axis size,
+           * and what that means depends entirely on whether the parent is
+           * bounded:
+           *
+           *  - Inside a `ScrollView`, the content height is unbounded, so the
+           *    percentage resolves to *undefined*, Yoga falls back to `auto`,
+           *    and the card is sized by its content. This is why every card in
+           *    a scrolling list looked correct.
+           *
+           *  - Inside a bounded parent - `absolute inset-0` with
+           *    `justify-center`, which is exactly how `Modal` centres its card -
+           *    the percentage resolves against a real number. `0%` of the screen
+           *    height is **0**, a definite size, so the surface collapsed to
+           *    nothing and `overflow-hidden` clipped the content away.
+           *
+           * The card did not disappear: the outer view still painted its
+           * `gradientBorder`, so every dialog in the app rendered as a scrim
+           * over a dimmed screen with a 1px gradient line across the middle and
+           * no body. The confirmation buttons existed and were unreachable, and
+           * "Disconnect wallet?" - which sets `dismissOnBackdrop={false}` -
+           * could not be dismissed by tapping outside it either. The only way
+           * out was the back gesture, so a wallet could not be disconnected at
+           * all.
+           *
+           * An `auto` basis is content-sized in both cases and still grows to
+           * fill a parent that has room to give, which is what this view wanted
+           * in the first place.
+           */
+          flexGrow: 1,
+          flexShrink: 1,
+          flexBasis: 'auto',
           borderRadius: gradientBorder ? radius - 1 : radius,
           margin: gradientBorder ? 1 : 0,
         }}
