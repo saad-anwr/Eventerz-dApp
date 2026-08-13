@@ -78,6 +78,24 @@ describe('describeWalletError', () => {
   });
 
   /*
+   * Asserted identically in the website's `lib/wallet-errors.test.ts`.
+   *
+   * These are the cases where both platforms mean exactly the same thing, so
+   * they say exactly the same thing. Testing onboarding on a Vercel preview
+   * only predicts what the APK does if the two agree on their failure text, so
+   * the shared sentences are pinned on both sides - a change to either breaks
+   * the other's suite.
+   */
+  it('shares its wording with the website where the situation is shared', () => {
+    expect(describeWalletError(new Error('Network request failed'))).toBe(
+      'Could not reach the network while connecting. Check your connection and try again.',
+    );
+    expect(describeWalletError(new Error('kotlin.NotImplementedError'))).toBe(
+      'That wallet could not be connected. You can try again, or continue with Google.',
+    );
+  });
+
+  /*
    * The property that matters more than any single case: whatever goes in, what
    * comes out is either a sentence or nothing. Never a class name, never a
    * stack fragment, never the empty string.
