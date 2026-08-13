@@ -24,6 +24,7 @@ import type {
 import type { CreateEventInput, UpdateEventInput } from '../event-repository';
 import { PROFILE_COLUMNS, type ProfileRow } from '@/services/auth/types';
 import { parseQrPayload } from '@/utils/check-in';
+import { assertRealIdentity } from '@/utils/identity';
 import { postgrestLikePattern } from '@/utils/postgrest';
 import {
   toCommunity,
@@ -774,23 +775,45 @@ export const supabaseCommunityRepository = {
   async toggleMembership(id: string, userId: string): Promise<Community> {
     const supabase = client();
 
-    const { data: existing } = await supabase
+    /*
+     * Joining writes a `profile_id`, so it needs a real profile row. Without
+     * this a wallet-only user - one who connected a wallet and has not signed
+     * in with Google - sent `wallet:<address>` into a uuid column and got
+     *
+     *     invalid input syntax for type uuid: "wallet:CiM2ZRkc..."
+     *
+     * which is the exact failure `assertRealIdentity` exists to prevent. Every
+     * other write path already called it; Communities was missed.
+     */
+    assertRealIdentity(userId);
+
+    const { data: existing, error: lookupError } = await supabase
       .from('community_members')
       .select('community_id')
       .eq('community_id', id)
       .eq('profile_id', userId)
       .maybeSingle();
+    if (lookupError) fail('Checking your membership', lookupError);
 
-    if (existing) {
-      await supabase
-        .from('community_members')
-        .delete()
-        .eq('community_id', id)
-        .eq('profile_id', userId);
-    } else {
-      await supabase
-        .from('community_members')
-        .insert({ community_id: id, profile_id: userId });
+    /*
+     * Errors checked rather than discarded. All three calls used to be bare
+     * `await`s, so a rejected insert - RLS, a token-gated community, a dropped
+     * connection - was thrown away and the reload below returned the community
+     * unchanged. The button flipped back and nothing said why, which reads as
+     * the app ignoring the tap.
+     */
+    const { error: writeError } = existing
+      ? await supabase
+          .from('community_members')
+          .delete()
+          .eq('community_id', id)
+          .eq('profile_id', userId)
+      : await supabase
+          .from('community_members')
+          .insert({ community_id: id, profile_id: userId });
+
+    if (writeError) {
+      fail(existing ? 'Leaving the community' : 'Joining the community', writeError);
     }
 
     const updated = await supabaseCommunityRepository.getById(id);

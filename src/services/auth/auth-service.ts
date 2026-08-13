@@ -23,7 +23,7 @@ import { APP_SCHEME } from '@/constants/config';
 
 import { getSupabaseClient, isSupabaseConfigured } from './supabase-client';
 import type { ProfileRow, ProfileUpdate } from './types';
-import { PROFILE_COLUMNS } from '@/services/auth/types';
+import { PROFILE_COLUMNS, asProfileRow } from '@/services/auth/types';
 
 export type AuthResult<T = void> =
   | { ok: true; data: T }
@@ -302,9 +302,24 @@ export async function deleteAccount(): Promise<AuthResult> {
     return { ok: false, error: detail };
   }
 
-  // The account is gone; clear the local session so nothing keeps using a token
-  // whose user no longer exists.
-  await supabase.auth.signOut();
+  /*
+   * The account is gone; clear the local session so nothing keeps using a token
+   * whose user no longer exists.
+   *
+   * Guarded, because by this point the deletion has already succeeded. A bare
+   * await meant a failing local sign-out - the very thing that cannot matter
+   * any more, since the user it authenticates no longer exists - propagated out
+   * and turned a completed deletion into a reported failure. The caller would
+   * then show an error and invite a retry on an account that is not there.
+   *
+   * Signing out locally is cleanup. It cannot be allowed to contradict the
+   * result it is cleaning up after.
+   */
+  try {
+    await supabase.auth.signOut();
+  } catch (signOutError) {
+    console.warn('[auth] session cleanup after delete failed', signOutError);
+  }
   return { ok: true, data: undefined };
 }
 
@@ -497,7 +512,20 @@ export async function unlinkWallet(
     : await supabase.rpc('unlink_wallet');
 
   if (error) return { ok: false, error: error.message };
-  return { ok: true, data: data as ProfileRow };
+
+  /*
+   * Checked rather than cast: these RPCs return a bare composite, which is one
+   * row of NULLs when nothing matched rather than no row at all. See
+   * `asProfileRow`. Reporting failure is right here - the wallet may well have
+   * been detached, but we were not handed a profile to show for it, and
+   * adopting a row with a null id as the user's identity is how a placeholder
+   * ends up in a uuid column.
+   */
+  const row = asProfileRow(data);
+  if (!row) {
+    return { ok: false, error: 'That wallet could not be removed. Try again.' };
+  }
+  return { ok: true, data: row };
 }
 
 /** Promote one of the account's wallets to primary. */
@@ -511,7 +539,13 @@ export async function setPrimaryWallet(
     p_wallet_address: walletAddress,
   });
   if (error) return { ok: false, error: error.message };
-  return { ok: true, data: data as ProfileRow };
+
+  // Same shape hazard as `unlinkWallet` above - see `asProfileRow`.
+  const row = asProfileRow(data);
+  if (!row) {
+    return { ok: false, error: 'That wallet could not be made primary. Try again.' };
+  }
+  return { ok: true, data: row };
 }
 
 /*

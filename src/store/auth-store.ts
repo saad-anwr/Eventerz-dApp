@@ -158,8 +158,22 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
     return true;
   },
 
+  /**
+   * Sign out locally, whatever the server says.
+   *
+   * The remote call was awaited bare, so anything it threw propagated out and
+   * skipped the `set` - leaving somebody who tapped "Sign out" still signed in,
+   * with no error shown, as an unhandled rejection from a callback nobody
+   * awaits. Signing out is a local decision; revoking the session server-side
+   * is the part that can fail, and it must not be able to keep a user in an
+   * account they have asked to leave.
+   */
   signOut: async () => {
-    await signOutRemote();
+    try {
+      await signOutRemote();
+    } catch (error) {
+      console.warn('[auth] sign out failed', error);
+    }
     set({
       profile: null,
       sessionEmail: null,
@@ -181,7 +195,26 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
     if (!isSupabaseConfigured) return 'Accounts are not configured.';
 
     set({ status: 'deleting', error: null });
-    const result = await deleteAccountRemote();
+
+    /*
+     * Wrapped because the caller cannot recover from a throw. The delete dialog
+     * does `setDeleting(true)` -> `await deleteAccount()` -> `setDeleting(false)`,
+     * so an exception here skipped the reset and left the dialog spinning on a
+     * button that would never come back - with no way to close it and no idea
+     * whether the account had been deleted. A message is recoverable; a
+     * permanent spinner is not.
+     */
+    let result: Awaited<ReturnType<typeof deleteAccountRemote>>;
+    try {
+      result = await deleteAccountRemote();
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'Your account could not be deleted. Try again.';
+      set({ status: 'error', error: message });
+      return message;
+    }
 
     if (!result.ok) {
       set({ status: 'error', error: result.error });

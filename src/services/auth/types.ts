@@ -55,6 +55,37 @@ export type ProfileRow = {
   updated_at: string;
 };
 
+/**
+ * A profile RPC result, or null if what came back is not a profile.
+ *
+ * # Why casting is not enough
+ *
+ * Several functions are declared `returns public.profiles` - a bare composite
+ * rather than a `setof`. Postgres answers those with **exactly one row**, and
+ * when the inner select matches nothing that row is not absent: every column
+ * comes back NULL. PostgREST reports it as a JSON object, so `data` is truthy,
+ * `data as ProfileRow` type-checks, and the caller has a `ProfileRow` whose
+ * `id` is null.
+ *
+ * That is precisely how onboarding broke for the dApp Store reviewer - see the
+ * header of migration 0024 - and `unlink_wallet_address`, `set_primary_wallet`
+ * and `sync_x_identity` all still return that shape. The functions themselves
+ * only reach it if a signed-in user has no profile row, which should not
+ * happen; the point is that "should not happen" is exactly what the last one
+ * was, and the cost of checking is one comparison.
+ *
+ * So: a row is a profile when it has an id. Anything else is null, and callers
+ * decide what that means rather than discovering it several frames later in a
+ * mapper.
+ */
+export function asProfileRow(data: unknown): ProfileRow | null {
+  if (!data || typeof data !== 'object') return null;
+  const row = data as Partial<ProfileRow>;
+  return typeof row.id === 'string' && row.id.length > 0
+    ? (row as ProfileRow)
+    : null;
+}
+
 export type ProfileUpdate = Partial<
   Pick<
     ProfileRow,
