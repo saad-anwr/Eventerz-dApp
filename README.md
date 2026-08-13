@@ -153,6 +153,13 @@ clone still starts - see `.env.example`.
 | `npm run prebuild`      | Regenerate `android/` after a native dependency change      |
 | `npm run build:check`   | Everything EAS will check, before you spend a build slot   |
 | `npm run eas:apk`       | Cloud APK via EAS (`preview` profile)                      |
+| `npm run eas:creds`     | Android signing credentials, incl. the keystore SHA-256    |
+| `npm run eas:builds`    | The last five Android builds and their status              |
+
+> `eas` is not installed globally here, and every EAS command needs the
+> project - so a bare `eas ...`, or any of these run from the repo's parent
+> folder, fails with "the term 'eas' is not recognized". Run them from this
+> directory, through npm, and both problems go away.
 
 ---
 
@@ -310,6 +317,29 @@ cloud build needs no signing setup from you.
 `autoIncrement: "versionCode"`, so EAS owns the version code and bumps it every
 build. `app.json` carries the human-facing `version` ("1.0.0"); raise that by
 hand when you want the displayed version to change.
+
+### App Links, and the one thing that silently breaks them
+
+`app.json` claims `https://eventerz.xyz/checkin` with `autoVerify: true`, so a
+scanned check-in link opens the app instead of the browser. Android only
+honours that if the site serves a Digital Asset Links file naming **the
+SHA-256 of the certificate this build is signed with**.
+
+That is one fact stored in two places - the EAS keystore and the website - and
+nothing warns you when they stop agreeing. Rotating the keystore is exactly
+what breaks it, and the failure is quiet: links keep working, they just open
+in the browser. Check both sides after any credentials change:
+
+```bash
+npm run eas:creds                                        # keystore SHA-256
+curl -s https://www.eventerz.xyz/.well-known/assetlinks.json
+```
+
+The fingerprints must be identical. The website builds that file from
+`ANDROID_CERT_SHA256`, so a mismatch is fixed there, not here.
+
+Nothing is lost while they disagree - `/checkin` still opens in a browser, and
+the in-app scanner never depended on this at all.
 
 ---
 

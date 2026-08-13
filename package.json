@@ -95,6 +95,8 @@
     "eas:apk": "npx eas-cli build --platform android --profile preview",
     "eas:apk:prod": "npx eas-cli build --platform android --profile production",
     "eas:apk:local": "npx eas-cli build --platform android --profile preview --local",
+    "eas:creds": "npx eas-cli credentials --platform android",
+    "eas:builds": "npx eas-cli build:list --platform android --limit 5",
     "test": "vitest run",
     "test:watch": "vitest",
     "check:mainnet": "node scripts/check-mainnet.mjs"
