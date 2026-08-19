@@ -235,13 +235,45 @@ directly. Re-adding a `requestMediaLibraryPermissionsAsync()` gate would resolve
 to *denied* on API ≤ 32 with no way for the user to grant it, and silently break
 avatar and banner picking on older devices. Do not add one back.
 
-Verify a change to any of this against the merged manifest, not `app.json`:
+Verify a change to any of this against the merged manifest, not `app.json`.
+`app.json` only states the intent; the merger decides, and it is the only thing
+that can tell you a library's declaration was actually rejected:
 
 ```bash
 npx expo prebuild --clean --platform android
 cd android && ./gradlew :app:processReleaseManifest
 grep uses-permission app/build/intermediates/merged_manifests/release/*/AndroidManifest.xml
+grep -A2 EXTERNAL_STORAGE app/build/outputs/logs/manifest-merger-release-report.txt
 ```
+
+**Then clean up, before the next EAS build.** Both commands above have to be
+undone or the next `eas build` fails in the *Configure expo-updates* phase with:
+
+    Runtime version calculated on local machine not equal to runtime version
+    calculated during build.
+
+`runtimeVersion.policy` is `fingerprint`, so EAS hashes the project twice - once
+locally to stamp the build, once on the worker after install - and refuses to
+continue if they disagree. Gradle writes `android/build/` output *inside* the
+autolinked native modules in `node_modules`, and `@expo/fingerprint` hashes those
+package directories whole (`rncoreAutolinkingAndroid`). One stray build directory
+under `@react-native-masked-view/masked-view` is enough to change the hash and
+burn a build. `android/` itself is harmless - it is gitignored, so it hashes to
+nothing - but `node_modules` is not:
+
+```bash
+rm -rf android
+npm ci                                              # pristine, matches the worker
+npx expo-updates fingerprint:generate --platform android
+```
+
+If a build has already failed this way, the log names the exact differing source
+and both hashes - fetch it with the `logFiles` URL from
+`eas build:view <id> --json`. Note the log is brotli-encoded, so PowerShell and
+the bundled `curl.exe` cannot read it; Node's `zlib.brotliDecompressSync` can.
+Comparing that hash against a local
+`npx expo-updates fingerprint:generate --platform android` confirms the fix
+*before* you spend another 45 minutes on a build.
 
 ### Where the environment comes from
 
