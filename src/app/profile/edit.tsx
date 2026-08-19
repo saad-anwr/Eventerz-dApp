@@ -85,15 +85,9 @@ export default function EditProfileScreen() {
     if (uploading || !user) return;
     haptics.light();
 
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) {
-      toast.error(
-        'Photo access needed',
-        'Enable photo permissions to choose a picture.',
-      );
-      return;
-    }
-
+    // No permission request here on purpose - see `pickImage` in
+    // features/create/step-components.tsx for why asking is both unnecessary
+    // and, now that the storage permissions are blocked, actively harmful.
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
       allowsEditing: true,

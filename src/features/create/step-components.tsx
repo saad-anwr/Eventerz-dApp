@@ -534,16 +534,30 @@ export const DesignStep = memo(function DesignStep() {
   const draft = useCreateEventStore((s) => s.draft);
   const setField = useCreateEventStore((s) => s.setField);
 
+  /**
+   * Pick a banner image.
+   *
+   * Deliberately does *not* call `requestMediaLibraryPermissionsAsync` first.
+   *
+   * `launchImageLibraryAsync` goes through `PickVisualMedia`, the system photo
+   * picker: the user chooses a file in a system UI and the app receives one
+   * `content://` URI with a per-item read grant. That needs no permission on
+   * any Android version - which is the whole point of the photo picker.
+   *
+   * Asking anyway was worse than redundant. On API 33+ the request resolves to
+   * an empty permission set and returns granted, so it did nothing. On API 32
+   * and below it asked for READ_EXTERNAL_STORAGE and WRITE_EXTERNAL_STORAGE -
+   * broad "read every file on the device" permissions that the Solana dApp
+   * Store rejected the submission over (PER-001, PER-002). Those are now
+   * stripped in app.json's `blockedPermissions`, so the request would resolve
+   * to denied with no way to grant it, and the picker would be unreachable on
+   * older devices.
+   *
+   * Removing the gate is what keeps the feature working on every API level
+   * while the permission stays out of the manifest.
+   */
   const pickImage = useCallback(async () => {
     haptics.light();
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) {
-      toast.error(
-        'Photo access needed',
-        'Enable photo permissions to use a custom banner.',
-      );
-      return;
-    }
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
       allowsEditing: true,
