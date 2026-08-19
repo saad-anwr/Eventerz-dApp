@@ -383,6 +383,19 @@ export function toUser(row: ProfileRow): User {
      * address lives on `authStore.sessionEmail`.
      */
     bio: row.bio ?? undefined,
+    /*
+     * The row carries `avatar_url` and this mapper used to drop it, so every
+     * identity that came through here was avatar-less. Uploading a picture
+     * therefore looked like it worked - `pickAvatar` sets its own local state
+     * from the upload result, and the edit screen renders that - and the
+     * picture vanished on the next reload, when the same profile was rebuilt
+     * from a row whose avatar this line had thrown away.
+     *
+     * Nothing was ever wrong with the upload or the column: `update` already
+     * writes `avatar_url` and guards it against being blanked by an unrelated
+     * save. It was only ever the read path.
+     */
+    avatarUrl: row.avatar_url ?? undefined,
     location: row.location ?? undefined,
     website: row.website ?? undefined,
     twitter: row.twitter ?? undefined,
