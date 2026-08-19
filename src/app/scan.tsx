@@ -334,16 +334,33 @@ export default function ScanScreen() {
             ? 'Point at an Eventerz ticket QR'
             : 'Camera access is needed to check guests in'}
         </Text>
+        {/*
+          The camera disclosure, and the only one there is.
+
+          Android's runtime permission dialog is a fixed system string - an app
+          cannot add a reason to it, unlike iOS with `NSCameraUsageDescription`.
+          So this screen *is* the disclosure, and it has to carry everything
+          before the dialog appears: what the camera is for, that it is the only
+          thing it is for, how long it runs, that nothing is kept, and that
+          declining still leaves a way to work.
+
+          It says all five deliberately. The dApp Store rejected a submission
+          under PER-002 ("sensitive permission use needs disclosure"), and while
+          that was aimed at the storage permissions - which are gone, and which
+          no screen ever disclosed because nothing ever used them - CAMERA is now
+          the only sensitive permission left, so it is the one a reviewer will
+          look for a justification of.
+        */}
         <Text
           variant="caption"
           className="mt-2 text-center text-muted-foreground"
-          style={{ maxWidth: 300 }}
+          style={{ maxWidth: 330 }}
         >
           {granted
             ? 'Each scan writes attendance on-chain and mints the guest a Proof-of-Attendance badge.'
             : canAskAgain
-              ? 'We only use the camera while this screen is open.'
-              : 'Camera access was turned off for Eventerz. Turn it back on in Settings, then come back to this screen.'}
+              ? 'Eventerz reads ticket QR codes to admit guests - the only thing the camera is used for. It runs only while this screen is open, and nothing is photographed, recorded, saved or uploaded. You can check guests in by code instead.'
+              : 'Camera access was turned off for Eventerz. Turn it back on in Settings, then come back to this screen - or check guests in by code below, which needs no camera.'}
         </Text>
 
         {!granted && (
