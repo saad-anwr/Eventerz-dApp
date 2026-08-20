@@ -1,6 +1,6 @@
 {
   // These run when this folder is opened on its own. When you open
-  // C:\Eventerz\Eventerz.code-workspace instead, the workspace file's tasks
+  // C:\Solana\Eventerz\Eventerz.code-workspace instead, the workspace file's tasks
   // (prefixed "dApp:") supersede these and can also drive the website.
   "version": "2.0.0",
   "tasks": [
