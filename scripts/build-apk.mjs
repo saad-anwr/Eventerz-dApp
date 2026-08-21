@@ -178,7 +178,7 @@ const JVM_ARGS = '-Xmx4096m -XX:MaxMetaspaceSize=1536m';
  * machine-wide, and this app's native build generates paths far past that:
  *
  *     ninja: error: Stat(rngesturehandler_codegen_autolinked_build/CMakeFiles/
- *     react_codegen_rngesturehandler_codegen.dir/C_/Dev/Eventerz/
+ *     react_codegen_rngesturehandler_codegen.dir/C_/<your-path>/
  *     Eventerz_dApp/node_modules/react-native-gesture-handler/shared/
  *     shadowNodes/.../RNGestureHandlerDetectorShadowNode.cpp.o):
  *     Filename longer than 260 characters

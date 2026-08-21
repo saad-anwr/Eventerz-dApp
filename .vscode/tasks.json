@@ -1,7 +1,7 @@
 {
-  // These run when this folder is opened on its own. When you open
-  // C:\Dev\Eventerz\Eventerz.code-workspace instead, the workspace file's tasks
-  // (prefixed "dApp:") supersede these and can also drive the website.
+  // These run when this folder is opened on its own. When you open the
+  // parent workspace's `Eventerz.code-workspace` instead, the workspace file's
+  // tasks (prefixed "dApp:") supersede these and can also drive the website.
   "version": "2.0.0",
   "tasks": [
     {
