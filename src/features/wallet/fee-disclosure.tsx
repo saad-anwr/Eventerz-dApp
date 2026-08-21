@@ -30,6 +30,7 @@ import { memo } from 'react';
 import { View } from 'react-native';
 
 import { CircleAlert, Info, Wallet } from '@/components/ui/icon';
+import { integrationsConfig } from '@/constants/config';
 import { Text } from '@/components/ui/text';
 import { useFeeQuote } from '@/hooks/use-fee';
 import { formatFeeSol, type FeeKind } from '@/services/solana/fees';
@@ -50,11 +51,18 @@ export const FeeDisclosure = memo(function FeeDisclosure({
   const { quote, failed, usd, label, treasury, charged } = useFeeQuote(kind);
 
   /*
-   * Nothing is charged on devnet/testnet, so claiming a fee there would be a
-   * lie in the other direction. Says so plainly rather than rendering nothing,
-   * because "no fee row" and "fee row that failed to load" look identical.
+   * Nothing is being charged, so claiming a fee would be a lie in the other
+   * direction. Says so plainly rather than rendering nothing, because "no fee
+   * row" and "fee row that failed to load" look identical.
+   *
+   * There are two ways to get here and they need different sentences. The
+   * original copy - "test SOL has no value" - assumed the only one was
+   * devnet/testnet. `FEES_PAUSED` is now the other, and it applies *on
+   * mainnet*, where telling someone their SOL is worthless is both false and
+   * alarming. The network is what decides which sentence is true.
    */
   if (!charged) {
+    const onTestCluster = integrationsConfig.solanaNetwork !== 'mainnet-beta';
     return (
       <View
         className="flex-row items-start gap-2.5 border border-white/10 bg-white/[0.03] p-4"
@@ -62,7 +70,10 @@ export const FeeDisclosure = memo(function FeeDisclosure({
       >
         <Info size={16} color="#94a2b8" strokeWidth={2.2} />
         <Text variant="bodySm" className="flex-1 text-muted-foreground">
-          No fee on this network - test SOL has no value. {outcome}
+          {onTestCluster
+            ? 'No fee on this network - test SOL has no value.'
+            : 'No fee is charged for this.'}{' '}
+          {outcome}
         </Text>
       </View>
     );
