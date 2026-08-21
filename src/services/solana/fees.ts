@@ -1,8 +1,22 @@
 /**
  * Platform fees.
  *
- * Creating an event costs $5, RSVPing costs $1, both in SOL, both paid from the
- * connected wallet straight to the Eventerz treasury. Neither is refundable.
+ * RSVPing costs $1, in SOL, paid from the connected wallet straight to the
+ * Eventerz treasury. It is not refundable.
+ *
+ * # Creating an event is free
+ *
+ * It used to cost $5. Charging a host to publish taxes the side of the
+ * marketplace that has to move first: no host means no event, no event means
+ * nobody to charge $1 to attend. A $5 gate in front of an empty calendar is the
+ * expensive kind of revenue.
+ *
+ * `createEvent` is **removed from `FEE_USD` entirely** rather than set to `0`.
+ * A zero amount still walks the whole charge path - quote a price, open the
+ * wallet, sign a transfer of nothing - and every one of those steps can still
+ * fail and block a publish. Deleting the key makes the type checker find every
+ * caller instead, which is how the create flow lost its payment step rather
+ * than kept a dormant one.
  *
  * # Why the price is fetched and never guessed
  *
@@ -19,7 +33,7 @@
  *
  * A System Program transfer needs no deployed program, which is the same reason
  * in-chat payments work today. The Anchor program is not deployed, and gating
- * event creation on it would make the feature unreachable.
+ * the fee on it would make the feature unreachable.
  */
 
 import { integrationsConfig } from '@/constants/config';
@@ -35,14 +49,12 @@ import { integrationsConfig } from '@/constants/config';
 export const TREASURY_ADDRESS = 'HUTXvjrFNbyCYeu9GxpK5aGYmuyAFC6HHECC781Pw5oJ';
 
 export const FEE_USD = {
-  createEvent: 5,
   rsvp: 1,
 } as const;
 
 export type FeeKind = keyof typeof FEE_USD;
 
 export const FEE_LABEL: Record<FeeKind, string> = {
-  createEvent: 'Event creation fee',
   rsvp: 'RSVP fee',
 };
 
@@ -151,10 +163,10 @@ export function formatFeeSol(lamports: bigint): string {
 }
 
 /**
- * Platform fees are live: $5 to create an event, $1 to RSVP, settled in SOL to
- * `TREASURY_ADDRESS`.
+ * The platform fee is live: $1 to RSVP, settled in SOL to `TREASURY_ADDRESS`.
+ * Creating an event is free - see the note at the top of this file.
  *
- * They were paused while the backend was still landing. The reasons for that
+ * Fees were paused while the backend was still landing. The reasons for that
  * have gone: the Edge Functions are deployed, and the fee path never needed the
  * Anchor program in the first place - it is a System Program transfer, which is
  * why it works with nothing deployed.
@@ -162,8 +174,8 @@ export function formatFeeSol(lamports: bigint): string {
  * What has *not* changed is the property that made pausing the safe default:
  * **every fee is non-refundable and irreversible.** There is no chargeback, no
  * support tool to undo one, and no way to reach a user who was charged for an
- * event that then failed to publish. That is why the callers pay first and only
- * proceed on a confirmed transfer, and why `quoteFee` refuses rather than
+ * RSVP that then failed to land. That is why the caller pays first and only
+ * proceeds on a confirmed transfer, and why `quoteFee` refuses rather than
  * guesses when the SOL price cannot be established.
  *
  * Flip back to `true` to stop charging; nothing else needs to change.
@@ -192,9 +204,8 @@ export const TRANSFERS_PAUSED = true;
 /**
  * Devnet and testnet SOL is free, so charging there is meaningless.
  *
- * Callers treat `false` as "this action is free": the create flow skips the
- * transfer entirely and RSVP goes straight through, so pausing here removes the
- * charge without leaving a half-paid path anywhere.
+ * Callers treat `false` as "this action is free": RSVP goes straight through,
+ * so pausing here removes the charge without leaving a half-paid path anywhere.
  */
 export const feesEnabled = (): boolean =>
   !FEES_PAUSED && integrationsConfig.solanaNetwork === 'mainnet-beta';

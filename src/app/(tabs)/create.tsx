@@ -2,12 +2,23 @@
  * Create Event - six-step wizard.
  *
  * The draft lives in `createEventStore`, so this file only owns navigation
- * between steps, validation gating and the publish mutation. Publishing signs
- * a transaction through the wallet adapter before the event appears anywhere.
+ * between steps, validation gating and the publish mutation.
+ *
+ * # Publishing is free, and touches no wallet
+ *
+ * It used to cost $5, taken before the write. That charge is gone (see
+ * `services/solana/fees.ts`), and with it the entire pay-then-act apparatus
+ * this file was built around: the fee quote, the confirmation sheet, the
+ * cancellation branch, and the "your fee was taken but the event was not
+ * created" recovery message that existed only because money moved first.
+ *
+ * What is left is a Postgres write. Nothing here opens the wallet, so nothing
+ * here can fail in a way that costs the host anything - a failed publish now
+ * means retry, with no second charge to warn about.
  */
 
 import { useRouter } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback } from 'react';
 import { KeyboardAvoidingView, Platform, View } from 'react-native';
 import Animated, {
   FadeIn,
@@ -32,10 +43,7 @@ import {
   StepScroll,
 } from '@/features/create/step-components';
 import { ConnectWalletPrompt, ConnectWalletSheet, useConnectWallet } from '@/features/wallet';
-import { ConfirmFeeSheet } from '@/features/wallet/confirm-fee-sheet';
 import { useCreateEvent } from '@/hooks/use-events';
-import { FeeCancelled, useFee } from '@/hooks/use-fee';
-import { feesEnabled } from '@/services/solana/fees';
 import { toast } from '@/store/toast-store';
 import { CREATE_STEPS, useCreateEventStore } from '@/store/create-event-store';
 import { screenPadding } from '@/theme/layout';
@@ -65,94 +73,41 @@ export default function CreateScreen() {
 
   const createEvent = useCreateEvent();
 
-  /** $5 in SOL, taken before the event is written. Free on devnet/testnet. */
-  const { payFee: payCreateFee, paying: payingFee } = useFee('createEvent');
-
-  /** The charge is confirmed here before the wallet is ever opened. */
-  const [confirmingFee, setConfirmingFee] = useState(false);
-
   const isLast = step === CREATE_STEPS.length - 1;
   const StepComponent = STEP_COMPONENTS[step];
 
   /**
-   * Pay, then publish. Only ever reached from an explicit confirmation.
+   * Publish. One database write, no wallet, nothing to undo on failure.
    *
-   * The $5 fee is taken before the event is written, and it is non-refundable.
-   * Publishing first would give away a free event whenever the payment failed,
-   * and an event cannot be un-published once guests can see it.
+   * "Saving your event", not "Approve the transaction in your wallet" - there
+   * is no transaction to approve. That wording was already wrong when the fee
+   * existed (the wallet step was over by then); with the fee gone it would be
+   * inventing a prompt that never appears.
    */
   const runPublish = useCallback(() => {
-    void (async () => {
-      let feeSignature: string | null = null;
-      try {
-        feeSignature = await payCreateFee();
-      } catch (error) {
-        /*
-         * Cancelling used to return in silence. The user tapped Publish, the
-         * wallet took the screen, they backed out - and the app said nothing at
-         * all, leaving "did that go through? was I charged?" as the only
-         * takeaway from a payment prompt. Store policy asks for recovery
-         * messaging after a rejection or cancellation, and the honest, useful
-         * fact is that nothing happened and the draft is intact.
-         */
-        setConfirmingFee(false);
-        if (error instanceof FeeCancelled) {
-          toast.info(
-            'Publishing cancelled',
-            'You have not been charged. Your draft is saved - tap Publish when you are ready.',
-          );
-          return;
-        }
+    const pendingId = toast.pending(
+      'Publishing event',
+      'Saving your event and opening RSVPs',
+    );
+
+    createEvent.mutate(toInput(), {
+      onSuccess: (event) => {
+        toast.dismiss(pendingId);
+        haptics.success();
+        toast.success('Event published', 'Your event is live and open for RSVPs.');
+        reset();
+        router.replace(`/event/${event.id}`);
+      },
+      onError: (error) => {
+        toast.dismiss(pendingId);
         haptics.error();
         toast.error(
-          'Could not take the creation fee',
+          'Could not publish',
           error instanceof Error ? error.message : 'Please try again.',
         );
-        return;
-      }
-
-      // Paid. The sheet has done its job and must not sit over the result.
-      setConfirmingFee(false);
-
-      /*
-       * "Saving your event", not "Approve the transaction in your wallet".
-       *
-       * The wallet step is already over by this line - that was the fee. What
-       * happens now is a database write with no wallet involved, so telling
-       * someone to go and approve something left them waiting on a prompt that
-       * was never going to appear, right after they had approved the only one
-       * there was.
-       */
-      const pendingId = toast.pending(
-        'Publishing event',
-        'Saving your event and opening RSVPs',
-      );
-
-      createEvent.mutate(toInput(), {
-        onSuccess: (event) => {
-          toast.dismiss(pendingId);
-          haptics.success();
-          toast.success('Event published', 'Your event is live and open for RSVPs.');
-          reset();
-          router.replace(`/event/${event.id}`);
-        },
-        onError: (error) => {
-          toast.dismiss(pendingId);
-          haptics.error();
-          toast.error(
-            'Could not publish',
-            feeSignature
-              ? // Money moved and no event exists. Telling them to try again
-                // invites a second $5 charge for the same event.
-                'Your fee was taken but the event was not created. Contact support with your wallet address - do not pay again.'
-              : error instanceof Error
-                ? error.message
-                : 'Please try again.',
-          );
-        },
-      });
-    })();
-  }, [createEvent, payCreateFee, reset, router, toInput]);
+      },
+    });
+  }, [createEvent, reset, router, toInput]);
 
   const handleNext = useCallback(() => {
     if (!isLast) {
@@ -169,22 +124,13 @@ export default function CreateScreen() {
     haptics.medium();
 
     /*
-     * Confirm the charge before spending, exactly as RSVP does.
-     *
-     * The Review step already renders `FeeDisclosure` - but it sits below a
-     * card preview and seven summary rows, while "Publish event" lives in a
-     * sticky footer that is on screen the whole time. Someone can reach the
-     * last step and tap Publish without the fee ever having been on screen,
-     * which is the failure the store asked us to fix: fees clear *before* the
-     * user is asked to continue. A sheet cannot be scrolled past.
-     *
-     * Free networks skip it - there is no charge to confirm.
+     * Straight to the write. There used to be a confirmation sheet here,
+     * because the next thing that happened was a non-refundable $5 charge and
+     * store policy asks that a fee be legible before the user is asked to
+     * continue. Publishing is free now, so the sheet would be confirming
+     * nothing - and a confirmation step that guards no consequence is the kind
+     * users learn to tap through.
      */
-    if (feesEnabled()) {
-      setConfirmingFee(true);
-      return;
-    }
-
     runPublish();
   }, [isLast, next, runPublish]);
 
