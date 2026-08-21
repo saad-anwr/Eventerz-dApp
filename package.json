@@ -68,6 +68,12 @@
     "typescript": "~6.0.3",
     "vitest": "^3.2.7"
   },
+  "//overrides": "Forced transitive versions that `npm audit fix` cannot reach. Every one is a patch inside the SAME major, which is the whole reason they are safe here: `expo export` proves the bundler still runs and `npm test` proves the app still builds. nanoid: the loop-forever-on-size-zero DoS - 3.3.18 is the in-major patch, and it MUST stay on 3.x because expo-router requires it at runtime and nanoid 4+ is ESM-only, so forcing 5/6 breaks the bundle rather than the advisory. js-yaml: quadratic CPU in !!omap (CVE-2026-59870), fixed in 4.3.1; only eslint and @expo/xcpretty parse YAML here, both build-time. brace-expansion: unbounded-expansion DoS reached through minimatch 3.x inside two eslint plugins - dev-only, and the website has carried the same override since 3 Aug. NOT overridden: image-size and uuid, whose only offered fix is `expo@53`, a major DOWNGRADE from SDK 57 - trading a build-time DoS for a two-major regression of the whole app is not a fix. image-size 1.2.1 is the last of its major, and forcing ^2.0.2 was TRIED and reverted: `expo export` dies with `TypeError: The \"list\" argument must be an instance of SharedArrayBuffer, ArrayBuffer or ArrayBufferView` because v2 changed the signature metro calls. It is also unreachable - the looping parsers are ICNS, JXL and HEIF, and this app bundles PNGs; putting a malicious .icns in assets/ requires commit access, at which point the bundler is not the weak point. uuid likewise: jayson only calls v4() with no buffer, and the advisory is a bounds check in v3/v5/v6 when a buffer IS supplied. See docs/SECURITY.md in the website repo.",
+  "overrides": {
+    "nanoid": "^3.3.18",
+    "js-yaml": "^4.3.1",
+    "brace-expansion": "^5.0.9"
+  },
   "scripts": {
     "start": "expo start",
     "android": "node scripts/run-android.mjs",

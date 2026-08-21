@@ -1,0 +1,74 @@
+# Every check that used to be run by hand.
+#
+# The mobile equivalent of the website's workflow. `expo export` is the one
+# that earns its minutes: it is the only step here that proves Metro can
+# actually resolve and bundle the app, which is a different question from
+# whether TypeScript is happy. A dependency override that breaks the bundler
+# typechecks perfectly - that is exactly how the image-size@2 attempt failed,
+# and it failed at export, not at tsc.
+#
+# Deliberately not included: `npm run android:smoke`, which drives a real
+# device over adb, and `eas build`, which is billed and slow. Neither belongs
+# on every push.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # `postinstall` runs scripts/check-deps.mjs, which guards the
+      # same-drive invariant. On Linux both paths resolve to "/", so it passes
+      # trivially here - it is a Windows-development guard, not a CI one, and
+      # it costs nothing to let it run.
+      - name: Install
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm test
+
+      # Every script in scripts/ parses. Cheap, and catches a syntax error in a
+      # build script before it fails an EAS build instead.
+      - name: Scripts parse
+        run: npm run scripts:check
+
+      - name: Secret scan
+        run: npm run secrets:check
+
+      # The real proof. Placeholder backend values: bundling only needs the
+      # variables to exist, and the shipped APK gets its real ones from the EAS
+      # environment (see eas.json), never from here.
+      - name: Bundle for Android
+        env:
+          EXPO_PUBLIC_SOLANA_NETWORK: mainnet-beta
+          EXPO_PUBLIC_SUPABASE_URL: https://ci-placeholder.supabase.co
+          EXPO_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-anon-key
+          EXPO_PUBLIC_USE_MOCK_WALLET: 'false'
+          EXPO_PUBLIC_USE_MOCK_DATA: 'false'
+        run: npx expo export --platform android

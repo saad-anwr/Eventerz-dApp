@@ -172,9 +172,57 @@ clone still starts - see `.env.example`.
 > `README.md`; rationale: `../Eventerz/docs/SECURITY.md`.
 
 
-Two ways. **EAS** builds in the cloud and needs no Android SDK; **`npm run apk`**
-builds locally and needs the SDK and a JDK. The artifact is the same shape - a
-release APK with the JS bundled in, so it runs without Metro.
+Two ways, and **only one of them can be submitted.** **EAS** builds in the cloud
+and needs no Android SDK; **`npm run apk`** builds locally and needs the SDK and
+a JDK. The artifact is the same *shape* - a release APK with the JS bundled in,
+so it runs without Metro - but not the same signature.
+
+### Signing: which artifact is submittable
+
+| Command | Signed with | Use it for |
+| --- | --- | --- |
+| `npm run apk` | the **debug keystore** | sideloading, device testing |
+| `npm run eas:apk:prod` | the **EAS upload keystore** | **dApp Store submission** |
+
+`npm run apk` produces a debug-signed APK because the release buildType falls
+back to the debug keystore when no upload key is configured. That key ships with
+the Android SDK and is byte-identical on every machine on earth, so a signature
+made with it proves nothing about who built the artifact - which is why no store
+accepts it.
+
+The part that makes this worth getting right the first time: **the signing key
+is a permanent identity.** Whatever key first publishes `xyz.eventerz.app` is
+the only key that can ever ship an update to it. Publish once with the debug key
+and the choice is between never updating the app and abandoning the package
+name.
+
+So generate a real upload key, once:
+
+```bash
+npm run eas:creds       # Android -> Keystore -> "Set up a new keystore"
+```
+
+EAS generates it, stores it against the project, and reuses it for every later
+build - so it survives this machine dying, which a local `.jks` does not.
+`eas.json` pins `"credentialsSource": "remote"` on the `production` and `play`
+profiles, so a submission build **fails loudly** if that keystore is missing
+rather than quietly emitting a debug-signed APK that looks identical until a
+reviewer rejects it.
+
+Back it up anyway, and store the printed SHA-256 fingerprint somewhere you can
+find it:
+
+```bash
+npx eas-cli credentials --platform android   # -> "Download keystore"
+```
+
+The fingerprint matters beyond signing: `assetlinks.json` on the website pins
+it, so Android verifies our deep links. Change the key and that file needs the
+new value or `eventerz://` links stop resolving.
+
+> `credentials.json` and `*.jks` / `*.keystore` are gitignored. If `eas
+> credentials` ever writes one into the repo, leave it there uncommitted or move
+> it out - it is the signing identity in plaintext.
 
 ### Before the first EAS build
 

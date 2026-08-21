@@ -1,4 +1,5 @@
 {
+  "//credentials": "`credentialsSource: remote` on the two submission profiles is load-bearing, not decoration. A local `gradlew assembleRelease` signs with the DEBUG keystore (see scripts/build-apk.mjs) - a key that ships with the Android SDK, is identical on every machine, and therefore proves nothing about who built the APK. The Solana dApp Store will not take it, and it must never be the key that first publishes xyz.eventerz.app, because whatever key does that is the only key that can ever update it. `remote` makes EAS use the upload keystore it generated and stores; run `npm run eas:creds` once to create it, and see README.md -> Building an APK for how to back it up. Setting this explicitly means a submission build fails loudly if the credentials are missing, instead of quietly producing a debug-signed artifact that looks identical until a store rejects it.",
   "cli": {
     "version": ">= 12.0.0",
     "appVersionSource": "remote"
@@ -27,7 +28,8 @@
       "distribution": "internal",
       "android": {
         "buildType": "apk",
-        "autoIncrement": "versionCode"
+        "autoIncrement": "versionCode",
+        "credentialsSource": "remote"
       },
       "channel": "production"
     },
@@ -37,7 +39,8 @@
       "distribution": "store",
       "android": {
         "buildType": "app-bundle",
-        "autoIncrement": "versionCode"
+        "autoIncrement": "versionCode",
+        "credentialsSource": "remote"
       },
       "channel": "play"
     }

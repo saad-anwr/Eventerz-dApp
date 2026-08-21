@@ -2,7 +2,7 @@
 /**
  * Build a standalone APK you can install on a real phone.
  *
- *   npm run apk            -> release APK, arm64 (dApp Store submission)
+ *   npm run apk            -> release APK, arm64, DEBUG-SIGNED (sideloading)
  *   npm run apk -- --debug -> debug APK that still needs Metro
  *   npm run apk -- --all   -> all ABIs (slower; only needed for wide release)
  *
@@ -11,13 +11,29 @@
  * A *debug* build loads its JavaScript from Metro at runtime, so the phone has
  * to be on your network with the dev server up. A *release* build bundles the
  * JS into the APK - it runs standalone, which is what you need for real
- * device testing away from your machine and for submission.
+ * device testing away from your machine.
  *
- * Signing: the release buildType is configured to sign with the debug keystore
- * (android/app/build.gradle), so the APK installs on any phone. That is fine
- * for testing and sideloading. Before submitting to the Solana dApp Store,
- * replace it with your own upload key - see
- * https://reactnative.dev/docs/signed-apk-android
+ * # This output is NOT the one you submit
+ *
+ * The release buildType signs with the **debug keystore**
+ * (android/app/build.gradle), so the APK installs on any phone and is fine for
+ * testing and sideloading. It is not acceptable to the Solana dApp Store, and
+ * it never will be: the debug keystore is a well-known key that ships with the
+ * Android SDK, identical on every machine, so an APK signed with it can be
+ * impersonated by anyone.
+ *
+ * Worse, the signing key is a **permanent identity**. Whatever key first
+ * publishes `xyz.eventerz.app` is the only key that can ever update it -
+ * publishing with the debug key would mean either never updating the app or
+ * abandoning the package name.
+ *
+ * So submission builds come from EAS, which holds a real upload key:
+ *
+ *   npm run eas:creds        # one-time, generates and stores the keystore
+ *   npm run eas:apk:prod     # the artifact you actually submit
+ *
+ * See README.md -> "Building an APK" for the full sequence and for how to back
+ * the key up.
  */
 
 import { execFileSync, spawnSync } from 'node:child_process';
@@ -67,7 +83,20 @@ const gradleArgs = [
 log(`Building ${variant.toLowerCase()} APK for ${abis}...`);
 if (!isDebug) {
   log('Release bundles the JS, so the APK runs without Metro.');
-  log('Signed with the debug keystore - fine for sideloading, not for the store.');
+  /*
+   * Said loudly, and said before the build rather than after it.
+   *
+   * "Fine for sideloading, not for the store" was already here as a one-liner
+   * and was easy to scroll past in five minutes of Gradle output. The mistake
+   * it guards against is not recoverable: whatever key first publishes
+   * xyz.eventerz.app is the only key that can ever update it.
+   */
+  log('');
+  log('  !!  DEBUG-SIGNED. Do NOT submit this artifact.');
+  log('      The debug keystore ships with the Android SDK and is identical on');
+  log('      every machine, so anyone can forge an update to it. Submission');
+  log('      builds come from EAS:  npm run eas:creds  then  npm run eas:apk:prod');
+  log('');
 }
 
 const result = spawnSync(gradlew, gradleArgs, {
