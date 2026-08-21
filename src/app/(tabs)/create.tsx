@@ -143,9 +143,20 @@ export default function CreateScreen() {
     return (
       <Screen tabBarInset padded>
         <View className="flex-1 justify-center">
+          {/*
+            The wallet is still required, but not for the reason this used to
+            give. "Publishing writes it on-chain, so it needs a wallet to sign
+            with" was wrong on both halves: the Anchor program is retired, so
+            an event is a Postgres record, and with the creation fee gone there
+            is no transaction to sign either.
+
+            What a host's wallet is actually for is being paid - ticket revenue
+            settles to it, and it is the identity guests see on the event. That
+            is the honest reason, so it is the one stated.
+          */}
           <ConnectWalletPrompt
             title="Connect to create"
-            description="Publishing an event writes it on-chain, so it needs a wallet to sign with."
+            description="Your wallet is where ticket revenue lands, and it is the host identity guests see."
             onConnect={openSheet}
           />
         </View>
@@ -245,31 +256,16 @@ export default function CreateScreen() {
             iconRight={isLast ? undefined : ArrowRight}
             icon={isLast ? Check : undefined}
             onPress={handleNext}
-            loading={createEvent.isPending || payingFee}
+            loading={createEvent.isPending}
             className={step > 0 ? 'flex-[1.4]' : 'flex-1'}
             accessibilityHint={
               isLast
-                ? 'Reviews the publishing fee before anything is charged'
+                ? 'Publishes your event and opens RSVPs'
                 : 'Moves to the next step'
             }
           />
         </Animated.View>
       </KeyboardAvoidingView>
-
-      {/*
-        States the $5 before the wallet is ever opened. Dismissing charges
-        nothing and leaves the draft untouched - see `ConfirmFeeSheet`.
-      */}
-      <ConfirmFeeSheet
-        visible={confirmingFee}
-        onClose={() => setConfirmingFee(false)}
-        onConfirm={runPublish}
-        kind="createEvent"
-        title="Publish this event"
-        outcome="Once it is confirmed, your event is published and open for RSVPs."
-        confirmLabel="Pay & publish"
-        busy={payingFee}
-      />
     </Screen>
   );
 }

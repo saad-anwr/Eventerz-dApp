@@ -45,8 +45,27 @@ describe('platform fees are live on mainnet', () => {
 
   it('charges the agreed amounts', async () => {
     const fees = await loadWithCluster('mainnet-beta');
-    expect(fees.FEE_USD.createEvent).toBe(5);
     expect(fees.FEE_USD.rsvp).toBe(1);
+  });
+
+  /*
+   * Creating an event is free, and this is the test that keeps it free.
+   *
+   * Asserted as an absent *key*, not as `toBe(0)`, because those fail
+   * differently and only one of them is safe. A zero amount is still a fee
+   * kind: `quoteFee` would resolve it, `useFee` would open the wallet, and the
+   * publish path would regain a payment step that merely happens to charge
+   * nothing today - one edit away from charging again. An absent key cannot be
+   * quoted, so the type checker refuses `useFee('createEvent')` outright.
+   *
+   * If this test fails, someone is re-introducing a charge to publish. That is
+   * a pricing decision, not a refactor - which is the whole reason this file
+   * exists.
+   */
+  it('does not charge to create an event', async () => {
+    const fees = await loadWithCluster('mainnet-beta');
+    expect(Object.keys(fees.FEE_USD)).toEqual(['rsvp']);
+    expect(fees.FEE_LABEL).not.toHaveProperty('createEvent');
   });
 
   /*

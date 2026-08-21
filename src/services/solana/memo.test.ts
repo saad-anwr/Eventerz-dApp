@@ -24,13 +24,17 @@ describe('memoInstruction', () => {
     );
   });
 
+  /*
+   * The fixture is the RSVP fee because that is the only fee left - creating
+   * an event no longer charges anything. A test that keeps writing "event
+   * creation fee ($5)" would read as evidence the charge still exists to
+   * whoever greps for it next.
+   */
   it('carries the text as UTF-8 with no accounts', () => {
-    const instruction = memoInstruction('Eventerz: event creation fee ($5).');
+    const instruction = memoInstruction('Eventerz: rsvp fee ($1).');
     expect(instruction.programId.equals(MEMO_PROGRAM_ID)).toBe(true);
     expect(instruction.keys).toHaveLength(0);
-    expect(instruction.data.toString('utf8')).toBe(
-      'Eventerz: event creation fee ($5).',
-    );
+    expect(instruction.data.toString('utf8')).toBe('Eventerz: rsvp fee ($1).');
   });
 
   /*
@@ -40,11 +44,11 @@ describe('memoInstruction', () => {
    */
   it('makes the charge legible to a wallet', () => {
     const decoded = memoInstruction(
-      'Eventerz: event creation fee ($5). Non-refundable.',
+      'Eventerz: rsvp fee ($1). Non-refundable.',
     ).data.toString('utf8');
 
     expect(decoded).toMatch(/Eventerz/);
-    expect(decoded).toMatch(/\$5/);
+    expect(decoded).toMatch(/\$1/);
     expect(decoded).toMatch(/non-refundable/i);
   });
 });

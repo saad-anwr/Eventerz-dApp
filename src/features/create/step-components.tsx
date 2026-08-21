@@ -30,7 +30,6 @@ import {
 } from '@/components/ui/icon';
 import { PressableScale } from '@/components/ui/pressable-scale';
 import { Text } from '@/components/ui/text';
-import { FeeDisclosure } from '@/features/wallet/fee-disclosure';
 import { toast } from '@/store/toast-store';
 import { useCreateEventStore } from '@/store/create-event-store';
 import { LocationPicker } from './location-picker';
@@ -955,23 +954,28 @@ export const ReviewStep = memo(function ReviewStep() {
       </View>
 
       {/*
-        The charge, stated before the Publish button rather than in a toast
-        raised as the wallet takes the screen. See `FeeDisclosure`.
+        A `FeeDisclosure` for the $5 creation fee used to sit here. The fee is
+        gone, so the disclosure is too - a fee notice above a free action is
+        worse than none, because it teaches hosts to skim the one place this
+        app promises a charge will always be legible.
 
-        The copy this replaced said "Publishing writes the event on-chain and
-        opens RSVPs", which was wrong twice over and wrong in the direction that
-        matters: it never mentioned the $5, and it described the transaction as
-        writing the event on-chain. The Anchor program is retired and
-        `EVENTERZ_PROGRAM_ID` is blank by design, so the event is a Postgres
-        record - the *only* thing that transfer does is move SOL to the Eventerz
-        treasury. Telling someone their SOL is being spent to write an event
-        on-chain, when it is being spent on a platform fee, is exactly the
-        "SOL deduction without clarity on what for" the reviewer described.
+        What replaces it says only what is true: nothing is charged, and the
+        host keeps what guests pay. Note it does *not* claim the event is
+        written on-chain - the Anchor program is retired and
+        `EVENTERZ_PROGRAM_ID` is blank by design, so an event is a Postgres
+        record.
       */}
-      <FeeDisclosure
-        kind="createEvent"
-        outcome="Once it is confirmed, your event is published and open for RSVPs."
-      />
+      <View
+        className="border border-white/10 bg-white/[0.03] px-4 py-3.5"
+        style={{ borderRadius: radius['2xl'] }}
+      >
+        <Text variant="bodySm">Publishing is free</Text>
+        <Text variant="caption" className="mt-1 text-muted-foreground">
+          {draft.isFree
+            ? 'No charge to publish, and your event is open for RSVPs straight away.'
+            : `No charge to publish. Ticket sales settle to your wallet at ${draft.price}, minus network fees.`}
+        </Text>
+      </View>
     </View>
   );
 });
