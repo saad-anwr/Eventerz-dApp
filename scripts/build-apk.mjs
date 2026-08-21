@@ -99,12 +99,31 @@ if (!isDebug) {
   log('');
 }
 
-const result = spawnSync(gradlew, gradleArgs, {
+/*
+ * `shell: true` on Windows is required, not cosmetic: since Node 20.12 the
+ * runtime refuses to spawn `.bat`/`.cmd` directly (CVE-2024-27980) and fails
+ * with EINVAL *and no output at all*. Gradle never starts, yet what you see is
+ * "Build failed - see the output above" above an empty scroll-back, which
+ * reads exactly like a compile error you somehow missed. run-android.mjs has
+ * carried this for a while; this script was left behind and `npm run apk` had
+ * been dead on any current Node since.
+ *
+ * With `shell: true` the command is re-parsed by cmd.exe, so the path needs
+ * quoting - this repo lives under "Eventerz dApp", and the space would
+ * otherwise split it into two arguments.
+ */
+const quote = (p) => (IS_WINDOWS ? `"${p}"` : p);
+
+const result = spawnSync(quote(gradlew), gradleArgs, {
   cwd: join(ROOT, 'android'),
   stdio: 'inherit',
+  shell: IS_WINDOWS,
   env: { ...process.env, ANDROID_HOME: SDK, ANDROID_SDK_ROOT: SDK },
 });
 
+// Reported separately from a non-zero exit: a spawn failure has produced no
+// build output to point at, so "see the output above" would be a dead end.
+if (result.error) die(`Could not run Gradle: ${result.error.message}`);
 if (result.status !== 0) die('Build failed - see the output above.');
 
 const apk = join(
