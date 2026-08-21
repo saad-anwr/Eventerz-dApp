@@ -15,10 +15,12 @@
  *      runtime that is not already known.
  *
  * The cost is that this file and `programs/eventerz/src/lib.rs` have to agree
- * by hand. `npm run idl:sync` in the program workspace recomputes every
- * discriminator from the built IDL and exits non-zero if this file disagrees, so
- * a rename in Rust that is not mirrored here fails a build rather than failing in
- * a user's wallet.
+ * by hand, and **nothing checks that any more.** `npm run idl:sync` used to
+ * recompute every discriminator from the built IDL and fail the build on a
+ * disagreement; it went with the program's retirement on 21 Aug 2026, because a
+ * program that will never be built has no IDL to check against. That is safe only
+ * while `EXPO_PUBLIC_EVENTERZ_PROGRAM_ID` stays blank and none of this runs -
+ * restore the guard before anything here signs a real transaction.
  *
  * @see ../../../../Eventerz Program/programs/eventerz/src/lib.rs
  */
