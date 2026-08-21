@@ -47,6 +47,7 @@ import { ProgressBar } from '@/components/ui/progress-bar';
 import { Screen } from '@/components/ui/screen';
 import { ScreenLoader } from '@/components/ui/spinner';
 import { Text } from '@/components/ui/text';
+import { EventClaimSection } from '@/features/create/event-claim-section';
 import { ConnectWalletSheet, useConnectWallet } from '@/features/wallet';
 import { ConfirmFeeSheet } from '@/features/wallet/confirm-fee-sheet';
 import { useCommunity } from '@/hooks/use-communities';
@@ -1095,6 +1096,17 @@ export default function EventDetailScreen() {
 
         {/* Host-only: the approval queue. */}
         {isHost && <GuestManagerSection event={event} />}
+
+        {/*
+          Host-only: the on-chain claim, signed or still outstanding.
+
+          This is what makes the create flow's "you can sign it later" true. A
+          host who dismissed the wallet prompt while publishing lands here, and
+          `refetch` swaps the button for the signed state without a reload.
+        */}
+        {isHost && (
+          <EventClaimSection event={event} onClaimed={() => void refetch()} />
+        )}
 
         {/* Schedule */}
         {event.schedule && event.schedule.length > 0 && (
