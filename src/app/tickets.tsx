@@ -27,8 +27,10 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Text } from '@/components/ui/text';
 import { ConnectWalletPrompt, ConnectWalletSheet, useConnectWallet } from '@/features/wallet';
 import { queryKeys } from '@/hooks/query-keys';
+import { useEventsByIds } from '@/hooks/use-events';
 import { useRefresh } from '@/hooks/use-refresh';
 import { useMyBadges, useMyTickets } from '@/hooks/use-tickets';
+import { hasEnded } from '@/utils/rsvp';
 import { accents, brand } from '@/theme/colors';
 import { radius, screenPadding } from '@/theme/layout';
 import { fontFamily } from '@/theme/typography';
@@ -37,19 +39,61 @@ import { timeAgoLabel } from '@/utils/format';
 
 type TabValue = 'upcoming' | 'past' | 'badges';
 
-/** Reads the ticket's event so upcoming/past can be split by start time. */
+/**
+ * Split tickets into upcoming and past.
+ *
+ * # What was wrong
+ *
+ * The docstring here said "reads the ticket's event so upcoming/past can be
+ * split by start time", and the body read no event at all - it split on
+ * `status === 'used'`, which records whether the holder was *scanned at the
+ * door*, not whether the event happened.
+ *
+ * So a ticket for an event that ended weeks ago sat under "Upcoming",
+ * labelled Valid, for as long as nobody checked in - and not checking in is
+ * the ordinary case for an online event, an event you skipped, or any event
+ * whose host never scanned anyone. The clocks disagreed across the app too:
+ * the same event correctly reads "Ended" on a profile card.
+ *
+ * # The rule
+ *
+ * A ticket is past when its event is over, or when it has already been used.
+ * Both, because they fail in opposite directions: time alone would move a
+ * ticket that was scanned early back to "Upcoming" until the event ends, and
+ * status alone is the bug above.
+ *
+ * An event that has not loaded yet stays upcoming. That is the safer default -
+ * a ticket you still need is worse to hide than one that lingers a moment.
+ *
+ * "Over" is `hasEnded` rather than a comparison written here. It already
+ * handles the optional `endsAt`, it matches what `request_to_join` enforces
+ * server-side, and it is the same helper that makes an event card read
+ * "Ended" - so the two surfaces cannot drift apart again.
+ */
 function useTicketPartition(tickets: Ticket[]) {
-  // The events are already in the query cache from the ticket cards, so this
-  // is a cache read rather than a second round of fetches.
+  const eventIds = useMemo(
+    () => Array.from(new Set(tickets.map((t) => t.eventId))),
+    [tickets],
+  );
+  // Same query key the ticket cards use, so this reads their cache rather than
+  // refetching. See `useEventsByIds`.
+  const events = useEventsByIds(eventIds);
+
   return useMemo(() => {
     const upcoming: Ticket[] = [];
     const past: Ticket[] = [];
+
     tickets.forEach((ticket) => {
-      if (ticket.status === 'used') past.push(ticket);
-      else upcoming.push(ticket);
+      const event = events.get(ticket.eventId);
+      if (ticket.status === 'used' || (event && hasEnded(event))) {
+        past.push(ticket);
+      } else {
+        upcoming.push(ticket);
+      }
     });
+
     return { upcoming, past };
-  }, [tickets]);
+  }, [tickets, events]);
 }
 
 function BadgeTile({ badge }: { badge: BadgeModel }) {

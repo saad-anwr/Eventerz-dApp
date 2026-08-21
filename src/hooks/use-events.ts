@@ -8,6 +8,7 @@
 import {
   useInfiniteQuery,
   useMutation,
+  useQueries,
   useQuery,
   useQueryClient,
 } from '@tanstack/react-query';
@@ -50,6 +51,33 @@ export function useEvent(id: string | undefined) {
     enabled: Boolean(id),
     staleTime: 60_000,
   });
+}
+
+/**
+ * Several events at once, keyed exactly as `useEvent` keys one.
+ *
+ * Sharing the key is the point: a screen that already renders an `EventCard`
+ * or a ticket card per row has those details in the cache, so asking for them
+ * here resolves from it instead of firing a second round of requests. Anything
+ * missing is fetched once and is then equally available to the cards.
+ *
+ * Returns a `Map` rather than an array because every caller so far wants to
+ * look an event up by the id it already holds, not iterate in order.
+ */
+export function useEventsByIds(ids: string[]) {
+  const results = useQueries({
+    queries: ids.map((id) => ({
+      queryKey: queryKeys.events.detail(id),
+      queryFn: () => eventRepository.getById(id),
+      staleTime: 60_000,
+    })),
+  });
+
+  const byId = new Map<string, EventItem>();
+  results.forEach((result, index) => {
+    if (result.data) byId.set(ids[index], result.data);
+  });
+  return byId;
 }
 
 export function useFeaturedEvents() {
