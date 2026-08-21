@@ -209,6 +209,20 @@ profiles, so a submission build **fails loudly** if that keystore is missing
 rather than quietly emitting a debug-signed APK that looks identical until a
 reviewer rejects it.
 
+> **Never put a `//`-prefixed key in `eas.json`.** `package.json` tolerates them
+> and this repo leans on that, so the habit transfers - but eas-cli validates
+> `eas.json` against a strict schema and rejects the *whole file* for one:
+>
+> ```
+> eas.json is not valid.
+> - "//credentials" is not allowed
+> ```
+>
+> Every EAS build then fails before it starts, submission builds included, and
+> the message names a comment rather than anything you were trying to do. One
+> lived here until eas-cli 22 started refusing it; what it said is the paragraph
+> above, which is where that reasoning belongs anyway.
+
 Back it up anyway, and store the printed SHA-256 fingerprint somewhere you can
 find it:
 
