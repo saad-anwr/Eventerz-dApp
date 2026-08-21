@@ -163,13 +163,25 @@ export function formatFeeSol(lamports: bigint): string {
 }
 
 /**
- * The platform fee is live: $1 to RSVP, settled in SOL to `TREASURY_ADDRESS`.
- * Creating an event is free - see the note at the top of this file.
+ * Paused for the dApp Store submission: RSVP is free, nothing is charged.
  *
- * Fees were paused while the backend was still landing. The reasons for that
- * have gone: the Edge Functions are deployed, and the fee path never needed the
- * Anchor program in the first place - it is a System Program transfer, which is
- * why it works with nothing deployed.
+ * The fee itself works and is not being hidden - $1 in SOL to
+ * `TREASURY_ADDRESS`, disclosed by `FeeDisclosure` before anyone is asked to
+ * sign. It is off because of who reviews the app next.
+ *
+ * RSVP is the core flow. With the fee live, exercising it costs a reviewer $1
+ * of their own mainnet SOL, non-refundably, and a reviewer whose wallet is
+ * empty cannot complete it at all - they get an insufficient-funds error on the
+ * one screen the review exists to judge. Three submissions have already been
+ * rejected, one of them for the reviewer being unable to complete a flow, so
+ * putting a paywall in front of the fourth is a risk with no upside: the
+ * disclosure work that satisfies the fee policy is already done and stays in
+ * the build, exercised by every devnet path.
+ *
+ * **Turn this back on in a new build, never over the air.** This is a JS
+ * constant, so an `expo-updates` OTA would flip a reviewed free app into a
+ * charging one without review - which is the kind of thing stores de-list for.
+ * A store-visible change in what users are charged belongs in a submission.
  *
  * What has *not* changed is the property that made pausing the safe default:
  * **every fee is non-refundable and irreversible.** There is no chargeback, no
@@ -177,10 +189,8 @@ export function formatFeeSol(lamports: bigint): string {
  * RSVP that then failed to land. That is why the caller pays first and only
  * proceeds on a confirmed transfer, and why `quoteFee` refuses rather than
  * guesses when the SOL price cannot be established.
- *
- * Flip back to `true` to stop charging; nothing else needs to change.
  */
-export const FEES_PAUSED = false;
+export const FEES_PAUSED = true;
 
 /**
  * Wallet-to-wallet transfers in DMs - still off.
