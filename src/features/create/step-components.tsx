@@ -717,6 +717,93 @@ export const DesignStep = memo(function DesignStep() {
 /*  5 - Access                                                                 */
 /* -------------------------------------------------------------------------- */
 
+/**
+ * Keep only what can be part of a decimal amount.
+ *
+ * Filtering on the way in rather than validating on the way out: a host who
+ * types a letter into a price field has made a mistake they can see and fix in
+ * the same motion, where an error message under the field arrives a step later
+ * and asks them to work out which character offended.
+ *
+ * The second dot is dropped rather than the input rejected - `1.2.5` is
+ * someone reaching for `1.25`, and silently keeping `1.25` is closer to what
+ * they meant than refusing the keystroke.
+ */
+function sanitizeAmount(text: string): string {
+  const cleaned = text.replace(/[^0-9.]/g, '');
+  const [whole, ...rest] = cleaned.split('.');
+  return rest.length ? `${whole}.${rest.join('')}` : whole;
+}
+
+/**
+ * SOL / USDC, inside the right edge of the price field.
+ *
+ * A segmented pair rather than a dropdown or a picker sheet. With exactly two
+ * options, a dropdown hides half the choice behind a tap and a sheet covers the
+ * field the host is filling in; a segment shows both, states which is active,
+ * and switches in one touch. It is also the shape that survives being 100pt
+ * wide, which is all the room the inside of a text field has.
+ */
+const CurrencyToggle = memo(function CurrencyToggle({
+  value,
+  onChange,
+}: {
+  value: PriceCurrency;
+  onChange: (next: PriceCurrency) => void;
+}) {
+  return (
+    <View
+      className="flex-row items-center bg-white/[0.06] p-0.5"
+      style={{ borderRadius: radius.lg }}
+      accessibilityRole="radiogroup"
+      accessibilityLabel="Ticket currency"
+    >
+      {PRICE_CURRENCIES.map((currency) => {
+        const selected = currency === value;
+        return (
+          <PressableScale
+            key={currency}
+            onPress={() => {
+              if (selected) return;
+              haptics.light();
+              onChange(currency);
+            }}
+            accessibilityRole="radio"
+            accessibilityState={{ selected }}
+            accessibilityLabel={`Price in ${currency}`}
+            /*
+             * The segment is about 44x26 drawn. Growing it to a 44pt touch
+             * target (`TOUCH_TARGET`) would leave 4pt of clearance inside a
+             * 52pt field and make the control look like a second input rather
+             * than a unit on the first, so the target is extended vertically
+             * with hitSlop instead - same reachable area, unchanged geometry.
+             */
+            hitSlop={{ top: 10, bottom: 10, left: 4, right: 4 }}
+            className="px-2.5 py-1.5"
+            style={{
+              borderRadius: radius.md,
+              backgroundColor: selected ? brand.purple : 'transparent',
+            }}
+          >
+            <Text
+              style={{
+                fontFamily: fontFamily.semibold,
+                fontSize: 12,
+                // Muted rather than hidden: the inactive option has to stay
+                // readable, or the control looks like a label with a stray
+                // word after it instead of a choice.
+                color: selected ? '#ffffff' : '#94a2b8',
+              }}
+            >
+              {currency}
+            </Text>
+          </PressableScale>
+        );
+      })}
+    </View>
+  );
+});
+
 export const AccessStep = memo(function AccessStep() {
   const draft = useCreateEventStore((s) => s.draft);
   const errors = useCreateEventStore((s) => s.errors);
@@ -911,7 +998,10 @@ export const ReviewStep = memo(function ReviewStep() {
                   color: '#ffffff',
                 }}
               >
-                {draft.isFree ? 'Free' : draft.price}
+                {/* `formatPrice`, not `draft.price` - the draft holds the bare
+                    amount, so this badge would otherwise read "0.5" where the
+                    published card reads "0.5 USDC". */}
+                {formatPrice(draft)}
               </Text>
             </View>
           </View>
@@ -952,6 +1042,14 @@ export const ReviewStep = memo(function ReviewStep() {
         <View className="h-px bg-white/[0.06]" />
         <ReviewRow label="Capacity" value={`${draft.capacity} guests`} />
         <View className="h-px bg-white/[0.06]" />
+        {/*
+          The price was missing from this summary while it was one typed
+          string. It earns a row now that it is two decisions - an amount and
+          the asset it is in - and a currency picked in the wrong segment is
+          precisely the mistake a review step exists to catch.
+        */}
+        <ReviewRow label="Price" value={formatPrice(draft)} />
+        <View className="h-px bg-white/[0.06]" />
         <ReviewRow label="Visibility" value={draft.visibility} />
         <View className="h-px bg-white/[0.06]" />
         <ReviewRow
@@ -989,7 +1087,7 @@ export const ReviewStep = memo(function ReviewStep() {
         <Text variant="caption" className="mt-1 text-muted-foreground">
           {draft.isFree
             ? 'No charge to publish, and your event is open for RSVPs straight away.'
-            : `No charge to publish. Ticket sales settle to your wallet at ${draft.price}, minus network fees.`}
+            : `No charge to publish. Ticket sales settle to your wallet at ${formatPrice(draft)}, minus network fees.`}
         </Text>
       </View>
     </View>

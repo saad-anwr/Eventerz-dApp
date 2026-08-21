@@ -968,12 +968,25 @@ export const supabaseAnalyticsRepository = {
     const all = (tickets ?? []) as { status: string; event_id: string }[];
     const used = all.filter((t) => t.status === 'used').length;
 
-    // Revenue derives from each event's price string x its tickets. Prices are
-    // display strings ("0.5 SOL"), so parse defensively.
+    /*
+     * Revenue derives from each event's price string x its tickets. Prices are
+     * display strings ("0.5 SOL"), so parse defensively.
+     *
+     * **SOL-priced events only.** Hosts can now price a ticket in USDC, and
+     * `parseFloat` cannot tell the two apart - "0.5 SOL" and "0.5 USDC" both
+     * come back as `0.5`. Adding them produces a figure that is neither SOL nor
+     * dollars nor any other unit, displayed under a label that says SOL.
+     *
+     * Undercounting a host's revenue is the safe direction to be wrong in here:
+     * a missing number prompts "where is my USDC?", while a wrong one is
+     * believed. Splitting the total by currency is the real fix and needs the
+     * analytics type and its tiles to carry more than one figure.
+     */
     const priceOf = new Map(
       (events ?? []).map((e) => {
         const row = e as { id: string; price: string };
-        return [row.id, Number.parseFloat(row.price) || 0];
+        const inSol = /\bSOL\b/i.test(row.price);
+        return [row.id, inSol ? Number.parseFloat(row.price) || 0 : 0];
       }),
     );
     const revenueSol = all.reduce(
