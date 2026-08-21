@@ -475,7 +475,7 @@ export default function ProfileScreen() {
         <View className="mt-8">
           <SectionHeader
             title="Attendance badges"
-            subtitle="Proof-of-Attendance NFTs you own"
+            subtitle="Proof of attendance you have earned"
             icon={BadgeCheck}
             onAction={() => router.push('/tickets')}
           />

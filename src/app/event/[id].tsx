@@ -69,7 +69,7 @@ import { useWalletStore } from '@/store/wallet-store';
 import { accents, brand, resolveCoverGradient } from '@/theme/colors';
 import { androidElevation, radius, screenPadding } from '@/theme/layout';
 import { fontFamily } from '@/theme/typography';
-import { siteConfig } from '@/constants/config';
+import { integrationsConfig, siteConfig } from '@/constants/config';
 import type { EventItem, User } from '@/types';
 import {
   countdownLabel,
@@ -960,8 +960,27 @@ export default function EventDetailScreen() {
           </View>
         </Section>
 
-        {/* NFT ticket preview */}
-        <Section title="Your NFT ticket" delay={220}>
+        {/*
+          Ticket preview.
+
+          The heading was a flat "Your NFT ticket", which promised an asset this
+          build cannot mint: `EXPO_PUBLIC_MERKLE_TREE_ADDRESS` is blank, so
+          `mint-cnft` returns `not-configured` and a ticket is a Postgres record
+          with a QR code. The ticket screen already refuses to over-claim here -
+          it prints "Eventerz ticket" until an `assetId` actually exists - and
+          this header was the same assertion one screen earlier, where a
+          reviewer meets it first.
+
+          Keyed on the tree rather than on the ticket because this is a preview
+          of a ticket that does not exist yet: there is no `assetId` to test,
+          only whether minting is configured at all.
+        */}
+        <Section
+          title={
+            integrationsConfig.merkleTree ? 'Your NFT ticket' : 'Your ticket'
+          }
+          delay={220}
+        >
           <View
             className="overflow-hidden border border-white/10"
             style={{ borderRadius: radius['2xl'] }}

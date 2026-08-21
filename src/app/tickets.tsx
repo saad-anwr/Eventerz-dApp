@@ -147,8 +147,22 @@ export default function TicketsScreen() {
           <Text variant="h1" accessibilityRole="header">
             Tickets
           </Text>
+          {/*
+            Was "Compressed NFTs held by your wallet", which asserted a standard
+            for every row in the list. Tickets are only cNFTs once a Bubblegum
+            mint has happened, and with `EXPO_PUBLIC_MERKLE_TREE_ADDRESS` blank
+            none of them are - `mint-cnft` returns `not-configured` rather than
+            inventing an asset id.
+
+            Left neutral rather than made conditional on the tree, because this
+            list can hold a *mix* once minting is switched on mid-life: older
+            tickets stay Postgres records while new ones mint. A single label
+            over a mixed list is wrong whichever standard it names, so it names
+            neither. `ticket/[id]` states the standard per ticket, which is the
+            only place that can be accurate about it.
+          */}
           <Text variant="bodySm" className="mt-1 text-muted-foreground">
-            Compressed NFTs held by your wallet
+            Tickets and attendance badges you hold
           </Text>
         </View>
 
@@ -296,7 +310,7 @@ export default function TicketsScreen() {
               }
               description={
                 tab === 'upcoming'
-                  ? 'RSVP to an event and your NFT ticket appears here instantly.'
+                  ? 'RSVP to an event and your ticket appears here instantly.'
                   : 'Tickets move here once you check in at the door.'
               }
               actionLabel="Discover events"
