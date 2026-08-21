@@ -14,7 +14,7 @@
  */
 
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useMemo, useRef, useState } from 'react';
 import {
   FlatList,
   KeyboardAvoidingView,
@@ -54,7 +54,7 @@ import type { Message, PaymentReceipt } from '@/types';
 const sameDay = (a: number, b: number) =>
   new Date(a).toDateString() === new Date(b).toDateString();
 
-function Bubble({
+const Bubble = memo(function Bubble({
   message,
   mine,
   payment,
@@ -108,7 +108,7 @@ function Bubble({
       </Text>
     </View>
   );
-}
+});
 
 export default function DirectMessageScreen() {
   const { id: otherId } = useLocalSearchParams<{ id: string }>();
@@ -142,6 +142,49 @@ export default function DirectMessageScreen() {
     setText('');
     send.mutate(body);
   }, [channelId, send, text]);
+
+  /*
+   * Stable across keystrokes in the composer below - `text` changing on every
+   * character used to recreate this closure and, with it, every bubble
+   * currently on screen, for a conversation that had not actually changed.
+   */
+  const renderItem = useCallback(
+    ({ item, index }: { item: Message; index: number }) => {
+      const prev = messages[index - 1];
+      const showDay = !prev || !sameDay(prev.createdAt, item.createdAt);
+      const grouped =
+        Boolean(prev) &&
+        prev.senderId === item.senderId &&
+        !showDay &&
+        item.createdAt - prev.createdAt < 4 * 60 * 1000;
+
+      return (
+        <>
+          {showDay && (
+            <View className="items-center py-3">
+              <View
+                className="bg-white/[0.05] px-3 py-1"
+                style={{ borderRadius: radius.full }}
+              >
+                <Text variant="micro" className="text-muted-foreground">
+                  {dayLabel(item.createdAt)}
+                </Text>
+              </View>
+            </View>
+          )}
+          <Bubble
+            message={item}
+            mine={item.senderId === meId}
+            payment={
+              item.paymentId ? paymentById.get(item.paymentId) : undefined
+            }
+            grouped={grouped}
+          />
+        </>
+      );
+    },
+    [messages, meId, paymentById],
+  );
 
   if (isLoading) return <ScreenLoader />;
   if (!other) {
@@ -206,40 +249,7 @@ export default function DirectMessageScreen() {
           ref={listRef}
           data={messages}
           keyExtractor={(item) => item.id}
-          renderItem={({ item, index }) => {
-            const prev = messages[index - 1];
-            const showDay = !prev || !sameDay(prev.createdAt, item.createdAt);
-            const grouped =
-              Boolean(prev) &&
-              prev.senderId === item.senderId &&
-              !showDay &&
-              item.createdAt - prev.createdAt < 4 * 60 * 1000;
-
-            return (
-              <>
-                {showDay && (
-                  <View className="items-center py-3">
-                    <View
-                      className="bg-white/[0.05] px-3 py-1"
-                      style={{ borderRadius: radius.full }}
-                    >
-                      <Text variant="micro" className="text-muted-foreground">
-                        {dayLabel(item.createdAt)}
-                      </Text>
-                    </View>
-                  </View>
-                )}
-                <Bubble
-                  message={item}
-                  mine={item.senderId === meId}
-                  payment={
-                    item.paymentId ? paymentById.get(item.paymentId) : undefined
-                  }
-                  grouped={grouped}
-                />
-              </>
-            );
-          }}
+          renderItem={renderItem}
           ListEmptyComponent={
             <View className="items-center px-8 py-16">
               <Text variant="bodySm" className="text-center text-muted-foreground">
