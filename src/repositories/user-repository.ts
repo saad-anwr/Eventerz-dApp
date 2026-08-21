@@ -1,6 +1,6 @@
 import { db } from '@/mock';
 import type { User } from '@/types';
-import { mockDelay, uid } from '@/utils';
+import { mockDelay, shortenAddress, uid } from '@/utils';
 
 export const userRepository = {
   async getById(id: string): Promise<User | null> {
@@ -46,7 +46,7 @@ export const userRepository = {
 
     const user: User = {
       id: uid('u'),
-      name: `${address.slice(0, 4)}...${address.slice(-4)}`,
+      name: shortenAddress(address),
       handle: `sol${address.slice(0, 6).toLowerCase()}`,
       walletAddress: address,
       authMethod: 'wallet',

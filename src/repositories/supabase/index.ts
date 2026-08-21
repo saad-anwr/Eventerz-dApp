@@ -24,6 +24,7 @@ import type {
 import type { CreateEventInput, UpdateEventInput } from '../event-repository';
 import { PROFILE_COLUMNS, type ProfileRow } from '@/services/auth/types';
 import { parseQrPayload } from '@/utils/check-in';
+import { shortenAddress } from '@/utils/format';
 import { assertRealIdentity } from '@/utils/identity';
 import { postgrestLikePattern } from '@/utils/postgrest';
 import {
@@ -657,7 +658,7 @@ export const supabaseUserRepository = {
 
     return {
       id: `wallet:${address}`,
-      name: `${address.slice(0, 4)}...${address.slice(-4)}`,
+      name: shortenAddress(address),
       handle: `sol${address.slice(0, 6).toLowerCase()}`,
       walletAddress: address,
       authMethod: 'wallet',
