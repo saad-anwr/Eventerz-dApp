@@ -529,14 +529,44 @@ export default function EventDetailScreen() {
   if (isLoading) return <ScreenLoader label="Loading event" />;
 
   if (isError || !event) {
+    /*
+     * Two different failures used to wear one face, and the wrong one.
+     *
+     * `isError` is the fetch failing - offline, RPC down - where "Try again" is
+     * exactly right. `!event` with no error is the event genuinely not being
+     * there: removed, private, or a mistyped link. Retrying that re-runs a
+     * query whose answer will not change, so the only control on screen was one
+     * that could never succeed.
+     *
+     * Both were also reachable with no way out. This screen is a deep-link
+     * target (`eventerz://event/<id>` and the /checkin App Link), so on a cold
+     * start it *is* the navigation stack - there is nothing to go back to, and
+     * system back leaves the app entirely. A shared link to a deleted event is
+     * the most ordinary way to arrive here, which made "stranded on a dead
+     * button" a realistic first impression rather than an edge case.
+     */
+    const missing = !isError;
     return (
       <Screen padded>
         <View className="flex-1 justify-center">
           <ErrorState
-            title="Event not found"
-            description="This event may have been removed, or the link is wrong."
-            onRetry={() => refetch()}
+            title={missing ? 'Event not found' : 'Could not load this event'}
+            description={
+              missing
+                ? 'This event may have been removed, or the link is wrong.'
+                : 'Check your connection and try again.'
+            }
+            onRetry={missing ? undefined : () => refetch()}
           />
+          <View className="items-center">
+            <Button
+              label="Browse events"
+              variant="link"
+              onPress={() =>
+                router.canGoBack() ? router.back() : router.replace('/explore')
+              }
+            />
+          </View>
         </View>
       </Screen>
     );

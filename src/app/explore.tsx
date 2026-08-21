@@ -15,7 +15,7 @@ import { EventCard } from '@/components/cards/event-card';
 import { Badge } from '@/components/ui/badge';
 import { Chip } from '@/components/ui/chip';
 import { EmptyState, ErrorState } from '@/components/ui/empty-state';
-import { Grid2x2, Search } from '@/components/ui/icon';
+import { CalendarCheck, Grid2x2, Search } from '@/components/ui/icon';
 import { PressableScale } from '@/components/ui/pressable-scale';
 import { Screen, useListBottomPadding } from '@/components/ui/screen';
 import { SearchBar } from '@/components/ui/search-bar';
@@ -66,6 +66,15 @@ export default function DiscoverScreen() {
 
   const feed = useEventsFeed(effectiveFilters);
   const { refreshing, onRefresh } = useRefresh([queryKeys.events.all]);
+
+  /*
+   * Is anything narrowing the feed? Decides which empty state is honest: "your
+   * search matched nothing" or "there is nothing here at all". `activeCount`
+   * deliberately excludes the query (it drives the Filters badge, and a typed
+   * search is already visible in the input), so the query has to be tested
+   * separately or a search with no filters would claim the feed is empty.
+   */
+  const narrowed = activeCount > 0 || debouncedQuery.trim().length > 0;
 
   const events = useMemo(
     () => feed.data?.pages.flatMap((page) => page.items) ?? [],
@@ -260,7 +269,7 @@ export default function DiscoverScreen() {
               <EventCardSkeleton />
               <EventCardSkeleton />
             </View>
-          ) : (
+          ) : narrowed ? (
             <EmptyState
               icon={Search}
               title="No events match"
@@ -270,6 +279,26 @@ export default function DiscoverScreen() {
                 useDiscoverStore.getState().reset();
                 setSearchInput('');
               }}
+            />
+          ) : (
+            /*
+             * Nothing is narrowing the feed - it is genuinely empty. This used
+             * to render the branch above unconditionally, which blamed filters
+             * the user had not set and offered a "Clear filters" button that
+             * reset an already-default store and emptied an already-empty
+             * input: a control that could never change what was on screen.
+             *
+             * That is the dead-end class the dApp Store has already rejected
+             * this app over once, and it is worst on a first run, when it is
+             * the first screen a new user reaches and the only explanation
+             * they are given for an empty app.
+             */
+            <EmptyState
+              icon={CalendarCheck}
+              title="No events published yet"
+              description="Nothing has been announced across the communities you can see. Create the first one, or pull down to refresh."
+              actionLabel="Create an event"
+              onAction={() => router.push('/create')}
             />
           )
         }
