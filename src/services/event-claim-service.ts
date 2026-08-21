@@ -18,6 +18,8 @@ import { integrationsConfig } from '@/constants/config';
 import { client } from '@/repositories/supabase/client';
 import { solanaService } from '@/services/solana-service';
 import { describeSigningError, isWalletCancellation } from '@/services/wallet/errors';
+import { useAuthStore } from '@/store/auth-store';
+import { useWalletStore } from '@/store/wallet-store';
 
 export type ClaimFailure =
   /** The wallet prompt was dismissed. Not an error - see `isWalletCancellation`. */
@@ -25,7 +27,9 @@ export type ClaimFailure =
   /** Signed and sent, but the server would not or could not attach it. */
   | 'unverified'
   /** Never reached the chain. */
-  | 'send-failed';
+  | 'send-failed'
+  /** The connected wallet is not one this account has proven it holds. */
+  | 'not-linked';
 
 export interface ClaimResult {
   ok: boolean;
@@ -100,6 +104,40 @@ export async function recordEventClaim(
  * six-step wizard again to make a duplicate.
  */
 export async function claimEvent(eventId: string): Promise<ClaimResult> {
+  /*
+   * Refuse before the wallet opens, not after it has been paid.
+   *
+   * `claim-event` only accepts a signature signed by a wallet in
+   * `wallet_links` - wallets this account has proven it holds, via the Ed25519
+   * challenge in `link-wallet`. Connecting a wallet does not link it: the link
+   * needs its own signature, and `useLinkGoogleWallet` deliberately remembers a
+   * refusal rather than asking again on every render.
+   *
+   * So a host can reach here with a wallet that is connected and unlinked, and
+   * without this check the sequence is: open wallet, sign, pay the network fee,
+   * then be told the claim cannot be verified. The fee is tiny and the
+   * principle is not - do not charge for an outcome that is already known to be
+   * impossible.
+   *
+   * An empty `wallets` is *not* treated as unlinked. It also means "not loaded
+   * yet", and blocking on unknown would refuse a claim that would have worked;
+   * the server check is still there behind this one.
+   */
+  const linked = useAuthStore.getState().wallets;
+  const connected = useWalletStore.getState().account?.address;
+  if (
+    connected &&
+    linked.length > 0 &&
+    !linked.some((wallet) => wallet.address === connected)
+  ) {
+    return {
+      ok: false,
+      failure: 'not-linked',
+      message:
+        'This wallet is not linked to your account yet. Link it from your profile, then sign the claim.',
+    };
+  }
+
   let signature: string;
   let explorerUrl: string;
 

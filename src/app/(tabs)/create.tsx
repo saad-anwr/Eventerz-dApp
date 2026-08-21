@@ -4,17 +4,25 @@
  * The draft lives in `createEventStore`, so this file only owns navigation
  * between steps, validation gating and the publish mutation.
  *
- * # Publishing is free, and touches no wallet
+ * # Publishing is free - the wallet signs, it does not pay
  *
  * It used to cost $5, taken before the write. That charge is gone (see
  * `services/solana/fees.ts`), and with it the entire pay-then-act apparatus
- * this file was built around: the fee quote, the confirmation sheet, the
- * cancellation branch, and the "your fee was taken but the event was not
- * created" recovery message that existed only because money moved first.
+ * this file was built around: the fee quote, the confirmation sheet, and the
+ * "your fee was taken but the event was not created" recovery message that
+ * existed only because money moved first.
  *
- * What is left is a Postgres write. Nothing here opens the wallet, so nothing
- * here can fail in a way that costs the host anything - a failed publish now
- * means retry, with no second charge to warn about.
+ * The wallet still opens, for something else. After the row is written, the
+ * host is asked to sign their **on-chain claim** - a memo-only transaction
+ * recording that they published this event. No lamports move; the host pays
+ * Solana's network fee and nothing to Eventerz. See
+ * `services/solana/event-claim.ts`.
+ *
+ * The two steps fail independently, which is the property to preserve when
+ * editing this file. The write is what publishes; the signature is optional.
+ * A dismissed prompt leaves a live, unclaimed event and says so - it must never
+ * be reported as a failed publish, because the event exists and telling someone
+ * otherwise is how you get two of it.
  */
 
 import { useRouter } from 'expo-router';

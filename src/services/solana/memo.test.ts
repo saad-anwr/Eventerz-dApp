@@ -8,6 +8,7 @@
  * without clarity on what for."*
  */
 
+import { PublicKey } from '@solana/web3.js';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -35,6 +36,32 @@ describe('memoInstruction', () => {
     expect(instruction.programId.equals(MEMO_PROGRAM_ID)).toBe(true);
     expect(instruction.keys).toHaveLength(0);
     expect(instruction.data.toString('utf8')).toBe('Eventerz: rsvp fee ($1).');
+  });
+
+  /*
+   * Beside a transfer, no accounts. The transfer instruction already names the
+   * sender, so a signer here would add nothing - and every existing caller
+   * relies on this shape.
+   */
+  it('takes no accounts when no signer is given', () => {
+    expect(memoInstruction('Eventerz: rsvp fee ($1).').keys).toHaveLength(0);
+  });
+
+  /*
+   * With a signer, Memo v2 verifies that the account signed the transaction.
+   * That is what a memo-only transaction needs and a transfer does not - see
+   * `event-claim.ts`, which is the only caller that passes one.
+   */
+  it('names a signer when one is given, and writes nothing', () => {
+    const signer = new PublicKey(
+      'HUTXvjrFNbyCYeu9GxpK5aGYmuyAFC6HHECC781Pw5oJ',
+    );
+    const keys = memoInstruction('claim', signer).keys;
+
+    expect(keys).toHaveLength(1);
+    expect(keys[0]!.pubkey.equals(signer)).toBe(true);
+    expect(keys[0]!.isSigner).toBe(true);
+    expect(keys[0]!.isWritable).toBe(false);
   });
 
   /*

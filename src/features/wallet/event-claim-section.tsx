@@ -61,6 +61,13 @@ export const EventClaimSection = memo(function EventClaimSection({
         return;
       }
 
+      if (result.failure === 'not-linked') {
+        // Refused before the wallet opened, so nothing was signed and no
+        // network fee was spent. Says what to do rather than what went wrong.
+        toast.info('Link this wallet first', result.message ?? '');
+        return;
+      }
+
       haptics.error();
       toast.error(
         'Could not sign the claim',
@@ -69,7 +76,11 @@ export const EventClaimSection = memo(function EventClaimSection({
     })();
   }, [event.id, onClaimed]);
 
-  if (event.onchainSignature) {
+  // Captured, so the callback below does not need a non-null assertion to see
+  // what the guard already proved.
+  const signature = event.onchainSignature;
+
+  if (signature) {
     return (
       <View
         className="mt-7 flex-row items-center gap-3 border border-white/10 bg-white/[0.03] px-4 py-3.5"
@@ -80,7 +91,7 @@ export const EventClaimSection = memo(function EventClaimSection({
           <Text variant="bodySm">Claim signed on Solana</Text>
           <PressableFade
             onPress={() => {
-              void Linking.openURL(explorerTxUrl(event.onchainSignature!));
+              void Linking.openURL(explorerTxUrl(signature));
             }}
             accessibilityRole="link"
             accessibilityLabel="View the claim on Solana Explorer"
