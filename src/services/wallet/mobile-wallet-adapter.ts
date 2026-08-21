@@ -305,11 +305,12 @@ function computeKindFor(intent: TransactionIntent): ComputeKind {
       return 'createEvent';
     case 'rsvp':
       return 'claimSeat';
-    // A memo writes no account and runs almost no compute. `simple` is already
-    // the smallest budget here, and asking for more would multiply the priority
-    // fee on a transaction the host is only paying network costs for.
+    // Sized for a memo and nothing else - see `COMPUTE_UNITS.memo`. The
+    // priority fee is `limit x price`, so borrowing `simple` here would charge
+    // about five times over on a transaction whose only cost to the host is
+    // meant to be the network fee.
     case 'claim-event':
-      return 'simple';
+      return 'memo';
     default:
       return 'simple';
   }
