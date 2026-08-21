@@ -44,6 +44,10 @@ import { integrationsConfig } from '@/constants/config';
 import { useRecordPayment } from '@/hooks/use-messages';
 import { transfersEnabled } from '@/services/solana/fees';
 import { walletService } from '@/services/wallet';
+import {
+  describeSigningError,
+  isWalletCancellation,
+} from '@/services/wallet/errors';
 import { explorerTxUrl } from '@/utils/explorer';
 import { toast } from '@/store/toast-store';
 import { useWalletStore } from '@/store/wallet-store';
@@ -214,14 +218,26 @@ export function SendCryptoSheet({
       setPhase('done');
       void refreshBalance();
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : 'Could not send that transfer.';
-
-      // Declining in the wallet is a choice, not a fault. Close quietly.
-      if (/user rejected|declined|denied|cancell?ed/i.test(message)) {
+      /*
+       * Declining in the wallet is a choice, not a fault. Close quietly.
+       *
+       * This used to test `err.message` against a local regex covering "user
+       * rejected", "declined", "denied" and "cancelled" - which does not match
+       * `java.util.concurrent.CancellationException`, the thing Mobile Wallet
+       * Adapter actually throws when someone backs out of the approval sheet on
+       * Android. So backing out fell through to the branch below and printed a
+       * Java class name into the sheet's error slot. `isWalletCancellation` is
+       * the shared rule that already handles it.
+       */
+      if (isWalletCancellation(err)) {
         setPhase('form');
         return;
       }
+
+      // Never the raw `err.message`: at this boundary it is a native exception
+      // or a TypeError far more often than it is a sentence.
+      const message =
+        describeSigningError(err) ?? 'Could not send that transfer.';
 
       haptics.error();
       setError(

@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { describeWalletError, isWalletCancellation, walletMessage } from './errors';
+import {
+  describeSigningError,
+  describeWalletError,
+  isWalletCancellation,
+  walletMessage,
+} from './errors';
 
 /**
  * What a user is allowed to be shown when a wallet fails.
@@ -29,6 +34,113 @@ describe('the two failures that cost the submission', () => {
     expect(shown).not.toBeNull();
     expect(shown).not.toMatch(/slice|null|TypeError/i);
     expect(shown).toMatch(/could not be connected/i);
+  });
+});
+
+/**
+ * The second rejection, and why signing needed its own translator.
+ *
+ * The connect flow was fixed after the first rejection; the *paying* flow was
+ * not. `useFee` and the send sheet each carried their own regex - "user
+ * rejected|declined|denied|cancell?ed" - which does not match
+ * `CancellationException`, because after "cancell" comes an "a", not an "e".
+ * So backing out of a payment prompt, the single most ordinary thing a user can
+ * do there, put a Java class name in a red toast. The reviewer's words:
+ * *"Cancellation of txn results in java related error messaging rather than
+ * user readable text."*
+ */
+describe('cancelling a payment', () => {
+  it('never shows the Java exception that caused the rejection', () => {
+    const error = new Error('java.util.concurrent.CancellationException');
+    expect(isWalletCancellation(error)).toBe(true);
+    expect(describeSigningError(error)).toBeNull();
+  });
+
+  /*
+   * The exact string the old regex let through, pinned so the weaker rule
+   * cannot be reintroduced by someone rewriting either call site.
+   */
+  it('is not something a "cancell?ed" regex can catch', () => {
+    expect(/user rejected|declined|denied|cancell?ed/i.test(
+      'java.util.concurrent.CancellationException',
+    )).toBe(false);
+    // ...which is precisely why the shared rule is used instead.
+    expect(isWalletCancellation(new Error('java.util.concurrent.CancellationException')))
+      .toBe(true);
+  });
+
+  it('stays silent for the other ways a user backs out', () => {
+    for (const message of [
+      'User rejected the request',
+      'declined',
+      'The request was aborted',
+      'Transaction cancelled',
+    ]) {
+      expect(describeSigningError(new Error(message))).toBeNull();
+    }
+  });
+});
+
+describe('describeSigningError', () => {
+  it('does not offer "continue with Google" as a way to pay a fee', () => {
+    // The connect-flow catch-all is wrong here: the wallet is already
+    // connected, and Google is not a payment method.
+    const shown = describeSigningError(new Error('kotlin.NotImplementedError'));
+    expect(shown).not.toMatch(/Google/i);
+    expect(shown).not.toMatch(/could not be connected/i);
+    expect(shown).toMatch(/Nothing has been charged/i);
+  });
+
+  it('keeps the real sentences the fee path throws itself', () => {
+    // `quoteFee` refusing, and a confirmed on-chain failure. Both are better
+    // than anything this function could reconstruct, and both are plain
+    // `Error`s rather than `WalletMessageError`s.
+    expect(
+      describeSigningError(
+        new Error(
+          'Could not check the SOL price, so the fee cannot be calculated. Try again in a moment.',
+        ),
+      ),
+    ).toMatch(/Could not check the SOL price/);
+
+    expect(
+      describeSigningError(
+        new Error(
+          'Your wallet does not have enough SOL to cover this and the network fee. You have not been charged.',
+        ),
+      ),
+    ).toMatch(/not have enough SOL/);
+  });
+
+  it('still refuses class names and stack fragments', () => {
+    const inputs: unknown[] = [
+      new Error('java.util.concurrent.TimeoutException'),
+      new TypeError("Cannot read property 'slice' of null"),
+      new Error('at com.solanamobile.Adapter.transact(Adapter.kt:88)'),
+      'java.lang.SecurityException',
+      new Error('TypeError: undefined is not an object'),
+      null,
+      42,
+      {},
+    ];
+
+    for (const input of inputs) {
+      const shown = describeSigningError(input);
+      if (shown === null) continue;
+      expect(shown).not.toMatch(/java\.|kotlin\.|TypeError|Cannot read propert|\bat\s+\w+\(/);
+      expect(shown).toMatch(/[.!]$/);
+    }
+  });
+
+  it('passes our own diagnoses through untouched', () => {
+    expect(
+      describeSigningError(walletMessage('That wallet did not share an account to pay with.')),
+    ).toBe('That wallet did not share an account to pay with.');
+  });
+
+  it('tells the user nothing was charged when the network was unreachable', () => {
+    const shown = describeSigningError(new Error('Network request failed'));
+    expect(shown).toMatch(/nothing has been charged/i);
   });
 });
 

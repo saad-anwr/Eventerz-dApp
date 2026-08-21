@@ -101,6 +101,83 @@ function messageOf(error: unknown): string {
 }
 
 /**
+ * Turn a failure during **signing or paying** into a sentence.
+ *
+ * # Why this is not `describeWalletError`
+ *
+ * Same recognition rules, different fallback, and the fallback is the whole
+ * point. `describeWalletError` ends with *"That wallet could not be connected.
+ * You can try again, or continue with Google."* - correct at a connect sheet,
+ * actively wrong at a payment prompt, where the wallet is already connected and
+ * "continue with Google" is not a way to pay a fee.
+ *
+ * It also passes through anything a caller diagnosed itself. A fee path throws
+ * real sentences of its own - the SOL price could not be fetched, the network
+ * rejected the transfer and you were not charged - and those are better than
+ * anything reconstructed here. Routing them through the connect-flow catch-all
+ * would replace a precise, actionable message with a misleading one, which is
+ * how the useful half of a diagnosis gets discarded.
+ *
+ * @returns A message to show, or `null` when the user simply cancelled.
+ */
+export function describeSigningError(error: unknown): string | null {
+  if (isWalletCancellation(error)) return null;
+
+  // Ours, and already written for this exact failure.
+  if (error instanceof WalletMessageError) return error.message;
+
+  const message = messageOf(error);
+
+  // Before the prose check: MWA phrases this one as a sentence, and the
+  // rewrite below is more useful than its own wording.
+  if (WALLET_NOT_FOUND.test(message)) {
+    return 'No Solana wallet app was found on this device to approve this with.';
+  }
+
+  /*
+   * A plain `Error` carrying a real sentence is kept, and kept *before* the
+   * keyword matching below. This is the one place that differs from the connect
+   * flow: there, everything unrecognised is a native exception and passing it
+   * through is what put a stack trace in front of a reviewer. Here, callers
+   * legitimately throw prose.
+   *
+   * The order is load-bearing, not stylistic. "Your wallet does not have enough
+   * SOL to cover this and the **network** fee" contains the word `network`, so
+   * matching keywords first replaced the one message that tells the user
+   * exactly what went wrong and how to fix it with a generic "check your
+   * connection" - the same "useful half of the diagnosis computed and then
+   * discarded" bug this module was written to end, reintroduced one function
+   * over. Caught by its own test rather than by a reviewer, this time.
+   */
+  if (looksLikeProse(message)) return message;
+
+  if (/network|timeout|unreachable|failed to fetch/i.test(message)) {
+    return 'Could not reach the network to send this. Check your connection - nothing has been charged.';
+  }
+
+  return 'That transaction could not be completed. Nothing has been charged - please try again.';
+}
+
+/**
+ * Does this read as a sentence written for a person?
+ *
+ * Native exceptions are dotted class paths (`java.util.concurrent.Cancellation‑
+ * Exception`), JS runtime errors are terse and unpunctuated (`Cannot read
+ * property 'slice' of null`), and both are unfit to show. A sentence we wrote
+ * has spaces and ends in punctuation.
+ */
+function looksLikeProse(message: string): boolean {
+  const text = message.trim();
+  if (text.length < 12) return false;
+  // A dotted package path, with no spaces before it, is a class name.
+  if (/^[\w$]+(\.[\w$]+){2,}/.test(text)) return false;
+  if (/\bat\s+[\w$.]+\(/.test(text)) return false; // stack frame
+  if (/^(TypeError|ReferenceError|SyntaxError|RangeError)\b/.test(text)) return false;
+  if (/^Cannot read propert/i.test(text)) return false;
+  return /\s/.test(text) && /[.!?]$/.test(text);
+}
+
+/**
  * Turn any wallet failure into a sentence.
  *
  * @param error - whatever was thrown.

@@ -50,11 +50,23 @@ export function useLinkGoogleWallet(): void {
    */
   const inFlight = useRef<string | null>(null);
   const reported = useRef<string | null>(null);
+  /**
+   * Addresses the user explicitly declined to sign for.
+   *
+   * Retrying a *transient* failure is the point of clearing `inFlight` below.
+   * Retrying a **refusal** is not: this effect runs on any later re-render, so
+   * declining the signature once meant the wallet sheet reappeared the next
+   * time anything moved - the app asking again, indefinitely, for something the
+   * user had just said no to. A decision is remembered until the wallet
+   * changes.
+   */
+  const declined = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     if (!isLive || !profile || !address) return;
     if (linked.has(address)) return;
     if (inFlight.current === address) return;
+    if (declined.current.has(address)) return;
 
     inFlight.current = address;
 
@@ -71,15 +83,32 @@ export function useLinkGoogleWallet(): void {
 
       inFlight.current = null;
 
+      /*
+       * `auth-store` clears the error and returns to `idle` for a cancellation,
+       * and only that case - so a null error here means the user declined
+       * rather than that something broke. The two deserve different words and
+       * different colours: one is a fault to report, the other is a choice to
+       * acknowledge.
+       */
+      const error = useAuthStore.getState().error;
+
+      if (!error) {
+        declined.current.add(address);
+        if (reported.current !== address) {
+          reported.current = address;
+          toast.info(
+            'Wallet not linked',
+            'You can link it any time from Settings - your RSVPs will use your Google account until then.',
+          );
+        }
+        return;
+      }
+
       // Once per address. A wallet that cannot be verified is worth saying out
       // loud - the account looks broken otherwise, for a reason nothing shows.
       if (reported.current !== address) {
         reported.current = address;
-        const error = useAuthStore.getState().error;
-        toast.error(
-          'Could not verify that wallet',
-          error ?? 'Your wallet is connected but not linked to your account yet.',
-        );
+        toast.error('Could not verify that wallet', error);
       }
     })();
   }, [isLive, profile, address, linkWallet, linked]);

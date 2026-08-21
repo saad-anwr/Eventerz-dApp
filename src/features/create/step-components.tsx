@@ -30,6 +30,7 @@ import {
 } from '@/components/ui/icon';
 import { PressableScale } from '@/components/ui/pressable-scale';
 import { Text } from '@/components/ui/text';
+import { FeeDisclosure } from '@/features/wallet/fee-disclosure';
 import { toast } from '@/store/toast-store';
 import { useCreateEventStore } from '@/store/create-event-store';
 import { LocationPicker } from './location-picker';
@@ -953,16 +954,24 @@ export const ReviewStep = memo(function ReviewStep() {
         )}
       </View>
 
-      <View
-        className="flex-row items-start gap-2.5 border border-brand-cyan/25 bg-brand-cyan/[0.06] p-4"
-        style={{ borderRadius: radius['2xl'] }}
-      >
-        <Ticket size={16} color={brand.cyan} strokeWidth={2.2} />
-        <Text variant="caption" className="flex-1 text-muted-foreground">
-          Publishing writes the event on-chain and opens RSVPs. You approve the
-          transaction in your wallet - Eventerz never signs on your behalf.
-        </Text>
-      </View>
+      {/*
+        The charge, stated before the Publish button rather than in a toast
+        raised as the wallet takes the screen. See `FeeDisclosure`.
+
+        The copy this replaced said "Publishing writes the event on-chain and
+        opens RSVPs", which was wrong twice over and wrong in the direction that
+        matters: it never mentioned the $5, and it described the transaction as
+        writing the event on-chain. The Anchor program is retired and
+        `EVENTERZ_PROGRAM_ID` is blank by design, so the event is a Postgres
+        record - the *only* thing that transfer does is move SOL to the Eventerz
+        treasury. Telling someone their SOL is being spent to write an event
+        on-chain, when it is being spent on a platform fee, is exactly the
+        "SOL deduction without clarity on what for" the reviewer described.
+      */}
+      <FeeDisclosure
+        kind="createEvent"
+        outcome="Once it is confirmed, your event is published and open for RSVPs."
+      />
     </View>
   );
 });

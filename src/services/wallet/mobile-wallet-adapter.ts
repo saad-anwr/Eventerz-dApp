@@ -33,6 +33,7 @@ import {
   eventerzProgramId,
   releaseSeatInstruction,
 } from '@/services/solana/program';
+import { memoInstruction } from '@/services/solana/memo';
 // One definition of "which RPC", shared with the holdings and fee paths. Three
 // copies of this rule had drifted on what to do when no endpoint is configured.
 import { rpcEndpoint } from '@/services/solana/rpc';
@@ -576,6 +577,17 @@ export class MobileWalletAdapter implements WalletAdapter {
       })
         .add(...budget)
         .add(instruction);
+
+      /*
+       * The memo rides along so the wallet can say what this transfer is for.
+       * Last, because it is an annotation on the instruction above it - and
+       * because a reader scanning the decoded transaction should hit the
+       * transfer first. See `memoInstruction` for why this was missing.
+       */
+      const memo = intent.type === 'transfer' ? intent.memo?.trim() : undefined;
+      if (memo) {
+        transaction.add(memoInstruction(memo));
+      }
 
       const [signature] = await wallet.signAndSendTransactions({
         transactions: [transaction],

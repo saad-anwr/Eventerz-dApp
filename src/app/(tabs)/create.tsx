@@ -7,7 +7,7 @@
  */
 
 import { useRouter } from 'expo-router';
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { KeyboardAvoidingView, Platform, View } from 'react-native';
 import Animated, {
   FadeIn,
@@ -32,8 +32,10 @@ import {
   StepScroll,
 } from '@/features/create/step-components';
 import { ConnectWalletPrompt, ConnectWalletSheet, useConnectWallet } from '@/features/wallet';
+import { ConfirmFeeSheet } from '@/features/wallet/confirm-fee-sheet';
 import { useCreateEvent } from '@/hooks/use-events';
 import { FeeCancelled, useFee } from '@/hooks/use-fee';
+import { feesEnabled } from '@/services/solana/fees';
 import { toast } from '@/store/toast-store';
 import { CREATE_STEPS, useCreateEventStore } from '@/store/create-event-store';
 import { screenPadding } from '@/theme/layout';
@@ -66,36 +68,41 @@ export default function CreateScreen() {
   /** $5 in SOL, taken before the event is written. Free on devnet/testnet. */
   const { payFee: payCreateFee, paying: payingFee } = useFee('createEvent');
 
+  /** The charge is confirmed here before the wallet is ever opened. */
+  const [confirmingFee, setConfirmingFee] = useState(false);
+
   const isLast = step === CREATE_STEPS.length - 1;
   const StepComponent = STEP_COMPONENTS[step];
 
-  const handleNext = useCallback(() => {
-    if (!isLast) {
-      const advanced = next();
-      if (advanced) {
-        haptics.light();
-      } else {
-        haptics.warning();
-        toast.error('Check this step', 'A field still needs your attention.');
-      }
-      return;
-    }
-
-    // Publish.
-    haptics.medium();
-
-    /*
-     * The $5 fee is taken before the event is written, and it is
-     * non-refundable. Publishing first would give away a free event whenever
-     * the payment failed, and an event cannot be un-published once guests can
-     * see it.
-     */
+  /**
+   * Pay, then publish. Only ever reached from an explicit confirmation.
+   *
+   * The $5 fee is taken before the event is written, and it is non-refundable.
+   * Publishing first would give away a free event whenever the payment failed,
+   * and an event cannot be un-published once guests can see it.
+   */
+  const runPublish = useCallback(() => {
     void (async () => {
       let feeSignature: string | null = null;
       try {
         feeSignature = await payCreateFee();
       } catch (error) {
-        if (error instanceof FeeCancelled) return;
+        /*
+         * Cancelling used to return in silence. The user tapped Publish, the
+         * wallet took the screen, they backed out - and the app said nothing at
+         * all, leaving "did that go through? was I charged?" as the only
+         * takeaway from a payment prompt. Store policy asks for recovery
+         * messaging after a rejection or cancellation, and the honest, useful
+         * fact is that nothing happened and the draft is intact.
+         */
+        setConfirmingFee(false);
+        if (error instanceof FeeCancelled) {
+          toast.info(
+            'Publishing cancelled',
+            'You have not been charged. Your draft is saved - tap Publish when you are ready.',
+          );
+          return;
+        }
         haptics.error();
         toast.error(
           'Could not take the creation fee',
@@ -104,9 +111,21 @@ export default function CreateScreen() {
         return;
       }
 
+      // Paid. The sheet has done its job and must not sit over the result.
+      setConfirmingFee(false);
+
+      /*
+       * "Saving your event", not "Approve the transaction in your wallet".
+       *
+       * The wallet step is already over by this line - that was the fee. What
+       * happens now is a database write with no wallet involved, so telling
+       * someone to go and approve something left them waiting on a prompt that
+       * was never going to appear, right after they had approved the only one
+       * there was.
+       */
       const pendingId = toast.pending(
         'Publishing event',
-        'Approve the transaction in your wallet',
+        'Saving your event and opening RSVPs',
       );
 
       createEvent.mutate(toInput(), {
@@ -133,7 +152,41 @@ export default function CreateScreen() {
         },
       });
     })();
-  }, [createEvent, isLast, next, payCreateFee, reset, router, toInput]);
+  }, [createEvent, payCreateFee, reset, router, toInput]);
+
+  const handleNext = useCallback(() => {
+    if (!isLast) {
+      const advanced = next();
+      if (advanced) {
+        haptics.light();
+      } else {
+        haptics.warning();
+        toast.error('Check this step', 'A field still needs your attention.');
+      }
+      return;
+    }
+
+    haptics.medium();
+
+    /*
+     * Confirm the charge before spending, exactly as RSVP does.
+     *
+     * The Review step already renders `FeeDisclosure` - but it sits below a
+     * card preview and seven summary rows, while "Publish event" lives in a
+     * sticky footer that is on screen the whole time. Someone can reach the
+     * last step and tap Publish without the fee ever having been on screen,
+     * which is the failure the store asked us to fix: fees clear *before* the
+     * user is asked to continue. A sheet cannot be scrolled past.
+     *
+     * Free networks skip it - there is no charge to confirm.
+     */
+    if (feesEnabled()) {
+      setConfirmingFee(true);
+      return;
+    }
+
+    runPublish();
+  }, [isLast, next, runPublish]);
 
   const handleBack = useCallback(() => {
     haptics.light();
@@ -250,12 +303,27 @@ export default function CreateScreen() {
             className={step > 0 ? 'flex-[1.4]' : 'flex-1'}
             accessibilityHint={
               isLast
-                ? 'Signs a transaction and publishes your event'
+                ? 'Reviews the publishing fee before anything is charged'
                 : 'Moves to the next step'
             }
           />
         </Animated.View>
       </KeyboardAvoidingView>
+
+      {/*
+        States the $5 before the wallet is ever opened. Dismissing charges
+        nothing and leaves the draft untouched - see `ConfirmFeeSheet`.
+      */}
+      <ConfirmFeeSheet
+        visible={confirmingFee}
+        onClose={() => setConfirmingFee(false)}
+        onConfirm={runPublish}
+        kind="createEvent"
+        title="Publish this event"
+        outcome="Once it is confirmed, your event is published and open for RSVPs."
+        confirmLabel="Pay & publish"
+        busy={payingFee}
+      />
     </Screen>
   );
 }

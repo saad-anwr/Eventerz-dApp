@@ -20,6 +20,16 @@ import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 
 import { APP_SCHEME } from '@/constants/config';
+/*
+ * Error *translation* only - no adapter, no native module. This module stays
+ * free of the wallet adapter itself (see `linkWallet`, which takes `signMessage`
+ * as a parameter for that reason); `errors` is a pure string module with no
+ * imports of its own, so sharing it costs nothing here.
+ */
+import {
+  describeSigningError,
+  isWalletCancellation,
+} from '@/services/wallet/errors';
 
 import { getSupabaseClient, isSupabaseConfigured } from './supabase-client';
 import type { ProfileRow, ProfileUpdate } from './types';
@@ -447,13 +457,41 @@ export async function linkWallet(
     if (!profile) return { ok: false, error: 'Could not verify that wallet.' };
     return { ok: true, data: profile };
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : 'Wallet verification failed.';
-    // Declining the signature is a choice, not a fault.
-    if (/user rejected|denied|declined|cancell?ed/i.test(message)) {
-      return { ok: false, error: 'Wallet verification was cancelled.' };
+    /*
+     * Declining the signature is a choice, not a fault - and it has to be
+     * flagged as `cancelled`, not merely worded politely.
+     *
+     * Two bugs lived in the four lines this replaced, and they compounded:
+     *
+     *  1. The test was a local regex - "user rejected|denied|declined|
+     *     cancell?ed" - which does not match `CancellationException`, because
+     *     after "cancell" comes an `a`, not an `e`. Backing out of the MWA
+     *     signing sheet therefore fell to the line below, which returned
+     *     `error.message` **raw**. That reaches
+     *     `use-link-google-wallet`, which red-toasts it: the exact
+     *     "title + java.util.concurrent.CancellationException" pairing that
+     *     cost the first store submission, reappearing on the linking path
+     *     after being fixed on the connecting one.
+     *  2. Even when the regex did match, the result omitted `cancelled: true`.
+     *     `auth-store` keys on that flag to decide between `status: 'idle',
+     *     error: null` and a real error - so a recognised cancellation still
+     *     became a red "Could not verify that wallet" toast for a user who had
+     *     simply changed their mind.
+     *
+     * `isWalletCancellation` is the shared rule; `describeSigningError` keeps
+     * any sentence we wrote and replaces anything that reads like a class name.
+     */
+    if (isWalletCancellation(error)) {
+      return {
+        ok: false,
+        error: 'Wallet verification was cancelled.',
+        cancelled: true,
+      };
     }
-    return { ok: false, error: message };
+    return {
+      ok: false,
+      error: describeSigningError(error) ?? 'Wallet verification failed.',
+    };
   }
 }
 

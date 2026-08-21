@@ -246,7 +246,17 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
     );
 
     if (!result.ok) {
-      set({ status: 'error', error: result.error });
+      /*
+       * A cancellation is not an error state, and must not leave one behind.
+       * `signInWithGoogle` already made this distinction; linking did not, so
+       * declining the signature set `status: 'error'` with a message that
+       * `use-link-google-wallet` then raised as a red toast - for a user who
+       * had simply changed their mind. Same convention as the Google path now.
+       */
+      set({
+        status: result.cancelled ? 'idle' : 'error',
+        error: result.cancelled ? null : result.error,
+      });
       return false;
     }
     set({

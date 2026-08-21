@@ -48,8 +48,10 @@ import { Screen } from '@/components/ui/screen';
 import { ScreenLoader } from '@/components/ui/spinner';
 import { Text } from '@/components/ui/text';
 import { ConnectWalletSheet, useConnectWallet } from '@/features/wallet';
+import { ConfirmFeeSheet } from '@/features/wallet/confirm-fee-sheet';
 import { useCommunity } from '@/hooks/use-communities';
 import { FeeCancelled, useFee } from '@/hooks/use-fee';
+import { feesEnabled } from '@/services/solana/fees';
 import {
   useApproveGuest,
   useCancelRsvp,
@@ -81,6 +83,7 @@ import {
   goingCount,
   isCancelled,
   isEditable,
+  isFull,
   isLiveRsvp,
   myRsvpState,
   rsvpActionLabel,
@@ -301,6 +304,16 @@ export default function EventDetailScreen() {
   /** $1 in SOL, taken before the RSVP is sent. Free on devnet/testnet. */
   const { payFee: payRsvpFee, paying: payingFee } = useFee('rsvp');
 
+  /*
+   * Gate on the charge, not on the tap.
+   *
+   * RSVP used to quote the fee and hand to the wallet in a single motion, so
+   * the $1 was never stated anywhere the user could read it - the disclosure
+   * was a toast raised as the screen dimmed for the wallet hand-off. This is
+   * the step that gives the amount somewhere to live. See `ConfirmFeeSheet`.
+   */
+  const [confirmingFee, setConfirmingFee] = useState(false);
+
   const { sheetVisible, requireWallet, closeSheet, handleConnected } =
     useConnectWallet();
 
@@ -374,6 +387,91 @@ export default function EventDetailScreen() {
   }, [event]);
 
   /**
+   * Pay, then join. Only ever reached from an explicit confirmation.
+   *
+   * Fee first, RSVP second. The other order gives away a free RSVP whenever the
+   * payment fails, and there is no way to withdraw a seat that has already been
+   * granted. The cost of this ordering is the opposite case - fee taken, RSVP
+   * failed - which is recoverable and is called out explicitly below rather
+   * than hidden behind "please try again".
+   */
+  const runRsvp = useCallback(() => {
+    if (!event) return;
+
+    void (async () => {
+      let feeSignature: string | null = null;
+      try {
+        feeSignature = await payRsvpFee();
+      } catch (error) {
+        /*
+         * Cancelling in the wallet closes the sheet and says nothing. It is a
+         * decision, not a failure - and `payFee` now recognises the Android
+         * `CancellationException` that used to fall through to a red toast
+         * containing a Java class name.
+         */
+        setConfirmingFee(false);
+        if (error instanceof FeeCancelled) {
+          toast.info('RSVP cancelled', 'You have not been charged.');
+          return;
+        }
+        haptics.error();
+        toast.error(
+          'Could not take the RSVP fee',
+          error instanceof Error ? error.message : 'Please try again.',
+        );
+        return;
+      }
+
+      // Paid. The sheet has done its job and must not sit over the result.
+      setConfirmingFee(false);
+
+      const pendingId = toast.pending(
+        event.requiresApproval ? 'Sending request' : 'Confirming RSVP',
+        event.requiresApproval
+          ? 'Asking the host to approve you'
+          : 'Reserving your spot',
+      );
+
+      requestToJoin.mutate(event, {
+        onSuccess: (updated) => {
+          toast.dismiss(pendingId);
+          haptics.success();
+          switch (updated.myStatus) {
+            case 'pending':
+              toast.success(
+                'Requested to attend',
+                'The host has been notified. You will hear back here.',
+              );
+              break;
+            case 'waitlist':
+              toast.info(
+                'You are on the waitlist',
+                'We will let you in automatically if a spot opens.',
+              );
+              break;
+            default:
+              toast.success('You are going', 'Your ticket is ready.');
+          }
+        },
+        onError: (error) => {
+          toast.dismiss(pendingId);
+          haptics.error();
+          toast.error(
+            'RSVP failed',
+            feeSignature
+              ? // The money moved. Saying only "try again" would invite a
+                // second charge for a seat they may already have paid for.
+                'Your fee was taken but the RSVP did not go through. Contact support with your wallet address - do not pay again.'
+              : error instanceof Error
+                ? error.message
+                : 'Please try again.',
+          );
+        },
+      });
+    })();
+  }, [event, payRsvpFee, requestToJoin]);
+
+  /**
    * Request to attend, or withdraw an existing claim.
    *
    * The success toast reports what the *server* decided rather than what the tap
@@ -410,81 +508,22 @@ export default function EventDetailScreen() {
       }
 
       /*
-       * Fee first, RSVP second.
+       * Everything past here costs money, so it happens behind an explicit
+       * confirmation rather than on the tap that opened this. The sheet states
+       * the amount, the recipient and what the charge buys; `runRsvp` is the
+       * half that actually spends.
        *
-       * The other order gives away a free RSVP whenever the payment fails, and
-       * there is no way to withdraw a seat that has already been granted. The
-       * cost of this ordering is the opposite case - fee taken, RSVP failed -
-       * which is recoverable and is called out explicitly below rather than
-       * hidden behind "please try again".
+       * Free networks skip the sheet entirely - there is no charge to disclose,
+       * and a confirmation step that confirms nothing is just friction.
        */
-      void (async () => {
-        let feeSignature: string | null = null;
-        try {
-          feeSignature = await payRsvpFee();
-        } catch (error) {
-          if (error instanceof FeeCancelled) return;
-          haptics.error();
-          toast.error(
-            'Could not take the RSVP fee',
-            error instanceof Error ? error.message : 'Please try again.',
-          );
-          return;
-        }
+      if (feesEnabled()) {
+        setConfirmingFee(true);
+        return;
+      }
 
-        const pendingId = toast.pending(
-          event.requiresApproval ? 'Sending request' : 'Confirming RSVP',
-          event.requiresApproval
-            ? 'Asking the host to approve you'
-            : 'Reserving your spot',
-        );
-
-        requestToJoin.mutate(event, {
-        onSuccess: (updated) => {
-          toast.dismiss(pendingId);
-          haptics.success();
-          switch (updated.myStatus) {
-            case 'pending':
-              toast.success(
-                'Requested to attend',
-                'The host has been notified. You will hear back here.',
-              );
-              break;
-            case 'waitlist':
-              toast.info(
-                'You are on the waitlist',
-                'We will let you in automatically if a spot opens.',
-              );
-              break;
-            default:
-              toast.success('You are going', 'Your ticket is ready.');
-          }
-        },
-        onError: (error) => {
-          toast.dismiss(pendingId);
-          haptics.error();
-          toast.error(
-            'RSVP failed',
-            feeSignature
-              ? // The money moved. Saying only "try again" would invite a
-                // second charge for a seat they may already have paid for.
-                'Your fee was taken but the RSVP did not go through. Contact support with your wallet address - do not pay again.'
-              : error instanceof Error
-                ? error.message
-                : 'Please try again.',
-          );
-        },
-        });
-      })();
+      runRsvp();
     });
-  }, [
-    cancelRsvp,
-    currentUser,
-    event,
-    payRsvpFee,
-    requestToJoin,
-    requireWallet,
-  ]);
+  }, [cancelRsvp, currentUser, event, requireWallet, runRsvp]);
 
   if (isLoading) return <ScreenLoader label="Loading event" />;
 
@@ -1229,6 +1268,54 @@ export default function EventDetailScreen() {
         visible={sheetVisible}
         onClose={closeSheet}
         onConnected={handleConnected}
+      />
+
+      {/*
+        States the $1 before the wallet is ever opened. Dismissing charges
+        nothing - see `ConfirmFeeSheet`.
+      */}
+      <ConfirmFeeSheet
+        visible={confirmingFee}
+        onClose={() => setConfirmingFee(false)}
+        onConfirm={runRsvp}
+        kind="rsvp"
+        /*
+         * Three outcomes, not two - and the same three `rsvpActionLabel` uses,
+         * because the button and the confirmation must not promise different
+         * things. A full event puts the guest on the waitlist, so telling them
+         * a spot is reserved and a ticket issued would be false at exactly the
+         * moment they are deciding whether to pay for it.
+         *
+         * The two unhappy paths also say the uncomfortable part out loud: the
+         * fee is taken when the request is *sent*, not when a seat is granted -
+         * the ordering exists so a failed payment cannot produce a free
+         * request - so a guest who is declined, or who never reaches the front
+         * of the queue, is a dollar down with nothing to show and there is no
+         * refund path to put it back. "Expected outcomes clear before the user
+         * continues" has to include the outcomes where they get nothing.
+         */
+        title={
+          isFull(event)
+            ? 'Join the waitlist'
+            : event.requiresApproval
+              ? 'Request to attend'
+              : 'RSVP to this event'
+        }
+        outcome={
+          isFull(event)
+            ? 'This event is full, so this joins the waitlist - you get a spot only if one frees up. The fee is charged now either way, and is not refunded if a spot never opens.'
+            : event.requiresApproval
+              ? 'Once it is confirmed, your request goes to the host. The fee is charged now, whether or not the host approves you - it is not refunded if they decline.'
+              : 'Once it is confirmed, your spot is reserved and your ticket is issued.'
+        }
+        confirmLabel={
+          isFull(event)
+            ? 'Pay & join waitlist'
+            : event.requiresApproval
+              ? 'Pay & request'
+              : 'Pay & RSVP'
+        }
+        busy={payingFee}
       />
     </Screen>
   );

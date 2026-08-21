@@ -12,7 +12,7 @@ import Animated, { SlideInUp, SlideOutUp } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { brand, status } from '@/theme/colors';
-import { androidElevation, radius } from '@/theme/layout';
+import { androidElevation, motion, radius } from '@/theme/layout';
 import { useToastStore, type ToastVariant } from '@/store/toast-store';
 import { haptics } from '@/utils/haptics';
 
@@ -90,8 +90,23 @@ export const ToastHost = memo(function ToastHost() {
         return (
           <Animated.View
             key={item.id}
-            entering={SlideInUp.springify().damping(20)}
-            exiting={SlideOutUp.duration(200)}
+            /*
+             * Settles, rather than springs.
+             *
+             * This was `SlideInUp.springify().damping(20)`, and an underdamped
+             * spring overshoots by design - the toast shot past its resting
+             * position, came back, and wobbled. On a surface whose entire job
+             * is to be read, that is the wrong trade: the text is moving for
+             * precisely as long as someone is trying to read it, and a toast
+             * that replaces another one re-runs the whole thing. A dApp Store
+             * reviewer put it plainly - the banner "bounces and moves ... so
+             * user cannot read clearly".
+             *
+             * A short eased slide arrives just as fast and is legible the
+             * moment it lands.
+             */
+            entering={SlideInUp.duration(motion.duration.fast)}
+            exiting={SlideOutUp.duration(160)}
             accessible
             accessibilityRole="alert"
             accessibilityLiveRegion="polite"
