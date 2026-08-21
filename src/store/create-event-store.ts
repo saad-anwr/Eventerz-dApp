@@ -20,6 +20,32 @@ export const CREATE_STEPS = [
   { id: 'review', label: 'Review' },
 ] as const;
 
+/**
+ * What a host may price a ticket in.
+ *
+ * Two entries, both first-class on Solana: SOL for the crypto-native case, and
+ * USDC for the far more common one - a host who thinks in dollars and does not
+ * want the gate price drifting 20% between announcing an event and running it.
+ * A ticket is bought weeks ahead, which is exactly the window in which SOL
+ * moves enough to matter.
+ */
+export const PRICE_CURRENCIES = ['SOL', 'USDC'] as const;
+export type PriceCurrency = (typeof PRICE_CURRENCIES)[number];
+
+/**
+ * The one place an amount and its unit are joined.
+ *
+ * Every surface that shows a price - the review card, the summary row, the
+ * record written to Postgres - goes through here, so a ticket cannot be
+ * previewed as "0.5 SOL" and stored as "0.5". The `price` column is `text`
+ * (`0002_events.sql`), so the composed string is what persists.
+ */
+export function formatPrice(draft: Pick<EventDraft, 'isFree' | 'price' | 'priceCurrency'>): string {
+  if (draft.isFree) return 'Free';
+  const amount = draft.price.trim();
+  return amount ? `${amount} ${draft.priceCurrency}` : 'Free';
+}
+
 export interface EventDraft {
   title: string;
   description: string;
@@ -38,7 +64,22 @@ export interface EventDraft {
   address?: string;
   isOnline: boolean;
   capacity: string;
+  /**
+   * The ticket amount **on its own** - `"0.5"`, never `"0.5 SOL"`.
+   *
+   * It used to carry the unit, because the field was one free-text box and
+   * whatever the host typed went straight to the database. That made the unit
+   * a typo away from meaningless: `"0.5 sol"`, `"0.5"`, `".5 SOL"` and
+   * `"half a sol"` were all accepted and all stored, and nothing downstream
+   * could tell a price in SOL from a price in dollars from a price in nothing.
+   *
+   * Splitting the unit into `priceCurrency` makes it a choice from a fixed set
+   * instead of a string, so `formatPrice()` is the only thing that ever decides
+   * how the two are joined.
+   */
   price: string;
+  /** Which asset `price` is denominated in. */
+  priceCurrency: PriceCurrency;
   isFree: boolean;
   visibility: EventVisibility;
   requiresApproval: boolean;
@@ -75,7 +116,12 @@ export const EMPTY_DRAFT: EventDraft = {
   location: '',
   isOnline: false,
   capacity: '100',
-  price: 'Free',
+  // Empty, not '0.5'. The field is hidden while the event is free, so a
+  // pre-filled amount is one the host never saw and never chose - and the
+  // moment they flip to paid it becomes a price they have to notice and
+  // correct rather than one they had to enter.
+  price: '',
+  priceCurrency: 'SOL',
   isFree: true,
   visibility: 'public',
   requiresApproval: false,
@@ -143,8 +189,22 @@ function validate(step: number, draft: EventDraft): DraftErrors {
     if (draft.tokenGated && !draft.gateRequirement.trim()) {
       errors.gateRequirement = 'Describe what a guest must hold to get in.';
     }
-    if (!draft.isFree && !/\d/.test(draft.price)) {
-      errors.price = 'Enter a price, e.g. "0.5 SOL".';
+    /*
+     * The old check was `/\d/.test(price)` - "contains a digit somewhere",
+     * which passed "0 SOL", "abc1" and "1 million". The field now takes digits
+     * and one dot only, so the remaining job is to reject the two values that
+     * are still typeable and still wrong: nothing at all, and zero.
+     *
+     * Zero matters on its own. A host who means free has a switch for it that
+     * says so on the event; a 0 SOL ticket is a paid event that charges
+     * nothing, which reads as free to a guest but keeps every paid-path
+     * behaviour behind it.
+     */
+    if (!draft.isFree) {
+      const amount = Number(draft.price);
+      if (!draft.price.trim() || !Number.isFinite(amount) || amount <= 0) {
+        errors.price = `Enter a ticket price above zero, or switch the event to free.`;
+      }
     }
   }
 
@@ -227,7 +287,7 @@ export const useCreateEventStore = create<CreateEventState>()((set, get) => ({
       placeId: d.isOnline ? undefined : d.placeId,
       address: d.isOnline ? undefined : d.address,
       capacity: Number(d.capacity) || 100,
-      price: d.isFree ? 'Free' : d.price.trim(),
+      price: formatPrice(d),
       visibility: d.visibility,
       requiresApproval: d.requiresApproval,
       tokenGated: d.tokenGated,

@@ -45,6 +45,20 @@ export interface TextFieldProps extends Omit<TextInputProps, 'style'> {
   multiline?: boolean;
   /** Character budget shown under the field. */
   maxLength?: number;
+  /**
+   * Rendered inside the field, hard against its right edge - a unit switcher, a
+   * suffix, a small action.
+   *
+   * Inside rather than beside deliberately. A control that changes what the
+   * number *means* belongs within the same bordered box as the number, sharing
+   * its focus ring; parked outside it reads as an unrelated setting that
+   * happens to sit nearby, which is exactly how a host ends up pricing a ticket
+   * in the wrong currency.
+   *
+   * Ignored when `multiline` - the box is tall and the anchor would float
+   * beside the first line of a paragraph with nothing to attach to.
+   */
+  accessory?: React.ReactNode;
   className?: string;
 }
 
@@ -55,6 +69,7 @@ export const TextField = memo(function TextField({
   icon: Icon,
   multiline = false,
   maxLength,
+  accessory,
   value,
   className,
   onFocus,
@@ -146,6 +161,17 @@ export const TextField = memo(function TextField({
           }}
           {...props}
         />
+
+        {/*
+          Sits outside the `TextInput`, not inside it - RN has no trailing-view
+          slot on a text input, and nesting one swallows the taps. The negative
+          right margin lets the accessory reach nearer the border than the
+          field's own 16pt padding allows, so it reads as attached to the edge
+          rather than floating short of it.
+        */}
+        {accessory && !multiline && (
+          <View style={{ marginRight: -6 }}>{accessory}</View>
+        )}
       </Animated.View>
 
       {(error || hint || maxLength) && (

@@ -31,7 +31,12 @@ import {
 import { PressableScale } from '@/components/ui/pressable-scale';
 import { Text } from '@/components/ui/text';
 import { toast } from '@/store/toast-store';
-import { useCreateEventStore } from '@/store/create-event-store';
+import {
+  PRICE_CURRENCIES,
+  formatPrice,
+  useCreateEventStore,
+  type PriceCurrency,
+} from '@/store/create-event-store';
 import { LocationPicker } from './location-picker';
 import {
   brand,
@@ -761,21 +766,32 @@ export const AccessStep = memo(function AccessStep() {
           description="No ticket price - guests only pay network fees"
           icon={Ticket}
           value={draft.isFree}
-          onValueChange={(next) => {
-            setField('isFree', next);
-            setField('price', next ? 'Free' : '0.5 SOL');
-          }}
+          onValueChange={(next) => setField('isFree', next)}
         />
       </View>
 
+      {/*
+        Toggling free no longer rewrites `price`. It used to swap the string
+        between 'Free' and '0.5 SOL', which meant flipping to free and back
+        silently discarded whatever the host had typed and replaced it with a
+        number they never chose. `isFree` decides whether the amount is *used*
+        (see `formatPrice`), so the draft can simply keep it.
+      */}
       {!draft.isFree && (
         <TextField
           label="Ticket price"
-          placeholder="0.5 SOL"
+          placeholder="0.00"
           value={draft.price}
-          onChangeText={(text) => setField('price', text)}
+          onChangeText={(text) => setField('price', sanitizeAmount(text))}
           error={errors.price}
-          hint="Settles straight to your wallet, minus network fees."
+          keyboardType="decimal-pad"
+          accessory={
+            <CurrencyToggle
+              value={draft.priceCurrency}
+              onChange={(next) => setField('priceCurrency', next)}
+            />
+          }
+          hint={`Settles straight to your wallet in ${draft.priceCurrency}, minus network fees.`}
         />
       )}
 
