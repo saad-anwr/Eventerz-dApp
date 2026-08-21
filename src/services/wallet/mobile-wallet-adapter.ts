@@ -33,6 +33,7 @@ import {
   eventerzProgramId,
   releaseSeatInstruction,
 } from '@/services/solana/program';
+import { eventClaimInstruction } from '@/services/solana/event-claim';
 import { memoInstruction } from '@/services/solana/memo';
 // One definition of "which RPC", shared with the holdings and fee paths. Three
 // copies of this rule had drifted on what to do when no endpoint is configured.
@@ -142,6 +143,26 @@ function toBase58(address: unknown): string {
 }
 
 /**
+ * Intents that need no Eventerz program deployed.
+ *
+ * One list, consulted by both the gate in `signAndSendTransaction` and the
+ * builder below, because these two answering differently is a specific and
+ * nasty bug: the gate lets the intent through, then the builder trips over a
+ * null `programId` and reports "the Eventerz program is not deployed" for
+ * something that never needed it.
+ *
+ *   - `transfer` is a System Program instruction.
+ *   - `claim-event` is an SPL Memo instruction.
+ *
+ * Both are programs Solana already runs. Neither has anything to do with
+ * `EVENTERZ_PROGRAM_ID`, which is blank by design.
+ */
+const PROGRAM_FREE_INTENTS: ReadonlySet<TransactionIntent['type']> = new Set([
+  'transfer',
+  'claim-event',
+]);
+
+/**
  * Compile an intent into one instruction.
  *
  * Deliberately a pure function outside the class: it takes the payer and the
@@ -154,6 +175,15 @@ function buildInstruction(
   payer: PublicKey,
   programId: PublicKey | null,
 ): TransactionInstruction {
+  /*
+   * The claim is the memo. Handled up here with `transfer`, above the
+   * `programId` guard, because it is a memo-only transaction: no transfer, no
+   * Eventerz program, nothing to deploy.
+   */
+  if (intent.type === 'claim-event') {
+    return eventClaimInstruction(intent.eventId, payer);
+  }
+
   if (intent.type === 'transfer') {
     /*
      * Translated rather than left to web3.js, which throws "Invalid public key
@@ -275,6 +305,11 @@ function computeKindFor(intent: TransactionIntent): ComputeKind {
       return 'createEvent';
     case 'rsvp':
       return 'claimSeat';
+    // A memo writes no account and runs almost no compute. `simple` is already
+    // the smallest budget here, and asking for more would multiply the priority
+    // fee on a transaction the host is only paying network costs for.
+    case 'claim-event':
+      return 'simple';
     default:
       return 'simple';
   }
@@ -503,10 +538,12 @@ export class MobileWalletAdapter implements WalletAdapter {
    *
    * Two rules that are load-bearing:
    *
-   *  1. **A `transfer` never needs the Eventerz program.** It is a System
-   *     Program instruction, so it works whether or not anything of ours is
-   *     deployed. Gating it on `programId` would break sending crypto for a
-   *     reason that has nothing to do with it.
+   *  1. **`PROGRAM_FREE_INTENTS` never need the Eventerz program.** A
+   *     `transfer` is a System Program instruction and a `claim-event` is an
+   *     SPL Memo instruction, so both work whether or not anything of ours is
+   *     deployed. Gating them on `programId` would break sending crypto, and
+   *     block a host's record of authorship, for a reason that has nothing to
+   *     do with either.
    *
    *  2. **Every other intent refuses when no program is deployed.** It does not
    *     fabricate a signature, and it no longer sends the zero-lamport
@@ -514,6 +551,14 @@ export class MobileWalletAdapter implements WalletAdapter {
    *     confirmable signature for a transaction that did nothing, which is the
    *     worst of both worlds: the UI would report a minted ticket and the
    *     explorer would appear to agree.
+   *
+   *     `claim-event` is not a re-run of that mistake, and the distinction is
+   *     worth being precise about because the shape looks similar. That
+   *     self-transfer carried **no evidence of the thing it claimed** - the
+   *     chain recorded "sent itself nothing" while the UI said "ticket minted".
+   *     A claim's memo *is* the assertion, checked by the Memo program against
+   *     the signer, so the chain and the UI say the same sentence. See
+   *     `services/solana/event-claim.ts`.
    */
   async signAndSendTransaction(
     intent: TransactionIntent,
@@ -527,7 +572,7 @@ export class MobileWalletAdapter implements WalletAdapter {
      * and this string is shown in a toast to whoever tapped RSVP, including a
      * store reviewer.
      */
-    if (intent.type !== 'transfer' && !programId) {
+    if (!PROGRAM_FREE_INTENTS.has(intent.type) && !programId) {
       throw new Error(
         `On-chain ${intent.type.replace(/-/g, ' ')} is not available yet.`,
       );

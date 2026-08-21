@@ -92,4 +92,16 @@ export const solanaService = {
     requiresApproval: boolean;
     priceLamports: bigint;
   }) => submit({ type: 'create-event', ...args }),
+
+  /**
+   * The host's signed record of authorship for an event they just published.
+   *
+   * Takes an id and nothing else, unlike `createEvent` above - and the contrast
+   * is the point. That one writes the event itself on-chain, so every term has
+   * to be in the instruction or the account is wrong. This one asserts a single
+   * fact about a row that already exists, so the id is the whole payload.
+   *
+   * No amount, because none moves. See `services/solana/event-claim.ts`.
+   */
+  claimEvent: (eventId: string) => submit({ type: 'claim-event', eventId }),
 };

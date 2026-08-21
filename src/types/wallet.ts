@@ -138,5 +138,14 @@ export type TransactionIntent =
   | { type: 'cancel-event'; eventId: string }
   | { type: 'release-seat'; eventId: string }
   | { type: 'claim-badge'; badgeId: string }
+  /**
+   * The host's signed record of authorship - a memo-only transaction, no
+   * lamports, no Eventerz program. See `services/solana/event-claim.ts`.
+   *
+   * Carries no amount because none moves: creating an event is free, and the
+   * host pays only the network fee. It sits beside `transfer` in every place
+   * that asks "does this intent need our program deployed?" - both answer no.
+   */
+  | { type: 'claim-event'; eventId: string }
   /** Base units, always. A float here is a rounding error in someone's money. */
   | { type: 'transfer'; to: string; lamports: bigint; memo?: string };

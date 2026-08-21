@@ -64,12 +64,33 @@ export function truncateMemoBytes(text: string): Buffer {
   return bytes.subarray(0, end);
 }
 
-/** The instruction that puts `text` on-chain beside a transfer. */
-export function memoInstruction(text: string): TransactionInstruction {
+/**
+ * The instruction that puts `text` on-chain.
+ *
+ * # When to pass `signer`, and why it is not always right
+ *
+ * Beside a transfer, pass nothing. Memo v2 accepts zero accounts, and naming
+ * the payer adds nothing the transfer does not already prove - the transfer
+ * instruction names the sender itself.
+ *
+ * In a **memo-only** transaction there is no transfer to prove anything, and
+ * the distinction stops being cosmetic. Memo v2 verifies that every account
+ * handed to it signed the transaction, and explorers attribute the memo to
+ * those accounts. Without one, the text is an unattributed string that happens
+ * to share a transaction with a fee payer; with one, the program itself has
+ * checked that this address signed this text.
+ *
+ * That is the whole difference between a note and an attestation, which is why
+ * `buildEventClaimMemo` is always sent with a signer.
+ */
+export function memoInstruction(
+  text: string,
+  signer?: PublicKey,
+): TransactionInstruction {
   return new TransactionInstruction({
-    // Memo v2 accepts zero accounts. Naming the payer as a signer would be
-    // valid too, and would add nothing the transfer does not already prove.
-    keys: [],
+    keys: signer
+      ? [{ pubkey: signer, isSigner: true, isWritable: false }]
+      : [],
     programId: MEMO_PROGRAM_ID,
     data: truncateMemoBytes(text),
   });

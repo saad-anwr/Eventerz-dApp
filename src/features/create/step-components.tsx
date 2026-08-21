@@ -1079,15 +1079,35 @@ export const ReviewStep = memo(function ReviewStep() {
         `EVENTERZ_PROGRAM_ID` is blank by design, so an event is a Postgres
         record.
       */}
+      {/*
+        Your wallet will open. Saying so here, on a screen that holds still,
+        is the same requirement the fee disclosure met: whatever the wallet is
+        about to be asked for has to be legible *before* the user is asked to
+        continue, not inside the approval sheet.
+
+        The distinction this copy has to carry is that a signature is not a
+        payment. Someone who has used this app before has been asked to approve
+        a $5 charge at exactly this point, so "no fee" is stated first and
+        plainly - otherwise the wallet opening is read as a charge they missed.
+
+        Note what it does *not* say: not "your event is stored on Solana". The
+        event is a Postgres row. What goes on-chain is a signed statement that
+        this wallet published it.
+      */}
       <View
         className="border border-white/10 bg-white/[0.03] px-4 py-3.5"
         style={{ borderRadius: radius['2xl'] }}
       >
-        <Text variant="bodySm">Publishing is free</Text>
+        <Text variant="bodySm">Free to publish - you sign, you do not pay</Text>
         <Text variant="caption" className="mt-1 text-muted-foreground">
+          Your wallet will ask you to sign a short message recording that you
+          published this event. No fee is charged and no SOL is sent - only the
+          Solana network fee, a fraction of a cent.
+        </Text>
+        <Text variant="caption" className="mt-2 text-muted-foreground">
           {draft.isFree
-            ? 'No charge to publish, and your event is open for RSVPs straight away.'
-            : `No charge to publish. Ticket sales settle to your wallet at ${formatPrice(draft)}, minus network fees.`}
+            ? 'Signing is optional: skip it and your event still goes live.'
+            : `Ticket sales settle to your wallet at ${formatPrice(draft)}, minus network fees. Signing is optional - skip it and your event still goes live.`}
         </Text>
       </View>
     </View>

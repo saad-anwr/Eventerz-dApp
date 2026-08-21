@@ -77,24 +77,57 @@ export default function CreateScreen() {
   const StepComponent = STEP_COMPONENTS[step];
 
   /**
-   * Publish. One database write, no wallet, nothing to undo on failure.
+   * Publish, then sign the on-chain claim.
    *
-   * "Saving your event", not "Approve the transaction in your wallet" - there
-   * is no transaction to approve. That wording was already wrong when the fee
-   * existed (the wallet step was over by then); with the fee gone it would be
-   * inventing a prompt that never appears.
+   * Two steps in one tap, and they fail independently on purpose. The write is
+   * what publishes the event; the signature is the host's record of authorship
+   * on Solana. Nothing is charged for either - the wallet prompt is a signature,
+   * not a payment, and `useFee` is not involved anywhere in this file.
+   *
+   * The event is live the moment the write returns, so a dismissed wallet
+   * prompt cannot un-publish it. That is why the success path branches instead
+   * of treating an unsigned claim as a failed publish: telling a host their
+   * event did not publish when it did is how you get two of the same event.
    */
   const runPublish = useCallback(() => {
     const pendingId = toast.pending(
       'Publishing event',
-      'Saving your event and opening RSVPs',
+      'Saving your event, then asking your wallet to sign the on-chain claim',
     );
 
     createEvent.mutate(toInput(), {
       onSuccess: (event) => {
         toast.dismiss(pendingId);
-        haptics.success();
-        toast.success('Event published', 'Your event is live and open for RSVPs.');
+        const { claim } = event;
+
+        if (claim.ok) {
+          haptics.success();
+          toast.success(
+            'Event published',
+            'Your event is live, and your claim is signed on Solana.',
+          );
+        } else if (claim.failure === 'cancelled') {
+          /*
+           * Not an error, and not silent either. The event genuinely is live;
+           * the only thing missing is the claim, and the host chose that. Say
+           * both halves, because "Event published" alone would hide a step they
+           * deliberately skipped and "claim cancelled" alone would read as a
+           * failed publish.
+           */
+          haptics.warning();
+          toast.info(
+            'Published without an on-chain claim',
+            'Your event is live. You were not charged - you can sign the claim from the event page whenever you like.',
+          );
+        } else {
+          haptics.warning();
+          toast.info(
+            'Published - claim not recorded',
+            claim.message ??
+              'Your event is live. The on-chain claim can be signed again from the event page.',
+          );
+        }
+
         reset();
         router.replace(`/event/${event.id}`);
       },

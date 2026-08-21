@@ -20,6 +20,7 @@ import {
   type UpdateEventInput,
 } from '@/repositories';
 import { AnalyticsEvent, analytics, notificationService, solanaService } from '@/services';
+import { claimEvent } from '@/services/event-claim-service';
 import {
   isRemoteUri,
   uploadEventBanner,
@@ -397,6 +398,7 @@ export function useCreateEvent() {
        * Only attempted when a program is deployed - the database row is the
        * record either way, and refusing to create an event because no program
        * exists would break a working feature to protect a promise nobody made.
+       * `EVENTERZ_PROGRAM_ID` is blank by design, so today this never runs.
        */
       if (integrationsConfig.programId) {
         await solanaService.createEvent({
@@ -410,7 +412,26 @@ export function useCreateEvent() {
       }
 
       analytics.track(AnalyticsEvent.EventCreated, { eventId: event.id });
-      return event;
+
+      /*
+       * The host's on-chain record of authorship.
+       *
+       * Deliberately *after* the row exists and outside the success path: the
+       * memo names `event.id`, which Postgres generates, so there is nothing to
+       * sign until the insert has returned. That ordering also decides what
+       * happens when the wallet prompt is dismissed - the event stays published
+       * and simply carries no claim yet.
+       *
+       * The reverse (sign first, insert second) would need a client-chosen id,
+       * which migration 0017 correctly refuses to grant, and would throw away a
+       * six-step draft every time someone fumbled a wallet prompt. A missing
+       * claim is recoverable; a lost draft is not.
+       *
+       * `claimEvent` never throws - see its docblock. The result rides along on
+       * the event so the screen can say which of the two things happened.
+       */
+      const claim = await claimEvent(event.id);
+      return { ...event, claim };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.events.all });
