@@ -79,6 +79,16 @@ const TABS: TabDescriptor[] = [
 
 const CENTER_INDEX = 2;
 
+/**
+ * Where the centre button goes when it is pressed as an X rather than a plus.
+ *
+ * Home, not `router.back()`: the wizard is a tab, so there is no guarantee of a
+ * previous route to return to - opening the app straight onto Create and
+ * pressing X would either do nothing or leave the tab shell entirely. A tab is
+ * a place, and the way out of one is another place.
+ */
+const HOME_ROUTE = TABS[0].name;
+
 const TabItem = memo(function TabItem({
   tab,
   focused,
@@ -160,8 +170,18 @@ const CreateButton = memo(function CreateButton({
         scaleTo={0.9}
         hapticFeedback={false}
         accessibilityRole="button"
-        accessibilityLabel="Create event"
-        accessibilityHint="Opens the event creation flow"
+        /*
+         * The icon rotates into an X when focused, so the label has to rotate
+         * with it. A button that reads "Create event" to a screen reader while
+         * showing a close affordance to everyone else describes two different
+         * controls.
+         */
+        accessibilityLabel={focused ? 'Close event creation' : 'Create event'}
+        accessibilityHint={
+          focused
+            ? 'Leaves the create flow. Your draft is kept.'
+            : 'Opens the event creation flow'
+        }
         className="items-center justify-center overflow-hidden"
         style={[
           {
@@ -210,6 +230,34 @@ export function EventerzTabBar({
       }
     },
     [navigation],
+  );
+
+  /**
+   * The centre button, which is two controls wearing one shape.
+   *
+   * `CreateButton` springs its plus 45° into an X as soon as the Create tab is
+   * focused, so on that screen it stops reading as "create" and starts reading
+   * as "close". Nothing implemented the second meaning: `handlePress` navigates
+   * only when the tab is *not* focused, so pressing the X fired a haptic and
+   * did nothing else. The wizard is six steps, and Back moves one step at a
+   * time, so the only way out was to press Back until the steps ran out.
+   *
+   * Leaving deliberately does not clear the draft. It lives in
+   * `createEventStore` and survives the screen unmounting, so stepping out and
+   * back in resumes where you were - and the header's explicit "Reset" is what
+   * discards it. A close button that silently destroyed six steps of work would
+   * be a worse bug than the dead one it replaces.
+   */
+  const handleCenterPress = useCallback(
+    (routeKey: string, routeName: string, isFocused: boolean) => {
+      if (isFocused) {
+        haptics.selection();
+        navigation.navigate(HOME_ROUTE);
+        return;
+      }
+      handlePress(routeKey, routeName, isFocused);
+    },
+    [handlePress, navigation],
   );
 
   /*
@@ -272,7 +320,9 @@ export function EventerzTabBar({
               <CreateButton
                 key={route.key}
                 focused={isFocused}
-                onPress={onPress}
+                onPress={() =>
+                  handleCenterPress(route.key, route.name, isFocused)
+                }
               />
             );
           }
