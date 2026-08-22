@@ -9,7 +9,7 @@
 import Constants, { ExecutionEnvironment } from 'expo-constants';
 import { Platform } from 'react-native';
 
-import { featureFlags } from '@/constants/config';
+import { featureFlags } from '@/constants';
 import type { WalletAdapter } from '@/types';
 
 import { MobileWalletAdapter } from './mobile-wallet-adapter';

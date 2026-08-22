@@ -30,7 +30,7 @@ import { memo } from 'react';
 import { View } from 'react-native';
 
 import { CircleAlert, Info, Wallet } from '@/components/ui/icon';
-import { integrationsConfig } from '@/constants/config';
+import { integrationsConfig } from '@/constants';
 import { Text } from '@/components/ui/text';
 import { useFeeQuote } from '@/hooks/use-fee';
 import { formatFeeSol, type FeeKind } from '@/services/solana/fees';

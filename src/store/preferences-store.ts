@@ -14,7 +14,7 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
-import { StorageKeys } from '@/constants/storage-keys';
+import { StorageKeys } from '@/constants';
 import { setHapticsEnabled, zustandStorage } from '@/utils';
 
 /*

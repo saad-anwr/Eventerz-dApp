@@ -28,7 +28,7 @@ import { Particles } from '@/components/brand/particles';
 import { EventerzMark } from '@/components/brand/logo';
 import { Text } from '@/components/ui/text';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
-import { siteConfig } from '@/constants/config';
+import { siteConfig } from '@/constants';
 import { usePreferencesStore } from '@/store/preferences-store';
 import { useWalletStore } from '@/store/wallet-store';
 import { brand, gradients } from '@/theme/colors';

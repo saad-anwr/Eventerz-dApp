@@ -69,7 +69,7 @@ import { useWalletStore } from '@/store/wallet-store';
 import { accents, brand, resolveCoverGradient } from '@/theme/colors';
 import { androidElevation, radius, screenPadding } from '@/theme/layout';
 import { fontFamily } from '@/theme/typography';
-import { integrationsConfig, siteConfig } from '@/constants/config';
+import { integrationsConfig, siteConfig } from '@/constants';
 import type { EventItem, User } from '@/types';
 import {
   countdownLabel,

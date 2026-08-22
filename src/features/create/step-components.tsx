@@ -186,29 +186,41 @@ export const ScheduleStep = memo(function ScheduleStep() {
     );
   }, [draft.endsAt, start]);
 
-  const setDays = useCallback(
-    (days: number) => {
-      const next = new Date();
-      next.setDate(next.getDate() + days);
-      next.setHours(start.getHours(), 0, 0, 0);
+  /**
+   * Move the start, dragging the end with it so the duration is preserved.
+   *
+   * Every control that changes *when* the event begins - the relative-day
+   * chips, the hour chips, and both native pickers - has to do this, and each
+   * had its own copy. A start that moved without its end is an event that ends
+   * before it starts.
+   */
+  const moveStart = useCallback(
+    (next: Date) => {
       const nextEnd = new Date(next);
       nextEnd.setHours(nextEnd.getHours() + durationHours);
       setField('startsAt', next.toISOString());
       setField('endsAt', nextEnd.toISOString());
     },
-    [durationHours, setField, start],
+    [durationHours, setField],
+  );
+
+  const setDays = useCallback(
+    (days: number) => {
+      const next = new Date();
+      next.setDate(next.getDate() + days);
+      next.setHours(start.getHours(), 0, 0, 0);
+      moveStart(next);
+    },
+    [moveStart, start],
   );
 
   const setHour = useCallback(
     (hour: number) => {
       const next = new Date(draft.startsAt);
       next.setHours(hour, 0, 0, 0);
-      const nextEnd = new Date(next);
-      nextEnd.setHours(nextEnd.getHours() + durationHours);
-      setField('startsAt', next.toISOString());
-      setField('endsAt', nextEnd.toISOString());
+      moveStart(next);
     },
-    [draft.startsAt, durationHours, setField],
+    [draft.startsAt, moveStart],
   );
 
   const setDuration = useCallback(
@@ -246,12 +258,9 @@ export const ScheduleStep = memo(function ScheduleStep() {
       // Keep the time of day; this control only moves the day.
       const next = new Date(draft.startsAt);
       next.setFullYear(picked.getFullYear(), picked.getMonth(), picked.getDate());
-      const nextEnd = new Date(next);
-      nextEnd.setHours(nextEnd.getHours() + durationHours);
-      setField('startsAt', next.toISOString());
-      setField('endsAt', nextEnd.toISOString());
+      moveStart(next);
     },
-    [draft.startsAt, durationHours, setField],
+    [draft.startsAt, moveStart],
   );
 
   const onPickTime = useCallback(
@@ -261,12 +270,9 @@ export const ScheduleStep = memo(function ScheduleStep() {
 
       const next = new Date(draft.startsAt);
       next.setHours(picked.getHours(), picked.getMinutes(), 0, 0);
-      const nextEnd = new Date(next);
-      nextEnd.setHours(nextEnd.getHours() + durationHours);
-      setField('startsAt', next.toISOString());
-      setField('endsAt', nextEnd.toISOString());
+      moveStart(next);
     },
-    [draft.startsAt, durationHours, setField],
+    [draft.startsAt, moveStart],
   );
 
   /** Nudge the end time without touching the start. Floors at 30 minutes. */

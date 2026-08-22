@@ -40,7 +40,7 @@ import { Chip } from '@/components/ui/chip';
 import { TextField } from '@/components/ui/form';
 import { ArrowUpRight, Check, Coins, ShieldCheck } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
-import { integrationsConfig } from '@/constants/config';
+import { integrationsConfig } from '@/constants';
 import { useRecordPayment } from '@/hooks/use-messages';
 import { transfersEnabled } from '@/services/solana/fees';
 import { walletService } from '@/services/wallet';

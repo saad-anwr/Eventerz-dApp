@@ -13,7 +13,7 @@ import {
   useQueryClient,
 } from '@tanstack/react-query';
 
-import { integrationsConfig } from '@/constants/config';
+import { integrationsConfig } from '@/constants';
 import {
   eventRepository,
   userRepository,

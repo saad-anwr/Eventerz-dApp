@@ -17,7 +17,7 @@
  * delete `warnNoProvider`.
  */
 
-import { featureFlags } from '@/constants/config';
+import { featureFlags } from '@/constants';
 
 type Props = Record<string, unknown>;
 

@@ -14,7 +14,7 @@
  * caller - mock and live, scanner and deep link - share one definition.
  */
 
-import { siteConfig } from '@/constants/config';
+import { siteConfig } from '@/constants';
 
 /**
  * The scannable check-in link for a ticket.

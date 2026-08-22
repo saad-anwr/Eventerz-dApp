@@ -10,7 +10,7 @@
  *   3. schedule local reminders 24h and 1h before each RSVP'd event.
  */
 
-import { featureFlags } from '@/constants/config';
+import { featureFlags } from '@/constants';
 import type { EventItem } from '@/types';
 
 export const notificationService = {

@@ -17,7 +17,7 @@
  * simply not something to run a product on. So it degrades, loudly, once.
  */
 
-import { integrationsConfig } from '@/constants/config';
+import { integrationsConfig } from '@/constants';
 
 /** Warned once per launch. This is read on nearly every screen. */
 let warnedAboutPublicRpc = false;

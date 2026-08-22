@@ -9,8 +9,7 @@
  * Wallet Adapter, so swapping is a one-line change in `wallet-service.ts`.
  */
 
-import { integrationsConfig } from '@/constants/config';
-import { StorageKeys, SecureKeys } from '@/constants/storage-keys';
+import { SecureKeys, StorageKeys, integrationsConfig } from '@/constants';
 import type {
   SignedTransactionResult,
   TransactionIntent,

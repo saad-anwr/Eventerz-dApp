@@ -14,7 +14,7 @@
  * Function's header. Nothing here can shortcut it.
  */
 
-import { integrationsConfig } from '@/constants/config';
+import { integrationsConfig } from '@/constants';
 import { client } from '@/repositories/supabase/client';
 import { solanaService } from '@/services/solana-service';
 import { describeSigningError, isWalletCancellation } from '@/services/wallet/errors';

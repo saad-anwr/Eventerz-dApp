@@ -1,6 +1,6 @@
 /** Small async helpers shared by the mock repositories. */
 
-import { MOCK_LATENCY_MS } from '@/constants/config';
+import { MOCK_LATENCY_MS } from '@/constants';
 
 export function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));

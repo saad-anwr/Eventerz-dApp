@@ -24,7 +24,7 @@ import {
 import { Buffer } from 'buffer';
 import { toUint8Array } from 'js-base64';
 
-import { integrationsConfig } from '@/constants/config';
+import { SecureKeys, StorageKeys, integrationsConfig } from '@/constants';
 import {
   cancelEventInstruction,
   checkInInstruction,
@@ -42,7 +42,6 @@ import {
   computeBudgetInstructions,
   type ComputeKind,
 } from '@/services/solana/priority-fee';
-import { SecureKeys, StorageKeys } from '@/constants/storage-keys';
 import type {
   SignedTransactionResult,
   TransactionIntent,

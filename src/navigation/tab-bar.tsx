@@ -22,14 +22,19 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { PressableScale } from '@/components/ui/pressable-scale';
 import { Text } from '@/components/ui/text';
+/*
+ * Lucide's `House` and `UserRound` are the closest matches to the web nav's
+ * icons. Community, Profile and Settings use the same glyphs as the website's
+ * nav, so the two products read as one app in the same slots.
+ */
 import {
-  Home,
+  House as Home,
   Plus,
   Settings,
-  User,
+  UserRound as User,
   Users,
   type LucideIcon,
-} from '@/navigation/tab-icons';
+} from 'lucide-react-native';
 import { useOverlayOpen } from '@/store/overlay-store';
 import { brand, gradients } from '@/theme/colors';
 import { TAB_BAR_HEIGHT, androidElevation, motion, shadow } from '@/theme/layout';

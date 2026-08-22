@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { integrationsConfig } from '@/constants/config';
+import { integrationsConfig } from '@/constants';
 import { ticketRepository, userRepository } from '@/repositories';
 import { AnalyticsEvent, analytics, solanaService } from '@/services';
 import { useWalletStore } from '@/store/wallet-store';

@@ -7,7 +7,7 @@
  * time they were counted.
  */
 
-import { integrationsConfig } from '@/constants/config';
+import { integrationsConfig } from '@/constants';
 
 /**
  * `?cluster=` for anything but mainnet, which the Explorer defaults to.

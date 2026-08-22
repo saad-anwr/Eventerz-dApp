@@ -51,7 +51,7 @@ import {
   LinkedWallets,
   useConnectWallet,
 } from '@/features/wallet';
-import { integrationsConfig, siteConfig } from '@/constants/config';
+import { integrationsConfig, siteConfig } from '@/constants';
 import { resetMockDatabase } from '@/mock';
 import { useMockBackend } from '@/repositories';
 import { getWalletDescriptor, walletAdapterReason } from '@/services/wallet';

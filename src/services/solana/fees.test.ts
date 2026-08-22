@@ -23,7 +23,7 @@ import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 /** Re-import the module with `solanaNetwork` mocked to a given cluster. */
 async function loadWithCluster(solanaNetwork: string) {
   vi.resetModules();
-  vi.doMock('@/constants/config', () => ({
+  vi.doMock('@/constants', () => ({
     integrationsConfig: { solanaNetwork },
   }));
   return import('./fees');
@@ -34,7 +34,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  vi.doUnmock('@/constants/config');
+  vi.doUnmock('@/constants');
   vi.resetModules();
 });
 

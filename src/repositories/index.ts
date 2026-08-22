@@ -9,7 +9,7 @@
  * which is what lets a fresh clone start and makes offline UI work possible.
  */
 
-import { featureFlags } from '@/constants/config';
+import { featureFlags } from '@/constants';
 import { isSupabaseConfigured } from '@/services/auth/supabase-client';
 
 import { analyticsRepository as mockAnalyticsRepository } from './analytics-repository';

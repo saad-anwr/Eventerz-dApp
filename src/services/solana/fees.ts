@@ -36,7 +36,7 @@
  * the fee on it would make the feature unreachable.
  */
 
-import { integrationsConfig } from '@/constants/config';
+import { integrationsConfig } from '@/constants';
 
 /**
  * Eventerz treasury.

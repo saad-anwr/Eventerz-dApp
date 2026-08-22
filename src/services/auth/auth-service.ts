@@ -19,7 +19,7 @@
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 
-import { APP_SCHEME } from '@/constants/config';
+import { APP_SCHEME } from '@/constants';
 /*
  * Error *translation* only - no adapter, no native module. This module stays
  * free of the wallet adapter itself (see `linkWallet`, which takes `signMessage`

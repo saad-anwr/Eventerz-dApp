@@ -71,6 +71,58 @@ type Segment = 'friends' | 'requests' | 'messages';
 /*  Rows                                                                       */
 /* -------------------------------------------------------------------------- */
 
+/**
+ * The shape every person row on this screen shares: tap the left half to open
+ * the profile, act on the right.
+ *
+ * Requests, friends and discovery each had their own copy of the container,
+ * the press target, the avatar and the name - so a change to any of it landed
+ * on one list and left the other two looking different.
+ */
+function PersonRow({
+  name,
+  id,
+  avatarUrl,
+  ring,
+  subtitle,
+  onOpen,
+  trailing,
+}: {
+  name: string;
+  id: string;
+  avatarUrl?: string | null;
+  /** Marks a connection, so friends and pending requests carry it. */
+  ring?: boolean;
+  subtitle: React.ReactNode;
+  onOpen: () => void;
+  trailing: React.ReactNode;
+}) {
+  return (
+    <View
+      className="flex-row items-center gap-3 py-3"
+      style={{ paddingHorizontal: screenPadding }}
+    >
+      <PressableFade
+        onPress={onOpen}
+        accessibilityRole="button"
+        accessibilityLabel={`View ${name}`}
+        className="flex-row items-center gap-3"
+        style={{ flex: 1 }}
+      >
+        <Avatar name={name} seed={id} size="md" ring={ring} uri={avatarUrl} />
+        <View className="flex-1">
+          <Text variant="title" numberOfLines={1}>
+            {name}
+          </Text>
+          {subtitle}
+        </View>
+      </PressableFade>
+
+      {trailing}
+    </View>
+  );
+}
+
 function RequestRow({
   request,
   onAccept,
@@ -87,62 +139,47 @@ function RequestRow({
   busy: boolean;
 }) {
   return (
-    <View
-      className="flex-row items-center gap-3 py-3"
-      style={{ paddingHorizontal: screenPadding }}
-    >
-      <PressableFade
-        onPress={onOpen}
-        accessibilityRole="button"
-        accessibilityLabel={`View ${request.user.name}`}
-        className="flex-row items-center gap-3"
-        style={{ flex: 1 }}
-      >
-        <Avatar
-          name={request.user.name}
-          seed={request.user.id}
-          size="md"
-          ring
-          uri={request.user.avatarUrl}
-        />
-        <View className="flex-1">
-          <Text variant="title" numberOfLines={1}>
-            {request.user.name}
-          </Text>
-          <Text variant="caption" className="text-muted-foreground">
-            {request.outgoing ? 'Request sent' : 'Wants to be friends'}
-          </Text>
-        </View>
-      </PressableFade>
-
-      {/*
+    <PersonRow
+      name={request.user.name}
+      id={request.user.id}
+      avatarUrl={request.user.avatarUrl}
+      ring
+      onOpen={onOpen}
+      subtitle={
+        <Text variant="caption" className="text-muted-foreground">
+          {request.outgoing ? 'Request sent' : 'Wants to be friends'}
+        </Text>
+      }
+      /*
         An outgoing request gets one action, not two. There is nothing to accept
         - the decision belongs to the other person - so offering Accept would be
         a button that cannot mean anything.
-      */}
-      {request.outgoing ? (
-        <Button
-          label="Cancel"
-          variant="ghost"
-          size="sm"
-          disabled={busy}
-          onPress={onCancel}
-        />
-      ) : (
-        <View className="flex-row items-center gap-2">
-          <IconButton
-            icon={X}
-            label={`Decline ${request.user.name}`}
-            onPress={onDecline}
-            variant="secondary"
-            size={36}
-            iconSize={16}
+      */
+      trailing={
+        request.outgoing ? (
+          <Button
+            label="Cancel"
+            variant="ghost"
+            size="sm"
             disabled={busy}
+            onPress={onCancel}
           />
-          <Button label="Accept" size="sm" disabled={busy} onPress={onAccept} />
-        </View>
-      )}
-    </View>
+        ) : (
+          <View className="flex-row items-center gap-2">
+            <IconButton
+              icon={X}
+              label={`Decline ${request.user.name}`}
+              onPress={onDecline}
+              variant="secondary"
+              size={36}
+              iconSize={16}
+              disabled={busy}
+            />
+            <Button label="Accept" size="sm" disabled={busy} onPress={onAccept} />
+          </View>
+        )
+      }
+    />
   );
 }
 
@@ -156,39 +193,30 @@ function FriendRow({
   onMessage: () => void;
 }) {
   return (
-    <View
-      className="flex-row items-center gap-3 py-3"
-      style={{ paddingHorizontal: screenPadding }}
-    >
-      <PressableFade
-        onPress={onOpen}
-        accessibilityRole="button"
-        accessibilityLabel={`View ${user.name}`}
-        className="flex-row items-center gap-3"
-        style={{ flex: 1 }}
-      >
-        <Avatar name={user.name} seed={user.id} size="md" ring uri={user.avatarUrl} />
-        <View className="flex-1">
-          <Text variant="title" numberOfLines={1}>
-            {user.name}
+    <PersonRow
+      name={user.name}
+      id={user.id}
+      avatarUrl={user.avatarUrl}
+      ring
+      onOpen={onOpen}
+      subtitle={
+        user.handle ? (
+          <Text variant="caption" className="text-muted-foreground">
+            @{user.handle}
           </Text>
-          {user.handle ? (
-            <Text variant="caption" className="text-muted-foreground">
-              @{user.handle}
-            </Text>
-          ) : null}
-        </View>
-      </PressableFade>
-
-      <IconButton
-        icon={MessageCircle}
-        label={`Message ${user.name}`}
-        onPress={onMessage}
-        variant="secondary"
-        size={36}
-        iconSize={16}
-      />
-    </View>
+        ) : null
+      }
+      trailing={
+        <IconButton
+          icon={MessageCircle}
+          label={`Message ${user.name}`}
+          onPress={onMessage}
+          variant="secondary"
+          size={36}
+          iconSize={16}
+        />
+      }
+    />
   );
 }
 
@@ -202,35 +230,23 @@ function FriendRow({
  */
 function DiscoverRow({ user, onOpen }: { user: User; onOpen: () => void }) {
   return (
-    <View
-      className="flex-row items-center gap-3 py-3"
-      style={{ paddingHorizontal: screenPadding }}
-    >
-      <PressableFade
-        onPress={onOpen}
-        accessibilityRole="button"
-        accessibilityLabel={`View ${user.name}`}
-        className="flex-row items-center gap-3"
-        style={{ flex: 1 }}
-      >
-        <Avatar name={user.name} seed={user.id} size="md" uri={user.avatarUrl} />
-        <View className="flex-1">
-          <Text variant="title" numberOfLines={1}>
-            {user.name}
-          </Text>
-          <Text
-            variant="caption"
-            className="text-muted-foreground"
-            numberOfLines={1}
-          >
-            {user.handle ? `@${user.handle}` : 'Eventerz member'}
-            {user.reputation > 0 ? ` · ${user.reputation} rep` : ''}
-          </Text>
-        </View>
-      </PressableFade>
-
-      <FriendButton userId={user.id} name={user.name} />
-    </View>
+    <PersonRow
+      name={user.name}
+      id={user.id}
+      avatarUrl={user.avatarUrl}
+      onOpen={onOpen}
+      subtitle={
+        <Text
+          variant="caption"
+          className="text-muted-foreground"
+          numberOfLines={1}
+        >
+          {user.handle ? `@${user.handle}` : 'Eventerz member'}
+          {user.reputation > 0 ? ` · ${user.reputation} rep` : ''}
+        </Text>
+      }
+      trailing={<FriendButton userId={user.id} name={user.name} />}
+    />
   );
 }
 
