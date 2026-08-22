@@ -109,7 +109,8 @@
         }
       ],
       "@react-native-community/datetimepicker",
-      "./plugins/with-solana-wallet-queries"
+      "./plugins/with-solana-wallet-queries",
+      "./plugins/with-optional-camera-hardware"
     ],
     "experiments": {
       "reactCompiler": true

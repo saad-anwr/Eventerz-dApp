@@ -297,6 +297,22 @@ directly. Re-adding a `requestMediaLibraryPermissionsAsync()` gate would resolve
 to *denied* on API ≤ 32 with no way for the user to grant it, and silently break
 avatar and banner picking on older devices. Do not add one back.
 
+**The camera is optional hardware.** Google Play infers hardware requirements
+from permissions: an app that declares `CAMERA` and no `<uses-feature>` is
+treated as requiring `android.hardware.camera` *and*
+`android.hardware.camera.autofocus`, both `required="true"`. Play then hides the
+listing from devices that have neither - and from fixed-focus devices, which
+fail the autofocus half. That claim is wrong here. Discovery, RSVP, tickets, the
+wallet and messaging never open the camera; its only caller is `app/scan.tsx`,
+the organizer check-in screen, which always offers manual code entry beside the
+scanner. `plugins/with-optional-camera-hardware.js` therefore declares both
+features `required="false"`, which keeps the permission for the one screen that
+needs it while moving the decision from install time to runtime - where
+`scan.tsx` already handles it. `plugins/with-optional-camera-hardware.test.ts`
+guards it, because the regression is invisible: the app still builds, installs
+and runs on any device you own, and the only symptom is a store listing quietly
+offered to fewer people.
+
 Verify a change to any of this against the merged manifest, not `app.json`.
 `app.json` only states the intent; the merger decides, and it is the only thing
 that can tell you a library's declaration was actually rejected:
