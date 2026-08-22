@@ -8,7 +8,7 @@
 
 import { useRouter } from 'expo-router';
 import { useCallback } from 'react';
-import { RefreshControl, ScrollView, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { CommunityCard } from '@/components/cards/community-card';
@@ -31,7 +31,6 @@ import {
 } from '@/hooks/use-events';
 import { queryKeys } from '@/hooks/query-keys';
 import { useRefresh } from '@/hooks/use-refresh';
-import { brand } from '@/theme/colors';
 import { screenPadding } from '@/theme/layout';
 import type { Community, EventItem } from '@/types';
 
@@ -58,7 +57,7 @@ export default function HomeScreen() {
   const recommended = useRecommendedEvents(5);
   const communities = useTrendingCommunities(5);
 
-  const { refreshing, onRefresh } = useRefresh(REFRESH_KEYS);
+  const { control } = useRefresh(REFRESH_KEYS);
 
   const openEvent = useCallback(
     (event: EventItem) => router.push(`/event/${event.id}`),
@@ -97,15 +96,7 @@ export default function HomeScreen() {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: bottomPadding }}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={brand.purple}
-            colors={[brand.purple, brand.cyan]}
-            progressBackgroundColor="#0b1024"
-          />
-        }
+        refreshControl={control}
       >
         <HomeHeader
           onConnect={openSheet}

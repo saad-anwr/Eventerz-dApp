@@ -34,7 +34,7 @@ import { PressableScale } from '@/components/ui/pressable-scale';
 import { Spinner } from '@/components/ui/spinner';
 import { Text } from '@/components/ui/text';
 
-import { GoogleMark } from './google-account-row';
+import { GoogleSignInBlock, useGoogleSignIn } from './google-sign-in';
 
 const WalletRow = memo(function WalletRow({
   wallet,
@@ -136,7 +136,6 @@ export const ConnectWalletSheet = memo(function ConnectWalletSheet({
 
   const isLive = useAuthStore((s) => s.isLive);
   const googleLinking = useAuthStore((s) => s.status === 'linking');
-  const signInWithGoogle = useAuthStore((s) => s.signInWithGoogle);
 
   const handleSelect = useCallback(
     async (walletId: WalletId) => {
@@ -173,29 +172,11 @@ export const ConnectWalletSheet = memo(function ConnectWalletSheet({
     [connect, onClose, onConnected],
   );
 
-  const handleGoogle = useCallback(async () => {
-    haptics.medium();
-    const ok = await signInWithGoogle();
-
-    if (ok) {
-      haptics.success();
-      const email = useAuthStore.getState().sessionEmail;
-      toast.success(
-        'Signed in',
-        email ? `Welcome, ${email}` : 'Connect a wallet to finish setting up.',
-      );
-      onConnected?.();
-      onClose();
-      return;
-    }
-
-    // A cancelled sign-in clears the error and warrants no toast.
-    const error = useAuthStore.getState().error;
-    if (error) {
-      haptics.error();
-      toast.error('Google sign-in failed', error);
-    }
-  }, [signInWithGoogle, onClose, onConnected]);
+  const afterGoogle = useCallback(() => {
+    onConnected?.();
+    onClose();
+  }, [onClose, onConnected]);
+  const handleGoogle = useGoogleSignIn(afterGoogle);
 
   const openDownload = useCallback((wallet: WalletDescriptor) => {
     Linking.openURL(wallet.downloadUrl).catch(() => {
@@ -263,37 +244,13 @@ export const ConnectWalletSheet = memo(function ConnectWalletSheet({
         */}
         {isLive && (
           <>
-            <View className="my-4 flex-row items-center gap-3">
-              <View className="h-px flex-1 bg-white/10" />
-              <Text variant="caption" className="text-muted-foreground">
-                or
-              </Text>
-              <View className="h-px flex-1 bg-white/10" />
-            </View>
-
-            <PressableScale
+            <GoogleSignInBlock
               onPress={handleGoogle}
+              busy={googleLinking}
               disabled={googleLinking || busy}
-              scaleTo={0.98}
-              accessibilityRole="button"
-              accessibilityLabel="Continue with Google"
-              accessibilityHint="Signs in for profile discovery and account recovery"
-              className="flex-row items-center justify-center gap-2.5 border border-white/12 bg-white/[0.05]"
-              style={{ height: 52, borderRadius: radius.full }}
-            >
-              {googleLinking ? <Spinner size={18} /> : <GoogleMark size={18} />}
-              <Text style={{ fontFamily: fontFamily.semibold, fontSize: 15 }}>
-                {googleLinking ? 'Waiting for Google...' : 'Continue with Google'}
-              </Text>
-            </PressableScale>
-
-            <Text
-              variant="caption"
-              className="mt-2.5 text-center text-muted-foreground"
-            >
-              Google makes your profile discoverable and the account
-              recoverable. Tickets and check-in still need a wallet.
-            </Text>
+              hint="Signs in for profile discovery and account recovery"
+              footnote="Google makes your profile discoverable and the account recoverable. Tickets and check-in still need a wallet."
+            />
           </>
         )}
       </ScrollView>

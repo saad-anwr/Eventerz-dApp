@@ -11,175 +11,39 @@ import type { CoverGradientKey } from '@/theme/colors';
 import type {
   AppNotification,
   Community,
-  EventCategory,
   EventGuest,
   EventItem,
-  EventVisibility,
   Message,
-  NotificationKind,
   PaymentReceipt,
   RsvpState,
-  ScheduleSlot,
   Ticket,
-  TicketStatus,
   User,
 } from '@/types';
-
-import type { ProfileRow } from '@/services/auth/types';
+import type {
+  CommunityRow,
+  EventGuestRow,
+  EventRow,
+  MessageRow,
+  NotificationRow,
+  PaymentRow,
+  ProfileRow,
+  TicketRow,
+} from '@/services/auth/types';
 import { buildCheckInUrl } from '@/utils/check-in';
 
-/* -------------------------------------------------------------------------- */
-/*  Rows                                                                       */
-/* -------------------------------------------------------------------------- */
-
-export type EventRow = {
-  id: string;
-  title: string;
-  description: string;
-  host_id: string;
-  community_id: string | null;
-  cover_gradient: string;
-  cover_image: string | null;
-  category: EventCategory;
-  starts_at: string;
-  ends_at: string | null;
-  location: string;
-  is_online: boolean;
-  capacity: number;
-  price: string;
-  visibility: EventVisibility;
-  requires_approval: boolean;
-  token_gated: boolean;
-  gate_requirement: string | null;
-  tags: string[];
-  schedule: ScheduleSlot[];
-  featured: boolean;
-  onchain_signature: string | null;
-  created_at: string;
-  updated_at: string;
-
-  /*
-   * Denormalised by trigger in migration 0005. Needed because the roster is no
-   * longer world-readable: a stranger must still see "42 going" without being
-   * able to list the 42, and counting from rows RLS hides would report 0.
-   */
-  confirmed_count: number;
-  pending_count: number;
-  waitlist_count: number;
-  checked_in_count: number;
-
-  /*
-   * Cancellation is soft (migration 0007). The row survives so ticket holders
-   * keep the record and the route still resolves.
-   */
-  cancelled_at: string | null;
-  cancel_reason: string | null;
-
-  /*
-   * Structured location (0006), alongside the free-text `location` the host
-   * typed. Null on every event created before that migration - both clients
-   * fall back to a map search, so null is supported rather than a gap.
-   */
-  latitude: number | null;
-  longitude: number | null;
-  place_id: string | null;
-  address: string | null;
-};
-
-export type MessageRow = {
-  id: string;
-  scope: 'event' | 'dm';
-  channel_id: string;
-  sender_id: string;
-  body: string;
-  kind: 'text' | 'payment';
-  payment_id: string | null;
-  created_at: string;
-};
-
-export type PaymentRow = {
-  id: string;
-  signature: string;
-  cluster: string;
-  from_profile: string;
-  to_profile: string | null;
-  from_wallet: string;
-  to_wallet: string;
-  /** PostgREST serialises `bigint` as a string. Keep it that way. */
-  amount: string;
-  mint: string | null;
-  symbol: string;
-  decimals: number;
-  memo: string | null;
-  channel_id: string | null;
-  verified: boolean;
-  created_at: string;
-};
-
-export type FriendRequestRow = {
-  id: string;
-  requester_id: string;
-  addressee_id: string;
-  status: 'pending' | 'accepted' | 'declined';
-  created_at: string;
-  updated_at: string;
-};
-
-/** `event_guests` view - an RSVP joined to its profile and ticket. */
-export type EventGuestRow = {
-  event_id: string;
-  profile_id: string;
-  status: RsvpState;
-  created_at: string;
-  name: string;
-  handle: string | null;
-  avatar_url: string | null;
-  wallet_address: string | null;
-  reputation: number;
-  ticket_id: string | null;
-  ticket_serial: number | null;
-  ticket_status: string | null;
-  checked_in_at: string | null;
-};
-
-export type CommunityRow = {
-  id: string;
-  name: string;
-  slug: string;
-  description: string;
-  icon: string;
-  accent: 'purple' | 'blue' | 'cyan' | 'green';
-  cover_gradient: string;
-  token_gated: boolean;
-  verified: boolean;
-  owner_id: string | null;
-  created_at: string;
-};
-
-export type TicketRow = {
-  id: string;
-  event_id: string;
-  owner_id: string;
-  asset_id: string | null;
-  serial: number;
-  status: TicketStatus;
-  soulbound: boolean;
-  tier: string;
-  qr_secret: string;
-  minted_at: string;
-  checked_in_at: string | null;
-};
-
-export type NotificationRow = {
-  id: string;
-  profile_id: string;
-  kind: NotificationKind;
-  title: string;
-  body: string;
-  href: string | null;
-  read: boolean;
-  created_at: string;
-};
+/* The row shapes live beside the `Database` contract they also type. Their only
+   other readers are the mappers below, so they are re-exported from here rather
+   than making every repository import two modules. */
+export type {
+  CommunityRow,
+  EventGuestRow,
+  EventRow,
+  FriendRequestRow,
+  MessageRow,
+  NotificationRow,
+  PaymentRow,
+  TicketRow,
+} from '@/services/auth/types';
 
 /* -------------------------------------------------------------------------- */
 /*  Mappers                                                                    */

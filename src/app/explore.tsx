@@ -8,7 +8,7 @@
 
 import { useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
-import { FlatList, RefreshControl, View } from 'react-native';
+import { FlatList, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 
 import { EventCard } from '@/components/cards/event-card';
@@ -65,7 +65,7 @@ export default function DiscoverScreen() {
   );
 
   const feed = useEventsFeed(effectiveFilters);
-  const { refreshing, onRefresh } = useRefresh([queryKeys.events.all]);
+  const { control } = useRefresh([queryKeys.events.all]);
 
   /*
    * Is anything narrowing the feed? Decides which empty state is honest: "your
@@ -248,15 +248,7 @@ export default function DiscoverScreen() {
         }}
         onEndReached={handleEndReached}
         onEndReachedThreshold={0.6}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={brand.purple}
-            colors={[brand.purple, brand.cyan]}
-            progressBackgroundColor="#0b1024"
-          />
-        }
+        refreshControl={control}
         // Windowing tuned for ~230px rows: render a screen ahead, no more.
         initialNumToRender={5}
         maxToRenderPerBatch={5}

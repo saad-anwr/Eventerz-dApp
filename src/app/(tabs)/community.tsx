@@ -23,7 +23,7 @@
 
 import { useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
-import { FlatList, RefreshControl, View } from 'react-native';
+import { FlatList, View } from 'react-native';
 
 import { Avatar } from '@/components/ui/avatar';
 import { Button, IconButton } from '@/components/ui/button';
@@ -57,7 +57,7 @@ import { useRefresh } from '@/hooks/use-refresh';
 import { useUserSearch } from '@/hooks/use-users';
 import { toast } from '@/store/toast-store';
 import { useWalletStore } from '@/store/wallet-store';
-import { accents, brand } from '@/theme/colors';
+import { accents } from '@/theme/colors';
 import { radius, screenPadding } from '@/theme/layout';
 import type { Conversation, User } from '@/types';
 import { timeAgo } from '@/utils/format';
@@ -341,10 +341,10 @@ export default function CommunityScreen() {
    */
   const people = useUserSearch(query);
 
-  const { refreshing, onRefresh } = useRefresh([
-    queryKeys.friends.all,
-    queryKeys.messages.all,
-  ]);
+  const { control } = useRefresh(
+    [queryKeys.friends.all, queryKeys.messages.all],
+    accents.green,
+  );
 
   const busy = respond.isPending || remove.isPending;
 
@@ -430,16 +430,6 @@ export default function CommunityScreen() {
   const discover = useMemo(
     () => (people.data ?? []).filter((u) => !known.has(u.id)),
     [people.data, known],
-  );
-
-  const refreshControl = (
-    <RefreshControl
-      refreshing={refreshing}
-      onRefresh={onRefresh}
-      tintColor={brand.purple}
-      colors={[brand.purple, accents.green]}
-      progressBackgroundColor="#0b1024"
-    />
   );
 
   return (
@@ -579,7 +569,7 @@ export default function CommunityScreen() {
                 ) : null
               }
               contentContainerStyle={{ paddingBottom: 32 }}
-              refreshControl={refreshControl}
+              refreshControl={control}
             />
           )}
         </>
@@ -614,7 +604,7 @@ export default function CommunityScreen() {
             )}
             ItemSeparatorComponent={SEPARATOR}
             contentContainerStyle={{ paddingBottom: 32 }}
-            refreshControl={refreshControl}
+            refreshControl={control}
           />
         ))}
 
@@ -646,7 +636,7 @@ export default function CommunityScreen() {
             )}
             ItemSeparatorComponent={SEPARATOR}
             contentContainerStyle={{ paddingBottom: 32 }}
-            refreshControl={refreshControl}
+            refreshControl={control}
           />
         ))}
       </>

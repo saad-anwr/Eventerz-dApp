@@ -7,7 +7,7 @@
 
 import { useRouter } from 'expo-router';
 import { useCallback, useMemo } from 'react';
-import { RefreshControl, SectionList, View } from 'react-native';
+import { SectionList, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -167,7 +167,7 @@ export default function NotificationsScreen() {
   const notifications = useNotifications();
   const markRead = useMarkNotificationRead();
   const markAllRead = useMarkAllNotificationsRead();
-  const { refreshing, onRefresh } = useRefresh([queryKeys.notifications.all]);
+  const { control } = useRefresh([queryKeys.notifications.all]);
 
   const sections = useMemo(() => {
     const grouped = new Map<string, AppNotification[]>();
@@ -260,15 +260,7 @@ export default function NotificationsScreen() {
             paddingHorizontal: screenPadding,
             paddingBottom: insets.bottom + 32,
           }}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              tintColor={brand.purple}
-              colors={[brand.purple, brand.cyan]}
-              progressBackgroundColor="#0b1024"
-            />
-          }
+          refreshControl={control}
           renderSectionHeader={({ section }) => (
             <Text
               variant="label"

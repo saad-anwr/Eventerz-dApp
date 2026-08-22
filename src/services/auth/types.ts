@@ -7,6 +7,15 @@
  * type to `never`.
  */
 
+import type {
+  EventCategory,
+  EventVisibility,
+  NotificationKind,
+  RsvpState,
+  ScheduleSlot,
+  TicketStatus,
+} from '@/types';
+
 /**
  * The columns of `profiles` a client may read, as a PostgREST select list.
  *
@@ -104,83 +113,6 @@ export type ProfileUpdate = Partial<
 /*  Rows from 0002_events.sql                                                  */
 /* -------------------------------------------------------------------------- */
 
-export type DbEvent = {
-  id: string;
-  title: string;
-  description: string;
-  host_id: string;
-  community_id: string | null;
-  cover_gradient: string;
-  cover_image: string | null;
-  category: string;
-  starts_at: string;
-  ends_at: string | null;
-  location: string;
-  is_online: boolean;
-  capacity: number;
-  price: string;
-  visibility: string;
-  requires_approval: boolean;
-  token_gated: boolean;
-  gate_requirement: string | null;
-  tags: string[];
-  schedule: unknown;
-  featured: boolean;
-  onchain_signature: string | null;
-  created_at: string;
-  updated_at: string;
-
-  /* Denormalised by trigger in migration 0005 - see rows.ts for why. */
-  confirmed_count: number;
-  pending_count: number;
-  waitlist_count: number;
-  checked_in_count: number;
-
-  /* Soft cancellation (0007). The row survives so ticket holders keep the
-     record and the route still resolves. */
-  cancelled_at: string | null;
-  cancel_reason: string | null;
-
-  /* Structured location (0006), alongside the free-text `location`. Null on
-     anything created before that migration - both clients fall back to a map
-     search, so null is supported rather than a gap. */
-  latitude: number | null;
-  longitude: number | null;
-  place_id: string | null;
-  address: string | null;
-};
-
-/** `event_guests` view - an RSVP joined to its profile and ticket. */
-export type DbEventGuest = {
-  event_id: string;
-  profile_id: string;
-  status: string;
-  created_at: string;
-  name: string;
-  handle: string | null;
-  avatar_url: string | null;
-  wallet_address: string | null;
-  reputation: number;
-  ticket_id: string | null;
-  ticket_serial: number | null;
-  ticket_status: string | null;
-  checked_in_at: string | null;
-};
-
-export type DbCommunity = {
-  id: string;
-  name: string;
-  slug: string;
-  description: string;
-  icon: string;
-  accent: string;
-  cover_gradient: string;
-  token_gated: boolean;
-  verified: boolean;
-  owner_id: string | null;
-  created_at: string;
-};
-
 export type DbCommunityMember = {
   community_id: string;
   profile_id: string;
@@ -196,32 +128,104 @@ export type DbRsvp = {
   created_at: string;
 };
 
-export type DbTicket = {
+/* -------------------------------------------------------------------------- */
+/*  Table and view rows                                                       */
+/* -------------------------------------------------------------------------- */
+
+/*
+ * These shapes were declared twice: a widened `Db*` copy here to type the
+ * supabase-js client, and a narrow `*Row` copy in
+ * `repositories/supabase/rows.ts` for the mappers - one pair per table. Two
+ * declarations of the same table drift, and they had: a column added to one
+ * was simply absent from the other. The narrow shape is now the only one, and
+ * `rows.ts` re-exports these beside the mappers that read them.
+ */
+
+export type EventRow = {
   id: string;
-  event_id: string;
-  owner_id: string;
-  asset_id: string | null;
-  serial: number;
-  status: string;
-  soulbound: boolean;
-  tier: string;
-  qr_secret: string;
-  minted_at: string;
-  checked_in_at: string | null;
+  title: string;
+  description: string;
+  host_id: string;
+  community_id: string | null;
+  cover_gradient: string;
+  cover_image: string | null;
+  category: EventCategory;
+  starts_at: string;
+  ends_at: string | null;
+  location: string;
+  is_online: boolean;
+  capacity: number;
+  price: string;
+  visibility: EventVisibility;
+  requires_approval: boolean;
+  token_gated: boolean;
+  gate_requirement: string | null;
+  tags: string[];
+  schedule: ScheduleSlot[];
+  featured: boolean;
+  onchain_signature: string | null;
+  created_at: string;
+  updated_at: string;
+
+  /*
+   * Denormalised by trigger in migration 0005. Needed because the roster is no
+   * longer world-readable: a stranger must still see "42 going" without being
+   * able to list the 42, and counting from rows RLS hides would report 0.
+   */
+  confirmed_count: number;
+  pending_count: number;
+  waitlist_count: number;
+  checked_in_count: number;
+
+  /*
+   * Cancellation is soft (migration 0007). The row survives so ticket holders
+   * keep the record and the route still resolves.
+   */
+  cancelled_at: string | null;
+  cancel_reason: string | null;
+
+  /*
+   * Structured location (0006), alongside the free-text `location` the host
+   * typed. Null on every event created before that migration - both clients
+   * fall back to a map search, so null is supported rather than a gap.
+   */
+  latitude: number | null;
+  longitude: number | null;
+  place_id: string | null;
+  address: string | null;
 };
 
-export type DbNotification = {
+export type MessageRow = {
   id: string;
-  profile_id: string;
-  kind: string;
-  title: string;
+  scope: 'event' | 'dm';
+  channel_id: string;
+  sender_id: string;
   body: string;
-  href: string | null;
-  read: boolean;
+  kind: 'text' | 'payment';
+  payment_id: string | null;
   created_at: string;
 };
 
-export type DbFriendRequest = {
+export type PaymentRow = {
+  id: string;
+  signature: string;
+  cluster: string;
+  from_profile: string;
+  to_profile: string | null;
+  from_wallet: string;
+  to_wallet: string;
+  /** PostgREST serialises `bigint` as a string. Keep it that way. */
+  amount: string;
+  mint: string | null;
+  symbol: string;
+  decimals: number;
+  memo: string | null;
+  channel_id: string | null;
+  verified: boolean;
+  created_at: string;
+};
+
+export type FriendRequestRow = {
   id: string;
   requester_id: string;
   addressee_id: string;
@@ -230,34 +234,59 @@ export type DbFriendRequest = {
   updated_at: string;
 };
 
-export type DbMessage = {
+/** `event_guests` view - an RSVP joined to its profile and ticket. */
+export type EventGuestRow = {
+  event_id: string;
+  profile_id: string;
+  status: RsvpState;
+  created_at: string;
+  name: string;
+  handle: string | null;
+  avatar_url: string | null;
+  wallet_address: string | null;
+  reputation: number;
+  ticket_id: string | null;
+  ticket_serial: number | null;
+  ticket_status: string | null;
+  checked_in_at: string | null;
+};
+
+export type CommunityRow = {
   id: string;
-  scope: 'event' | 'dm';
-  channel_id: string;
-  sender_id: string;
-  body: string;
-  /** `payment` rows are written only by `record_payment`; see migration 0009. */
-  kind: 'text' | 'payment';
-  payment_id: string | null;
+  name: string;
+  slug: string;
+  description: string;
+  icon: string;
+  accent: 'purple' | 'blue' | 'cyan' | 'green';
+  cover_gradient: string;
+  token_gated: boolean;
+  verified: boolean;
+  owner_id: string | null;
   created_at: string;
 };
 
-export type DbPayment = {
+export type TicketRow = {
   id: string;
-  signature: string;
-  cluster: string;
-  from_profile: string;
-  to_profile: string | null;
-  from_wallet: string;
-  to_wallet: string;
-  /** PostgREST serialises `bigint` as a string, because it exceeds 2^53. */
-  amount: string;
-  mint: string | null;
-  symbol: string;
-  decimals: number;
-  memo: string | null;
-  channel_id: string | null;
-  verified: boolean;
+  event_id: string;
+  owner_id: string;
+  asset_id: string | null;
+  serial: number;
+  status: TicketStatus;
+  soulbound: boolean;
+  tier: string;
+  qr_secret: string;
+  minted_at: string;
+  checked_in_at: string | null;
+};
+
+export type NotificationRow = {
+  id: string;
+  profile_id: string;
+  kind: NotificationKind;
+  title: string;
+  body: string;
+  href: string | null;
+  read: boolean;
   created_at: string;
 };
 
@@ -277,24 +306,24 @@ export type Database = {
         Partial<ProfileRow> & { id: string },
         ProfileUpdate
       >;
-      events: Table<DbEvent>;
-      communities: Table<DbCommunity>;
+      events: Table<EventRow>;
+      communities: Table<CommunityRow>;
       community_members: Table<DbCommunityMember>;
       rsvps: Table<DbRsvp>;
-      tickets: Table<DbTicket>;
-      notifications: Table<DbNotification>;
-      friend_requests: Table<DbFriendRequest>;
+      tickets: Table<TicketRow>;
+      notifications: Table<NotificationRow>;
+      friend_requests: Table<FriendRequestRow>;
       messages: Table<
-        DbMessage,
+        MessageRow,
         // A client may only insert plain text. Receipts come from
         // `record_payment`; see migration 0009.
-        Pick<DbMessage, 'channel_id' | 'sender_id' | 'body' | 'scope'>
+        Pick<MessageRow, 'channel_id' | 'sender_id' | 'body' | 'scope'>
       >;
-      payments: Table<DbPayment>;
+      payments: Table<PaymentRow>;
     };
     Views: {
       event_guests: {
-        Row: DbEventGuest;
+        Row: EventGuestRow;
         Relationships: [];
       };
     };
@@ -380,11 +409,11 @@ export type Database = {
           p_place_id?: string | null;
           p_address?: string | null;
         };
-        Returns: DbEvent;
+        Returns: EventRow;
       };
       cancel_event: {
         Args: { p_event_id: string; p_reason?: string | null };
-        Returns: DbEvent;
+        Returns: EventRow;
       };
       my_waitlist_position: {
         Args: { p_event_id: string };
@@ -411,7 +440,7 @@ export type Database = {
           p_decimals?: number;
           p_cluster?: string;
         };
-        Returns: DbPayment;
+        Returns: PaymentRow;
       };
       dm_channel_id: {
         Args: { a: string; b: string };
@@ -464,7 +493,7 @@ export type Database = {
       };
       check_in_ticket: {
         Args: { p_ticket_id: string; p_qr_secret: string };
-        Returns: DbTicket;
+        Returns: TicketRow;
       };
     };
     Enums: Record<never, never>;

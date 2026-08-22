@@ -10,7 +10,7 @@ import * as Clipboard from 'expo-clipboard';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { RefreshControl, ScrollView, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { CommunityCard } from '@/components/cards/community-card';
@@ -102,7 +102,7 @@ export default function ProfileScreen() {
   const attending = useEventsByAttendee(user?.id);
   const organized = useEventsByHost(user?.id);
 
-  const { refreshing, onRefresh } = useRefresh([
+  const { control } = useRefresh([
     queryKeys.events.all,
     queryKeys.tickets.all,
     queryKeys.communities.all,
@@ -180,15 +180,7 @@ export default function ProfileScreen() {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: bottomPadding }}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={brand.purple}
-            colors={[brand.purple, brand.cyan]}
-            progressBackgroundColor="#0b1024"
-          />
-        }
+        refreshControl={control}
       >
         {/* Banner */}
         <View style={{ height: 132 }}>

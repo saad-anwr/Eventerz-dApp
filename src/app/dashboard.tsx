@@ -8,7 +8,7 @@
 
 import { useRouter } from 'expo-router';
 import { useCallback } from 'react';
-import { Dimensions, RefreshControl, View } from 'react-native';
+import { Dimensions, View } from 'react-native';
 import Animated, {
   FadeInDown,
   useAnimatedScrollHandler,
@@ -47,7 +47,6 @@ import { useEventsByHost } from '@/hooks/use-events';
 import { useRefresh } from '@/hooks/use-refresh';
 import { useUsers } from '@/hooks/use-users';
 import { useWalletStore } from '@/store/wallet-store';
-import { brand } from '@/theme/colors';
 import { radius, screenPadding } from '@/theme/layout';
 import { fontFamily } from '@/theme/typography';
 import { shortenAddress, timeAgo } from '@/utils/format';
@@ -69,7 +68,7 @@ export default function DashboardScreen() {
   const registrations = useRecentRegistrations(6);
   const hosted = useEventsByHost(user?.id);
 
-  const { refreshing, onRefresh } = useRefresh([queryKeys.analytics.all]);
+  const { control } = useRefresh([queryKeys.analytics.all]);
 
   const scrollHandler = useAnimatedScrollHandler((e) => {
     scrollY.value = e.contentOffset.y;
@@ -116,15 +115,7 @@ export default function DashboardScreen() {
         onScroll={scrollHandler}
         scrollEventThrottle={16}
         contentContainerStyle={{ paddingTop: 108, paddingBottom: 48 }}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={brand.purple}
-            colors={[brand.purple, brand.cyan]}
-            progressBackgroundColor="#0b1024"
-          />
-        }
+        refreshControl={control}
       >
         <View style={{ paddingHorizontal: screenPadding }}>
           <Text variant="h1" accessibilityRole="header">

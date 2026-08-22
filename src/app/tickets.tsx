@@ -8,7 +8,7 @@
 
 import { useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
-import { FlatList, RefreshControl, ScrollView, View } from 'react-native';
+import { FlatList, ScrollView, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { NftTicketCard } from '@/components/cards/nft-ticket-card';
@@ -151,7 +151,7 @@ export default function TicketsScreen() {
 
   const tickets = useMyTickets();
   const badges = useMyBadges();
-  const { refreshing, onRefresh } = useRefresh([queryKeys.tickets.all]);
+  const { control } = useRefresh([queryKeys.tickets.all]);
 
   const { upcoming, past } = useTicketPartition(tickets.data ?? []);
 
@@ -255,15 +255,7 @@ export default function TicketsScreen() {
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: bottomPadding }}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              tintColor={brand.purple}
-              colors={[brand.purple, brand.cyan]}
-              progressBackgroundColor="#0b1024"
-            />
-          }
+          refreshControl={control}
         >
           {header}
 
@@ -318,15 +310,7 @@ export default function TicketsScreen() {
           paddingBottom: bottomPadding,
           gap: 16,
         }}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={brand.purple}
-            colors={[brand.purple, brand.cyan]}
-            progressBackgroundColor="#0b1024"
-          />
-        }
+        refreshControl={control}
         initialNumToRender={4}
         maxToRenderPerBatch={4}
         windowSize={5}
