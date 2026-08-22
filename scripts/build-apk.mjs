@@ -226,8 +226,9 @@ if (IS_WINDOWS) {
         'them - ninja rejects the ~365-character object paths that React',
         'Native codegen produces. Enable them once, in an ELEVATED PowerShell:',
         '',
-        '  Set-ItemProperty -Type DWord -Value 1 -Name LongPathsEnabled \\',
-        '    -Path "HKLM:\\SYSTEM\\CurrentControlSet\\Control\\FileSystem"',
+        // One line on purpose: a backslash is a shell continuation, not a
+        // PowerShell one, so a wrapped copy of this command fails when pasted.
+        '  Set-ItemProperty -Path "HKLM:\\SYSTEM\\CurrentControlSet\\Control\\FileSystem" -Name LongPathsEnabled -Type DWord -Value 1',
         '',
         'Then reopen the terminal and run this again. Moving the repo somewhere',
         'shorter does not help: the path is long because of node_modules, not',
